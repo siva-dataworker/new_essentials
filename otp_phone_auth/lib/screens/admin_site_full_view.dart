@@ -25,7 +25,7 @@ class AdminSiteFullView extends StatefulWidget {
 class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTickerProviderStateMixin {
   final _authService = AuthService();
   final _exportService = ExportService();
-  static const String baseUrl = 'http://192.168.1.9:8000/api';
+  static const String baseUrl = 'https://essentials-construction-project.onrender.com/api';
   
   late TabController _tabController;
   
@@ -1654,7 +1654,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
   }
 
   Widget _buildPhotoCard(Map<String, dynamic> photo) {
-    final imageUrl = 'http://192.168.1.9:8000${photo['image_url']}';
+    final imageUrl = 'https://essentials-construction-project.onrender.com${photo['image_url']}';
     final uploadDate = photo['upload_date'] ?? photo['update_date'] ?? photo['created_at'];
     String timeDisplay = '';
     
@@ -2069,7 +2069,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
       // Construct full URL
       final fullUrl = fileUrl.startsWith('http') 
           ? fileUrl 
-          : 'http://192.168.1.9:8000$fileUrl';
+          : 'https://essentials-construction-project.onrender.com$fileUrl';
       
       // Show loading dialog
       showDialog(

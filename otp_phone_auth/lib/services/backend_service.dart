@@ -11,7 +11,7 @@ class BackendService {
   // Django backend URL - change this to your computer's IP for physical device
   // For emulator: http://10.0.2.2:8000/api
   // For physical device: http://YOUR_COMPUTER_IP:8000/api
-  static const String baseUrl = 'http://192.168.1.9:8000/api';
+  static const String baseUrl = 'https://essentials-construction-project.onrender.com/api';
   
   String? _jwtToken;
   

@@ -8,7 +8,7 @@ class BudgetService {
   BudgetService._internal();
 
   final _authService = AuthService();
-  static const String baseUrl = 'http://192.168.1.9:8000/api';
+  static const String baseUrl = 'https://essentials-construction-project.onrender.com/api';
 
   /// Set budget for a site
   Future<Map<String, dynamic>?> setBudget(String siteId, double budgetAmount) async {

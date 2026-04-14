@@ -192,7 +192,7 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
     // Construct full image URL
     final imageUrl = photo['image_url'].toString().startsWith('http')
         ? photo['image_url']
-        : 'http://192.168.1.9:8000${photo['image_url']}';
+        : 'https://essentials-construction-project.onrender.com${photo['image_url']}';
     
     return GestureDetector(
       onTap: () => _openFullScreen(index),
@@ -403,7 +403,7 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
               // Construct full image URL
               final imageUrl = widget.photos[index]['image_url'].toString().startsWith('http')
                   ? widget.photos[index]['image_url']
-                  : 'http://192.168.1.9:8000${widget.photos[index]['image_url']}';
+                  : 'https://essentials-construction-project.onrender.com${widget.photos[index]['image_url']}';
               
               return InteractiveViewer(
                 minScale: 0.5,

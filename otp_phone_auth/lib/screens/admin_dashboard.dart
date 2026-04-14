@@ -35,7 +35,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   String _profilePhone = '';
 
   // Sites tab state
-  static const String _sitesBaseUrl = 'http://192.168.1.9:8000/api';
+  static const String _sitesBaseUrl = 'https://essentials-construction-project.onrender.com/api';
   List<String> _areas = [];
   List<String> _streets = [];
   List<Map<String, dynamic>> _sites = [];
@@ -88,7 +88,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     try {
       final token = await _authService.getToken();
       final response = await http.get(
-        Uri.parse('http://192.168.1.9:8000/api/admin/pending-users/'),
+        Uri.parse('https://essentials-construction-project.onrender.com/api/admin/pending-users/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',
@@ -114,7 +114,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     try {
       final token = await _authService.getToken();
       final response = await http.get(
-        Uri.parse('http://192.168.1.9:8000/api/admin/all-users/'),
+        Uri.parse('https://essentials-construction-project.onrender.com/api/admin/all-users/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',
@@ -214,7 +214,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     try {
       final token = await _authService.getToken();
       final response = await http.post(
-        Uri.parse('http://192.168.1.9:8000/api/admin/approve-user/$userId/'),
+        Uri.parse('https://essentials-construction-project.onrender.com/api/admin/approve-user/$userId/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',
@@ -246,7 +246,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     try {
       final token = await _authService.getToken();
       final response = await http.post(
-        Uri.parse('http://192.168.1.9:8000/api/admin/reject-user/$userId/'),
+        Uri.parse('https://essentials-construction-project.onrender.com/api/admin/reject-user/$userId/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',
