@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: essential-homes-backend
+    env: python
+    region: singapore
+    plan: free
+    branch: main
+    buildCommand: "cd django-backend && pip install -r requirements.txt"
+    startCommand: "cd django-backend && gunicorn backend.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 5432

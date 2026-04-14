@@ -1,0 +1,149 @@
+================================================================================
+                    MATERIAL NOTIFICATION FIX - ACTION CHECKLIST
+================================================================================
+
+ISSUE CONFIRMED:
+  ✅ 6 material entries submitted outside 4-7 PM window
+  ❌ 0 notifications created
+  
+ROOT CAUSE:
+  Django server needs restart to load notification API
+
+================================================================================
+                              IMMEDIATE ACTIONS
+================================================================================
+
+[ ] STEP 1: RESTART DJANGO SERVER
+    
+    In the terminal running Django:
+    1. Press Ctrl+C to stop server
+    2. Run: python manage.py runserver 0.0.0.0:8000
+    3. Wait for "Starting development server at http://0.0.0.0:8000/"
+    
+    OR
+    
+    Double-click: START_SERVER.bat
+
+[ ] STEP 2: TEST NOTIFICATION SYSTEM
+    
+    1. Open Flutter app
+    2. Go to any site detail page
+    3. Click "Material Balance" button
+    4. Enter some material quantities
+    5. Click "Submit Material Balance"
+    
+    IMPORTANT: Current time is 6:29 AM (outside 4-7 PM window)
+    This WILL trigger a notification!
+
+[ ] STEP 3: CHECK FLUTTER CONSOLE
+    
+    Look for these logs:
+    ✅ "📧 [MATERIAL] Sending late entry notification to admin..."
+    ✅ "📧 [MATERIAL] Notification result: {success: true}"
+    
+    If you see errors:
+    ❌ Check Django server is running
+    ❌ Check network connectivity
+    ❌ Check authentication token
+
+[ ] STEP 4: VERIFY NOTIFICATION IN DATABASE
+    
+    Run: python check_notifications.py
+    
+    Expected output:
+    ✅ "📊 Total notifications in database: 1"
+    ✅ "📬 Unread notifications: 1"
+    
+    If still 0:
+    ❌ Django server may not have restarted properly
+    ❌ Check Django logs for errors
+
+[ ] STEP 5: CHECK ADMIN UI
+    
+    1. Login as admin in Flutter app
+    2. Look for notification icon/badge
+    3. Open notifications
+    4. Verify late entry notification appears
+    
+    Should show:
+    ✅ "Material entry submitted outside allowed time"
+    ✅ Site name and timestamp
+    ✅ Unread indicator
+
+================================================================================
+                            VERIFICATION COMMANDS
+================================================================================
+
+Check material entries:
+  python check_material_simple.py
+
+Check notifications:
+  python check_notifications.py
+
+Start PostgreSQL (if needed):
+  START_POSTGRESQL.bat
+
+Start Django server:
+  START_SERVER.bat
+  OR
+  python manage.py runserver 0.0.0.0:8000
+
+================================================================================
+                              EXPECTED RESULTS
+================================================================================
+
+BEFORE RESTART:
+  - Material entries: 6 (all outside time window)
+  - Notifications: 0
+  - Endpoint /notifications/create/ returns 404
+
+AFTER RESTART:
+  - Material entries: 6 (existing) + new test entry
+  - Notifications: 1 (from test)
+  - Endpoint /notifications/create/ returns 201 Created
+  - Admin sees notification in app
+  - Flutter shows "Late entry - Admin notified"
+
+================================================================================
+                            TROUBLESHOOTING
+================================================================================
+
+IF DJANGO WON'T START:
+  - Check if port 8000 is in use
+  - Check for syntax errors in views_notifications.py
+  - Check database connection
+  - Review Django error logs
+
+IF NOTIFICATION STILL NOT CREATED:
+  - Verify Django server restarted (check timestamp in console)
+  - Check Flutter console for API errors
+  - Test endpoint directly with curl
+  - Check JWT token is valid
+  - Review api/views_notifications.py for errors
+
+IF ADMIN CAN'T SEE NOTIFICATION:
+  - Verify notification exists in database
+  - Check admin user ID matches notification recipient
+  - Check notification API endpoint /notifications/get/
+  - Verify admin UI is calling correct endpoint
+
+================================================================================
+                              DOCUMENTATION
+================================================================================
+
+Full details in:
+  - RESTART_DJANGO_NOW.md (immediate action guide)
+  - INVESTIGATION_COMPLETE.md (full investigation summary)
+  - MATERIAL_ENTRIES_INVESTIGATION.md (detailed analysis)
+  - TROUBLESHOOTING_NOTIFICATIONS.md (comprehensive troubleshooting)
+
+================================================================================
+                                  STATUS
+================================================================================
+
+Current Status: READY TO FIX
+Action Required: RESTART DJANGO SERVER
+Estimated Time: < 5 minutes
+Risk Level: LOW (simple restart)
+
+================================================================================

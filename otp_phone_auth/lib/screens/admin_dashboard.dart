@@ -1,0 +1,2897 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../services/auth_service.dart';
+import '../services/construction_service.dart';
+import '../services/notification_service.dart';
+import '../utils/app_colors.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'login_screen.dart';
+import 'admin_labour_rates_screen.dart';
+import 'admin_budget_management_screen.dart';
+import 'admin_client_complaints_screen.dart';
+
+class AdminDashboard extends StatefulWidget {
+  const AdminDashboard({Key? key}) : super(key: key);
+
+  @override
+  State<AdminDashboard> createState() => _AdminDashboardState();
+}
+
+class _AdminDashboardState extends State<AdminDashboard> {
+  final _authService = AuthService();
+  final _notificationService = NotificationService();
+  int _selectedIndex = 0;
+
+  // User Management State
+  bool _showNewUsers = true;
+  List<Map<String, dynamic>> _pendingUsers = [];
+  List<Map<String, dynamic>> _allUsers = [];
+  bool _isLoading = false;
+
+  // Profile state
+  Map<String, dynamic>? _currentAdminUser;
+  String _profileName = 'Admin';
+  String _profilePhone = '';
+
+  // Sites tab state
+  static const String _sitesBaseUrl = 'http://192.168.1.9:8000/api';
+  List<String> _areas = [];
+  List<String> _streets = [];
+  List<Map<String, dynamic>> _sites = [];
+  String? _selectedArea;
+  String? _selectedStreet;
+  bool _sitesLoading = false;
+
+  // Notifications state
+  List<Map<String, dynamic>> _notifications = [];
+  bool _notificationsLoading = false;
+  int _unreadCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAdminUser();
+    _loadData();
+    _loadAreas();
+  }
+
+  Future<void> _loadAdminUser() async {
+    final user = await _authService.getCurrentUser();
+    if (user != null && mounted) {
+      setState(() {
+        _currentAdminUser = user;
+        _profileName = user['full_name'] ?? user['username'] ?? 'Admin';
+        _profilePhone = user['phone'] ?? '';
+      });
+    }
+  }
+  
+  void _loadData() {
+    if (_selectedIndex == 0) {
+      // Users tab
+      if (_showNewUsers) {
+        _loadPendingUsers();
+      } else {
+        _loadAllUsers();
+      }
+    } else if (_selectedIndex == 2) {
+      // Notifications tab
+      _loadNotifications();
+    }
+    // Add other tab data loading here
+  }
+
+  Future<void> _loadPendingUsers() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final token = await _authService.getToken();
+      final response = await http.get(
+        Uri.parse('http://192.168.1.9:8000/api/admin/pending-users/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token ?? ''}',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _pendingUsers = List<Map<String, dynamic>>.from(data['users']);
+        });
+      }
+    } catch (e) {
+      print('Error loading pending users: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadAllUsers() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final token = await _authService.getToken();
+      final response = await http.get(
+        Uri.parse('http://192.168.1.9:8000/api/admin/all-users/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token ?? ''}',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _allUsers = List<Map<String, dynamic>>.from(data['users']);
+        });
+      }
+    } catch (e) {
+      print('Error loading all users: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadNotifications() async {
+    setState(() => _notificationsLoading = true);
+
+    try {
+      print('🔍 [NOTIFICATIONS] Loading notifications...');
+      final result = await _notificationService.getNotifications();
+      
+      print('🔍 [NOTIFICATIONS] Result: ${result['success']}');
+      print('🔍 [NOTIFICATIONS] Notifications count: ${result['notifications']?.length ?? 0}');
+      print('🔍 [NOTIFICATIONS] Unread count: ${result['unread_count']}');
+      
+      if (result['success'] == true && mounted) {
+        setState(() {
+          _notifications = List<Map<String, dynamic>>.from(result['notifications'] ?? []);
+          _unreadCount = result['unread_count'] ?? 0;
+        });
+        
+        print('✅ [NOTIFICATIONS] Loaded ${_notifications.length} notifications');
+      } else {
+        print('❌ [NOTIFICATIONS] Error: ${result['error']}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${result['error'] ?? 'Failed to load notifications'}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ [NOTIFICATIONS] Exception: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading notifications: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _notificationsLoading = false);
+      }
+    }
+  }
+
+  Future<void> _markNotificationAsRead(String notificationId) async {
+    try {
+      final result = await _notificationService.markAsRead(notificationId);
+      
+      if (result['success'] == true) {
+        _loadNotifications(); // Refresh list
+      }
+    } catch (e) {
+      print('Error marking notification as read: $e');
+    }
+  }
+
+  Future<void> _markAllNotificationsAsRead() async {
+    try {
+      final result = await _notificationService.markAllAsRead();
+      
+      if (result['success'] == true && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('All notifications marked as read'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadNotifications(); // Refresh list
+      }
+    } catch (e) {
+      print('Error marking all notifications as read: $e');
+    }
+  }
+
+  Future<void> _approveUser(String userId, String username) async {
+    try {
+      final token = await _authService.getToken();
+      final response = await http.post(
+        Uri.parse('http://192.168.1.9:8000/api/admin/approve-user/$userId/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token ?? ''}',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('User $username approved successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadPendingUsers(); // Refresh list
+      } else {
+        throw Exception('Failed to approve user');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error approving user: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _rejectUser(String userId, String username) async {
+    try {
+      final token = await _authService.getToken();
+      final response = await http.post(
+        Uri.parse('http://192.168.1.9:8000/api/admin/reject-user/$userId/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token ?? ''}',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('User $username rejected'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        _loadPendingUsers(); // Refresh list
+      } else {
+        throw Exception('Failed to reject user');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error rejecting user: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _logout() async {
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Sign Out',
+          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+        ),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.statusOverdue,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text(
+              'Sign Out',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _authService.logout();
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.lightSlate,
+      appBar: AppBar(
+        title: Text(
+          _getAppBarTitle(),
+          style: const TextStyle(
+            color: AppColors.deepNavy,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: AppColors.cleanWhite,
+        elevation: 0,
+        actions: [
+          // Notification badge
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined, color: AppColors.deepNavy),
+                onPressed: () {
+                  setState(() => _selectedIndex = 2);
+                },
+              ),
+              if (_pendingUsers.isNotEmpty)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.safetyOrange,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      '${_pendingUsers.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          // Logout button
+          IconButton(
+            icon: const Icon(Icons.logout, color: AppColors.deepNavy),
+            onPressed: _logout,
+            tooltip: 'Sign Out',
+          ),
+        ],
+      ),
+      body: _buildBody(),
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    const items = [
+      _NavItem(Icons.people_outline, Icons.people, 'Users'),
+      _NavItem(Icons.location_city_outlined, Icons.location_city, 'Sites'),
+      _NavItem(Icons.notifications_outlined, Icons.notifications, 'Alerts'),
+      _NavItem(Icons.report_problem_outlined, Icons.report_problem, 'Issues'),
+      _NavItem(Icons.person_outline, Icons.person, 'Profile'),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cleanWhite,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.deepNavy.withValues(alpha: 0.10),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(items.length, (i) {
+              final selected = _selectedIndex == i;
+              final item = items[i];
+              return GestureDetector(
+                onTap: () => setState(() {
+                  _selectedIndex = i;
+                  _loadData();
+                }),
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeInOut,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: selected ? 18 : 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: selected ? AppColors.orangeGradient : null,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: selected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.safetyOrange.withValues(alpha: 0.35),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            )
+                          ]
+                        : null,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Badge dot for Alerts tab
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            selected ? item.activeIcon : item.icon,
+                            color: selected ? Colors.white : AppColors.textSecondary,
+                            size: 22,
+                          ),
+                          if (i == 2 && _pendingUsers.isNotEmpty)
+                            Positioned(
+                              right: -4,
+                              top: -4,
+                              child: Container(
+                                width: 9,
+                                height: 9,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.statusOverdue,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (selected) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          item.label,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getAppBarTitle() {
+    switch (_selectedIndex) {
+      case 0:
+        return 'User Management';
+      case 1:
+        return 'Site Management';
+      case 2:
+        return 'Notifications';
+      case 3:
+        return 'Client Issues';
+      case 4:
+        return 'Profile';
+      default:
+        return 'Admin Dashboard';
+    }
+  }
+
+  Widget _buildBody() {
+    switch (_selectedIndex) {
+      case 0:
+        return _buildUsersTab();
+      case 1:
+        return _buildSitesTab();
+      case 2:
+        return _buildNotificationsTab();
+      case 3:
+        return _buildClientComplaintsTab();
+      case 4:
+        return _buildProfileTab();
+      default:
+        return _buildUsersTab();
+    }
+  }
+
+  Widget _buildClientComplaintsTab() {
+    return const AdminClientComplaintsScreen();
+  }
+
+  Widget _buildUsersTab() {
+    return Column(
+      children: [
+        // Instagram-style toggle buttons
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: AppColors.cleanWhite,
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildPillButton(
+                  'New Users',
+                  _showNewUsers,
+                  () {
+                    setState(() {
+                      _showNewUsers = true;
+                      _loadPendingUsers();
+                    });
+                  },
+                  badge: _pendingUsers.length,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildPillButton(
+                  'All Users',
+                  !_showNewUsers,
+                  () {
+                    setState(() {
+                      _showNewUsers = false;
+                      _loadAllUsers();
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Content
+        Expanded(
+          child: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.safetyOrange,
+                  ),
+                )
+              : _showNewUsers
+                  ? _buildNewUsersList()
+                  : _buildExistingUsersList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPillButton(String label, bool isSelected, VoidCallback onTap, {int badge = 0}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(25),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          gradient: isSelected ? AppColors.orangeGradient : null,
+          color: isSelected ? null : AppColors.lightSlate,
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.safetyOrange.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+              ),
+            ),
+            if (badge > 0) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.white : AppColors.safetyOrange,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$badge',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? AppColors.safetyOrange : Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNewUsersList() {
+    if (_pendingUsers.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                gradient: AppColors.orangeGradient,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_outline,
+                size: 60,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'All Caught Up!',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.deepNavy,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No pending user approvals',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadPendingUsers,
+      color: AppColors.safetyOrange,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _pendingUsers.length,
+        itemBuilder: (context, index) {
+          final user = _pendingUsers[index];
+          return _buildPendingUserCard(user);
+        },
+      ),
+    );
+  }
+
+  Widget _buildExistingUsersList() {
+    if (_allUsers.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 80,
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No users found',
+              style: TextStyle(
+                fontSize: 18,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadAllUsers,
+      color: AppColors.safetyOrange,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _allUsers.length,
+        itemBuilder: (context, index) {
+          final user = _allUsers[index];
+          return _buildExistingUserCard(user);
+        },
+      ),
+    );
+  }
+
+  Future<void> _loadAreas() async {
+    setState(() => _sitesLoading = true);
+    try {
+      final token = await _authService.getToken();
+      final res = await http.get(
+        Uri.parse('$_sitesBaseUrl/construction/areas/'),
+        headers: {'Authorization': 'Bearer ${token ?? ''}'},
+      );
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        if (mounted) {
+          setState(() {
+            _areas = List<String>.from(data['areas'] ?? []);
+          });
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _sitesLoading = false);
+  }
+
+  Future<void> _loadStreets(String area) async {
+    setState(() {
+      _sitesLoading = true;
+      _streets = [];
+      _sites = [];
+      _selectedStreet = null;
+    });
+    try {
+      final token = await _authService.getToken();
+      final res = await http.get(
+        Uri.parse('$_sitesBaseUrl/construction/streets/${Uri.encodeComponent(area)}/'),
+        headers: {'Authorization': 'Bearer ${token ?? ''}'},
+      );
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        if (mounted) {
+          setState(() {
+            _streets = List<String>.from(data['streets'] ?? []);
+          });
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _sitesLoading = false);
+  }
+
+  Future<void> _loadSites(String area, String street) async {
+    setState(() {
+      _sitesLoading = true;
+      _sites = [];
+    });
+    try {
+      final token = await _authService.getToken();
+      final res = await http.get(
+        Uri.parse(
+            '$_sitesBaseUrl/construction/sites/?area=${Uri.encodeComponent(area)}&street=${Uri.encodeComponent(street)}'),
+        headers: {'Authorization': 'Bearer ${token ?? ''}'},
+      );
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        if (mounted) {
+          setState(() {
+            _sites = List<Map<String, dynamic>>.from(data['sites'] ?? []);
+          });
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _sitesLoading = false);
+  }
+
+  Widget _buildSitesTab() {
+    return Column(
+      children: [
+        // Global Labour Rates card
+        Container(
+          color: AppColors.cleanWhite,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const AdminLabourRatesScreen()),
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.safetyOrange,
+                    AppColors.safetyOrange.withValues(alpha: 0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.currency_rupee,
+                        color: Colors.white, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Labour Rates',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold)),
+                        Text('Set default rates for all labour types',
+                            style: TextStyle(
+                                color: Colors.white70, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right,
+                      color: Colors.white, size: 22),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // Header
+        Container(
+          color: AppColors.cleanWhite,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Site Budget Management',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.deepNavy)),
+              const SizedBox(height: 12),
+              // Area dropdown
+              DropdownButtonFormField<String>(
+                value: _selectedArea,
+                decoration: InputDecoration(
+                  labelText: 'Select Area',
+                  prefixIcon: const Icon(Icons.location_city,
+                      color: AppColors.deepNavy, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  isDense: true,
+                ),
+                items: _areas
+                    .map((a) =>
+                        DropdownMenuItem(value: a, child: Text(a)))
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() => _selectedArea = val);
+                    _loadStreets(val);
+                  }
+                },
+                hint: const Text('Choose area'),
+              ),
+              if (_streets.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: _selectedStreet,
+                  decoration: InputDecoration(
+                    labelText: 'Select Street',
+                    prefixIcon: const Icon(Icons.streetview,
+                        color: AppColors.deepNavy, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    isDense: true,
+                  ),
+                  items: _streets
+                      .map((s) =>
+                          DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null && _selectedArea != null) {
+                      setState(() => _selectedStreet = val);
+                      _loadSites(_selectedArea!, val);
+                    }
+                  },
+                  hint: const Text('Choose street'),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        // Site list
+        Expanded(
+          child: _sitesLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                      color: AppColors.safetyOrange))
+              : _selectedArea == null
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.location_on_outlined,
+                              size: 60,
+                              color:
+                                  AppColors.textSecondary.withValues(alpha: 0.4)),
+                          const SizedBox(height: 12),
+                          Text('Select an area to view sites',
+                              style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14)),
+                        ],
+                      ),
+                    )
+                  : _selectedStreet == null
+                      ? Center(
+                          child: Text('Select a street to view sites',
+                              style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14)),
+                        )
+                      : _sites.isEmpty
+                          ? Center(
+                              child: Text('No sites found',
+                                  style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 14)),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(14),
+                              itemCount: _sites.length,
+                              itemBuilder: (context, i) {
+                                final site = _sites[i];
+                                final siteId =
+                                    site['id']?.toString() ?? '';
+                                final siteName =
+                                    site['display_name'] ?? site['site_name'] ?? 'Site ${i + 1}';
+                                return _buildSiteManagementCard(
+                                    siteId, siteName);
+                              },
+                            ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSiteManagementCard(String siteId, String siteName) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.cleanWhite,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.deepNavy.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+            color: AppColors.deepNavy.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Site name header
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.deepNavy.withValues(alpha: 0.04),
+              borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(14)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.safetyOrange.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.apartment,
+                      color: AppColors.safetyOrange, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    siteName,
+                    style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.deepNavy),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Action buttons
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: _buildSiteActionButton(
+              icon: Icons.account_balance_wallet_outlined,
+              label: 'Budget Management',
+              color: AppColors.deepNavy,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AdminBudgetManagementScreen(
+                    siteId: siteId,
+                    siteName: siteName,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSiteActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationsTab() {
+    if (_notificationsLoading) {
+      return Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (_notifications.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: AppColors.orangeGradient,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.notifications_outlined,
+                size: 50,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Work Notifications',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.deepNavy,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Notifications for work not done\nwill appear here',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadNotifications,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh Notifications'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.safetyOrange,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Header with actions
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.cleanWhite,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const Text(
+                'Notifications',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.deepNavy,
+                ),
+              ),
+              if (_unreadCount > 0) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '$_unreadCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _loadNotifications,
+                tooltip: 'Refresh',
+              ),
+              if (_unreadCount > 0)
+                TextButton.icon(
+                  onPressed: _markAllNotificationsAsRead,
+                  icon: const Icon(Icons.done_all, size: 18),
+                  label: const Text('Mark all read'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        // Notifications list
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _loadNotifications,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _notifications.length,
+              itemBuilder: (context, index) {
+                final notification = _notifications[index];
+                return _buildNotificationCard(notification);
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNotificationCard(Map<String, dynamic> notification) {
+    final isRead = notification['is_read'] == true;
+    final notificationType = notification['notification_type'] ?? 'late_entry';
+    final message = notification['message'] ?? 'No message';
+    final createdAt = notification['created_at'] ?? '';
+    final siteName = notification['site_name'] ?? 'Unknown Site';
+    final supervisorName = notification['supervisor_name'] ?? 'Unknown Supervisor';
+    final entryType = notification['entry_type'] ?? '';
+    final actualTime = notification['actual_time'] ?? '';
+    
+    // Parse entry type for display
+    String entryTypeDisplay = '';
+    IconData entryIcon = Icons.warning;
+    Color entryColor = Colors.orange;
+    
+    switch (entryType) {
+      case 'labour':
+        entryTypeDisplay = 'Labour Entry';
+        entryIcon = Icons.people;
+        entryColor = Colors.blue;
+        break;
+      case 'material':
+        entryTypeDisplay = 'Material Balance';
+        entryIcon = Icons.inventory_2;
+        entryColor = Colors.green;
+        break;
+      case 'morning_photo':
+        entryTypeDisplay = 'Morning Photo';
+        entryIcon = Icons.wb_sunny;
+        entryColor = Colors.amber;
+        break;
+      case 'evening_photo':
+        entryTypeDisplay = 'Evening Photo';
+        entryIcon = Icons.nights_stay;
+        entryColor = Colors.indigo;
+        break;
+      default:
+        entryTypeDisplay = 'Late Entry';
+        entryIcon = Icons.access_time;
+        entryColor = Colors.red;
+    }
+
+    // Parse timestamp
+    String timeAgo = '';
+    try {
+      final timestamp = DateTime.parse(createdAt);
+      final now = DateTime.now();
+      final difference = now.difference(timestamp);
+      
+      if (difference.inMinutes < 1) {
+        timeAgo = 'Just now';
+      } else if (difference.inMinutes < 60) {
+        timeAgo = '${difference.inMinutes}m ago';
+      } else if (difference.inHours < 24) {
+        timeAgo = '${difference.inHours}h ago';
+      } else {
+        timeAgo = '${difference.inDays}d ago';
+      }
+    } catch (e) {
+      timeAgo = createdAt;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: isRead ? 0 : 2,
+      color: isRead ? AppColors.lightSlate : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isRead ? Colors.transparent : entryColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: () {
+          if (!isRead) {
+            _markNotificationAsRead(notification['id'].toString());
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: entryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      entryIcon,
+                      color: entryColor,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              entryTypeDisplay,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: entryColor,
+                              ),
+                            ),
+                            if (!isRead) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          timeAgo,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.orange.shade200,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.orange.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        message,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.orange.shade900,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      siteName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.person,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      supervisorName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (actualTime.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Submitted at: $actualTime',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // PROFILE TAB
+  // ============================================================
+
+  Widget _buildProfileTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // ── Avatar + name ──
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.cleanWhite,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.deepNavy.withValues(alpha: 0.07),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.orangeGradient,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      _profileName.isNotEmpty
+                          ? _profileName.substring(0, 1).toUpperCase()
+                          : 'A',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _profileName,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.deepNavy,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.orangeGradient,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'ADMIN',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildProfileInfoRow(Icons.email_outlined,
+                    _currentAdminUser?['email'] ?? 'N/A'),
+                const SizedBox(height: 8),
+                _buildProfileInfoRow(Icons.phone_outlined,
+                    _profilePhone.isNotEmpty ? _profilePhone : 'N/A'),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Account Settings ──
+          _buildSectionHeader('Account'),
+          _buildProfileActionTile(
+            icon: Icons.edit_outlined,
+            color: AppColors.deepNavy,
+            title: 'Edit Profile',
+            subtitle: 'Update name and phone',
+            onTap: _showEditProfileDialog,
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Management ──
+          _buildSectionHeader('Management'),
+          _buildProfileActionTile(
+            icon: Icons.person_add_outlined,
+            color: const Color(0xFF2196F3),
+            title: 'Create User',
+            subtitle: 'Add Supervisor, Engineer, Accountant etc.',
+            onTap: _showCreateUserDialog,
+          ),
+          _buildProfileActionTile(
+            icon: Icons.admin_panel_settings_outlined,
+            color: AppColors.safetyOrange,
+            title: 'Create Admin',
+            subtitle: 'Add another admin account',
+            onTap: _showCreateAdminDialog,
+          ),
+          _buildProfileActionTile(
+            icon: Icons.badge_outlined,
+            color: const Color(0xFF9C27B0),
+            title: 'Create Role',
+            subtitle: 'Add a new custom role',
+            onTap: _showCreateRoleDialog,
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Logout ──
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _logout,
+              icon: const Icon(Icons.logout),
+              label: const Text('Sign Out',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.statusOverdue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileInfoRow(IconData icon, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 16, color: AppColors.textSecondary),
+        const SizedBox(width: 6),
+        Text(value,
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+      ],
+    );
+  }
+
+  Widget _buildProfileActionTile({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.cleanWhite,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.deepNavy.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: color)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios,
+                color: AppColors.textSecondary, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Edit Profile ──────────────────────────────────────────
+
+  Future<void> _showEditProfileDialog() async {
+    final nameCtrl = TextEditingController(text: _profileName);
+    final phoneCtrl = TextEditingController(text: _profilePhone);
+    final formKey = GlobalKey<FormState>();
+    bool isSaving = false;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDS) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Edit Profile',
+              style: TextStyle(
+                  color: AppColors.deepNavy, fontWeight: FontWeight.bold)),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Full Name',
+                    prefixIcon: const Icon(Icons.person_outline,
+                        color: AppColors.deepNavy),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: AppColors.deepNavy, width: 2),
+                    ),
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Name is required'
+                      : null,
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(
+                    labelText: 'Phone Number',
+                    counterText: '',
+                    prefixIcon: const Icon(Icons.phone_outlined,
+                        color: AppColors.deepNavy),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: AppColors.deepNavy, width: 2),
+                    ),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty)
+                      return 'Phone is required';
+                    if (v.trim().length != 10)
+                      return 'Must be exactly 10 digits';
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSaving ? null : () => Navigator.pop(ctx),
+              child: Text('Cancel',
+                  style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.deepNavy,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: isSaving
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setDS(() => isSaving = true);
+                      final newName = nameCtrl.text.trim();
+                      final newPhone = phoneCtrl.text.trim();
+                      final result = await ConstructionService().updateProfile(
+                          fullName: newName, phone: newPhone);
+                      if (!ctx.mounted) return;
+                      Navigator.pop(ctx);
+                      if (result['success'] == true) {
+                        setState(() {
+                          _profileName =
+                              newName.isNotEmpty ? newName : _profileName;
+                          _profilePhone =
+                              newPhone.isNotEmpty ? newPhone : _profilePhone;
+                        });
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(result['success'] == true
+                            ? 'Profile updated!'
+                            : result['error'] ?? 'Update failed'),
+                        backgroundColor: result['success'] == true
+                            ? AppColors.statusCompleted
+                            : Colors.red,
+                      ));
+                    },
+              child: isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    nameCtrl.dispose();
+    phoneCtrl.dispose();
+  }
+
+  // ── Create User ───────────────────────────────────────────
+
+  Future<void> _showCreateUserDialog() async {
+    final nameCtrl     = TextEditingController();
+    final usernameCtrl = TextEditingController();
+    final emailCtrl    = TextEditingController();
+    final phoneCtrl    = TextEditingController();
+    final passCtrl     = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    String? selectedRole;
+    List<String> roles = [];
+    List<Map<String, dynamic>> allSites = [];
+    Set<String> selectedSiteIds = {};
+    bool isSaving = false;
+    bool loadingRoles = true;
+    bool loadingSites = false;
+
+    // Load roles
+    try {
+      final token = await _authService.getToken();
+      final res = await http.get(
+        Uri.parse('${AuthService.baseUrl}/admin/roles/'),
+        headers: {'Authorization': 'Bearer ${token ?? ''}'},
+      );
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        roles = List<Map<String, dynamic>>.from(data['roles'])
+            .map((r) => r['role_name'] as String)
+            .where((r) => r != 'Admin')
+            .toList();
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing while saving
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDS) {
+          if (loadingRoles) {
+            loadingRoles = false;
+            if (roles.isNotEmpty) selectedRole = roles.first;
+          }
+          
+          // Check if Client role is selected
+          final isClientRole = selectedRole?.toLowerCase() == 'client';
+          
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16)),
+            title: const Text('Create User',
+                style: TextStyle(
+                    color: Color(0xFF2196F3),
+                    fontWeight: FontWeight.bold)),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _dialogField(nameCtrl, 'Full Name', Icons.person_outline,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Required'
+                            : null),
+                    const SizedBox(height: 12),
+                    _dialogField(usernameCtrl, 'Username', Icons.alternate_email,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Required'
+                            : null),
+                    const SizedBox(height: 12),
+                    _dialogField(emailCtrl, 'Email', Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (v) => (v == null || !v.contains('@'))
+                            ? 'Valid email required'
+                            : null),
+                    const SizedBox(height: 12),
+                    _dialogField(phoneCtrl, 'Phone', Icons.phone_outlined,
+                        keyboardType: TextInputType.phone,
+                        maxLength: 10,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
+                        validator: (v) => (v == null || v.trim().length != 10)
+                            ? '10 digits required'
+                            : null),
+                    const SizedBox(height: 12),
+                    _dialogField(passCtrl, 'Password', Icons.lock_outline,
+                        obscureText: true,
+                        validator: (v) =>
+                            (v == null || v.length < 6)
+                                ? 'Min 6 characters'
+                                : null),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: selectedRole,
+                      decoration: InputDecoration(
+                        labelText: 'Role',
+                        prefixIcon: const Icon(Icons.badge_outlined,
+                            color: Color(0xFF2196F3)),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 14),
+                      ),
+                      items: roles
+                          .map((r) => DropdownMenuItem(
+                              value: r, child: Text(r)))
+                          .toList(),
+                      onChanged: (v) async {
+                        print('🎯 ROLE CHANGED TO: $v');
+                        setDS(() => selectedRole = v);
+                        
+                        // Load sites if Client role is selected
+                        final isClient = v?.toLowerCase() == 'client';
+                        print('🎯 Is client role: $isClient');
+                        print('🎯 All sites count: ${allSites.length}');
+                        print('🎯 Loading sites: $loadingSites');
+                        
+                        if (isClient && allSites.isEmpty) {
+                          print('🎯 Starting to load sites...');
+                          setDS(() => loadingSites = true);
+                          try {
+                            final token = await _authService.getToken();
+                            final url = '${AuthService.baseUrl}/construction/all-sites/';
+                            print('🎯 Fetching from: $url');
+                            
+                            final res = await http.get(
+                              Uri.parse(url),
+                              headers: {
+                                'Authorization': 'Bearer ${token ?? ''}',
+                                'Content-Type': 'application/json',
+                              },
+                            );
+                            
+                            print('🎯 Response: ${res.statusCode}');
+                            
+                            if (res.statusCode == 200) {
+                              final data = json.decode(res.body);
+                              final sites = List<Map<String, dynamic>>.from(data['sites'] ?? []);
+                              print('🎯 ✅ Loaded ${sites.length} sites');
+                              
+                              setDS(() {
+                                allSites = sites;
+                                loadingSites = false;
+                              });
+                              print('🎯 State updated - allSites now has ${allSites.length} items');
+                            } else {
+                              print('🎯 ❌ Failed: ${res.statusCode}');
+                              setDS(() => loadingSites = false);
+                            }
+                          } catch (e) {
+                            print('🎯 ❌ Error: $e');
+                            setDS(() => loadingSites = false);
+                          }
+                        }
+                      },
+                      validator: (v) =>
+                          v == null ? 'Select a role' : null,
+                    ),
+                    
+                    // Show site selection for Client role
+                    if (isClientRole) ...[
+                      Builder(
+                        builder: (context) {
+                          print('🎯 RENDERING SITE SELECTION UI');
+                          print('🎯 isClientRole: $isClientRole');
+                          print('🎯 loadingSites: $loadingSites');
+                          print('🎯 allSites.length: ${allSites.length}');
+                          return Column(
+                            children: [
+                              const SizedBox(height: 16),
+                              const Divider(),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(Icons.location_city, color: Color(0xFF2196F3), size: 20),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Assign Site(s)',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF2196F3),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Client will only see assigned site(s)',
+                                style: TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
+                              const SizedBox(height: 12),
+                              
+                              if (loadingSites)
+                                const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              else if (allSites.isEmpty)
+                                const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Text('No sites available', style: TextStyle(color: Colors.grey)),
+                                )
+                              else
+                                Container(
+                                  constraints: const BoxConstraints(maxHeight: 200),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey.shade300),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: allSites.length,
+                                    itemBuilder: (context, index) {
+                                      final site = allSites[index];
+                                      final siteId = site['id'].toString();
+                                      final isSelected = selectedSiteIds.contains(siteId);
+                                      
+                                      return CheckboxListTile(
+                                        dense: true,
+                                        value: isSelected,
+                                        onChanged: (value) {
+                                          setDS(() {
+                                            if (value == true) {
+                                              selectedSiteIds.add(siteId);
+                                            } else {
+                                              selectedSiteIds.remove(siteId);
+                                            }
+                                          });
+                                        },
+                                        title: Text(
+                                          site['display_name'] ?? site['site_name'] ?? 'Site',
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                        controlAffinity: ListTileControlAffinity.leading,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              
+                              if (isClientRole && selectedSiteIds.isEmpty)
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    '⚠️ Please select at least one site',
+                                    style: TextStyle(color: Colors.orange, fontSize: 12),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  ],
+                ), // Column
+              ), // Form
+            ), // SingleChildScrollView
+            ), // SizedBox
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => Navigator.pop(ctx),
+                child: Text('Cancel',
+                    style:
+                        TextStyle(color: AppColors.textSecondary)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2196F3),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        if (!formKey.currentState!.validate()) return;
+                        
+                        // Validate site selection for Client role
+                        if (isClientRole && selectedSiteIds.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please select at least one site for the client'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                          return;
+                        }
+                        
+                        setDS(() => isSaving = true);
+                        try {
+                          final token = await _authService.getToken();
+                          final Map<String, dynamic> body = {
+                            'full_name': nameCtrl.text.trim(),
+                            'username': usernameCtrl.text.trim(),
+                            'email': emailCtrl.text.trim(),
+                            'phone': phoneCtrl.text.trim(),
+                            'password': passCtrl.text,
+                            'role': selectedRole,
+                          };
+                          
+                          // Add site_ids for Client role
+                          if (isClientRole) {
+                            body['site_ids'] = selectedSiteIds.toList();
+                          }
+                          
+                          final res = await http.post(
+                            Uri.parse(
+                                '${AuthService.baseUrl}/admin/create-user/'),
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': 'Bearer ${token ?? ''}',
+                            },
+                            body: json.encode(body),
+                          );
+                          
+                          final data = json.decode(res.body);
+                          final success = res.statusCode == 201;
+                          final message = success 
+                              ? (data['message'] ?? 'User created!')
+                              : (data['error'] ?? 'Failed');
+                          
+                          if (!ctx.mounted) return;
+                          
+                          // Close dialog first
+                          Navigator.pop(ctx);
+                          
+                          // Then show snackbar
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(success ? '✅ $message' : '❌ $message'),
+                              backgroundColor: success
+                                  ? AppColors.statusCompleted
+                                  : Colors.red,
+                            ));
+                            if (success) _loadAllUsers();
+                          }
+                        } catch (e) {
+                          if (ctx.mounted) Navigator.pop(ctx);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('Error: $e'),
+                              backgroundColor: Colors.red,
+                            ));
+                          }
+                        }
+                      },
+                child: isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Text('Create'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    nameCtrl.dispose();
+    usernameCtrl.dispose();
+    emailCtrl.dispose();
+    phoneCtrl.dispose();
+    passCtrl.dispose();
+  }
+
+  // ── Create Admin ──────────────────────────────────────────
+
+  Future<void> _showCreateAdminDialog() async {
+    final nameCtrl     = TextEditingController();
+    final usernameCtrl = TextEditingController();
+    final emailCtrl    = TextEditingController();
+    final phoneCtrl    = TextEditingController();
+    final passCtrl     = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool isSaving = false;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDS) => AlertDialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+          title: const Text('Create Admin',
+              style: TextStyle(
+                  color: AppColors.safetyOrange,
+                  fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _dialogField(nameCtrl, 'Full Name', Icons.person_outline,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Required' : null),
+                  const SizedBox(height: 12),
+                  _dialogField(
+                      usernameCtrl, 'Username', Icons.alternate_email,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Required' : null),
+                  const SizedBox(height: 12),
+                  _dialogField(emailCtrl, 'Email', Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (v) => (v == null || !v.contains('@'))
+                          ? 'Valid email required'
+                          : null),
+                  const SizedBox(height: 12),
+                  _dialogField(phoneCtrl, 'Phone', Icons.phone_outlined,
+                      keyboardType: TextInputType.phone,
+                      maxLength: 10,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly
+                      ],
+                      validator: (v) =>
+                          (v == null || v.trim().length != 10)
+                              ? '10 digits required'
+                              : null),
+                  const SizedBox(height: 12),
+                  _dialogField(passCtrl, 'Password', Icons.lock_outline,
+                      obscureText: true,
+                      validator: (v) =>
+                          (v == null || v.length < 6)
+                              ? 'Min 6 characters'
+                              : null),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSaving ? null : () => Navigator.pop(ctx),
+              child: Text('Cancel',
+                  style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.safetyOrange,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: isSaving
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setDS(() => isSaving = true);
+                      try {
+                        final token = await _authService.getToken();
+                        final res = await http.post(
+                          Uri.parse(
+                              '${AuthService.baseUrl}/admin/create-admin/'),
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ${token ?? ''}',
+                          },
+                          body: json.encode({
+                            'full_name': nameCtrl.text.trim(),
+                            'username': usernameCtrl.text.trim(),
+                            'email': emailCtrl.text.trim(),
+                            'phone': phoneCtrl.text.trim(),
+                            'password': passCtrl.text,
+                          }),
+                        );
+                        if (!ctx.mounted) return;
+                        Navigator.pop(ctx);
+                        final data = json.decode(res.body);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(res.statusCode == 201
+                              ? data['message'] ?? 'Admin created!'
+                              : data['error'] ?? 'Failed'),
+                          backgroundColor: res.statusCode == 201
+                              ? AppColors.statusCompleted
+                              : Colors.red,
+                        ));
+                      } catch (e) {
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: Colors.red,
+                        ));
+                      }
+                    },
+              child: isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Text('Create'),
+            ),
+          ],
+        ),
+      ),
+    );
+    nameCtrl.dispose();
+    usernameCtrl.dispose();
+    emailCtrl.dispose();
+    phoneCtrl.dispose();
+    passCtrl.dispose();
+  }
+
+  // ── Create Role ───────────────────────────────────────────
+
+  Future<void> _showCreateRoleDialog() async {
+    final roleCtrl = TextEditingController();
+    final formKey  = GlobalKey<FormState>();
+    bool isSaving  = false;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDS) => AlertDialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+          title: const Text('Create Role',
+              style: TextStyle(
+                  color: Color(0xFF9C27B0),
+                  fontWeight: FontWeight.bold)),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: roleCtrl,
+              decoration: InputDecoration(
+                labelText: 'Role Name',
+                hintText: 'e.g. Quality Inspector',
+                prefixIcon: const Icon(Icons.badge_outlined,
+                    color: Color(0xFF9C27B0)),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                      color: Color(0xFF9C27B0), width: 2),
+                ),
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Role name is required'
+                  : null,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSaving ? null : () => Navigator.pop(ctx),
+              child: Text('Cancel',
+                  style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF9C27B0),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: isSaving
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setDS(() => isSaving = true);
+                      try {
+                        final token = await _authService.getToken();
+                        final res = await http.post(
+                          Uri.parse(
+                              '${AuthService.baseUrl}/admin/create-role/'),
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ${token ?? ''}',
+                          },
+                          body: json.encode(
+                              {'role_name': roleCtrl.text.trim()}),
+                        );
+                        if (!ctx.mounted) return;
+                        Navigator.pop(ctx);
+                        final data = json.decode(res.body);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(res.statusCode == 201
+                              ? data['message'] ?? 'Role created!'
+                              : data['error'] ?? 'Failed'),
+                          backgroundColor: res.statusCode == 201
+                              ? AppColors.statusCompleted
+                              : Colors.red,
+                        ));
+                      } catch (e) {
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: Colors.red,
+                        ));
+                      }
+                    },
+              child: isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Text('Create'),
+            ),
+          ],
+        ),
+      ),
+    );
+    roleCtrl.dispose();
+  }
+
+  // ── Shared dialog field builder ───────────────────────────
+
+  Widget _dialogField(
+    TextEditingController ctrl,
+    String label,
+    IconData icon, {
+    TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
+    int? maxLength,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: ctrl,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      maxLength: maxLength,
+      inputFormatters: inputFormatters,
+      decoration: InputDecoration(
+        labelText: label,
+        counterText: maxLength != null ? '' : null,
+        prefixIcon: Icon(icon, color: AppColors.deepNavy),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.deepNavy, width: 2),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      ),
+      validator: validator,
+    );
+  }
+
+  Widget _buildPendingUserCard(Map<String, dynamic> user) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppColors.cleanWhite,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.deepNavy.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with avatar and role badge
+            Row(
+              children: [
+                // Avatar
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.orangeGradient,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      (user['full_name'] ?? 'U').substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user['username'] ?? 'Unknown',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.deepNavy,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.navyGradient,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          user['role'] ?? 'Unknown',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // User details with icons
+            _buildInstagramDetailRow(Icons.person_outline, user['full_name'] ?? 'N/A'),
+            const SizedBox(height: 12),
+            _buildInstagramDetailRow(Icons.email_outlined, user['email'] ?? 'N/A'),
+            const SizedBox(height: 12),
+            _buildInstagramDetailRow(Icons.phone_outlined, user['phone'] ?? 'N/A'),
+            const SizedBox(height: 12),
+            _buildInstagramDetailRow(
+              Icons.calendar_today_outlined,
+              'Registered ${_formatDate(user['created_at'])}',
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Instagram-style pill action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: _buildActionPillButton(
+                    'Approve',
+                    Icons.check_circle_outline,
+                    AppColors.statusCompleted,
+                    () => _showApproveDialog(user['id'], user['username']),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildActionPillButton(
+                    'Reject',
+                    Icons.cancel_outlined,
+                    AppColors.statusOverdue,
+                    () => _showRejectDialog(user['id'], user['username']),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstagramDetailRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.lightSlate,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 18, color: AppColors.deepNavy),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionPillButton(String label, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(25),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: color, width: 1.5),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExistingUserCard(Map<String, dynamic> user) {
+    final status = user['status'] ?? 'UNKNOWN';
+    final isActive = user['is_active'] ?? true;
+    
+    Color statusColor = AppColors.textSecondary;
+    if (status == 'APPROVED') statusColor = AppColors.statusCompleted;
+    if (status == 'REJECTED') statusColor = AppColors.statusOverdue;
+    if (status == 'PENDING') statusColor = AppColors.statusPending;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppColors.cleanWhite,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.deepNavy.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with avatar and badges
+            Row(
+              children: [
+                // Avatar
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.navyGradient,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      (user['full_name'] ?? 'U').substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user['username'] ?? 'Unknown',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.deepNavy,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          // Status badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              status,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: statusColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          // Role badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.lightSlate,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              user['role'] ?? 'Unknown',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.deepNavy,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Active indicator
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: isActive ? AppColors.statusCompleted : AppColors.textSecondary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // User details
+            _buildInstagramDetailRow(Icons.person_outline, user['full_name'] ?? 'N/A'),
+            const SizedBox(height: 10),
+            _buildInstagramDetailRow(Icons.email_outlined, user['email'] ?? 'N/A'),
+            const SizedBox(height: 10),
+            _buildInstagramDetailRow(Icons.phone_outlined, user['phone'] ?? 'N/A'),
+            const SizedBox(height: 10),
+            _buildInstagramDetailRow(
+              Icons.calendar_today_outlined,
+              'Joined ${_formatDate(user['created_at'])}',
+            ),
+            if (user['last_login'] != null) ...[
+              const SizedBox(height: 10),
+              _buildInstagramDetailRow(
+                Icons.login_outlined,
+                'Last login ${_formatDate(user['last_login'])}',
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return 'N/A';
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  void _showApproveDialog(String userId, String username) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Approve User',
+          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+        ),
+        content: Text('Are you sure you want to approve $username?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _approveUser(userId, username);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.statusCompleted,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text(
+              'Approve',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRejectDialog(String userId, String username) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Reject User',
+          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+        ),
+        content: Text('Are you sure you want to reject $username?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _rejectUser(userId, username);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.statusOverdue,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text(
+              'Reject',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  const _NavItem(this.icon, this.activeIcon, this.label);
+}

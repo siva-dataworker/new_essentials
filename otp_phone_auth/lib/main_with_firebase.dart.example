@@ -1,0 +1,40 @@
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'screens/splash_screen.dart';
+import 'utils/app_theme.dart';
+import 'services/supabase_service.dart';
+import 'config/supabase_config.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Initialize Supabase
+  await SupabaseService.initialize(
+    supabaseUrl: SupabaseConfig.supabaseUrl,
+    supabaseAnonKey: SupabaseConfig.supabaseAnonKey,
+  );
+  
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Essential Homes',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.lightTheme,
+      themeMode: ThemeMode.light,
+      home: const SplashScreen(),
+    );
+  }
+}

@@ -1,0 +1,6 @@
+@echo off
+echo Starting Django Server on 192.168.1.9:8000...
+echo Setting UTF-8 encoding...
+chcp 65001 >nul
+set PYTHONIOENCODING=utf-8
+python manage.py runserver 192.168.1.9:8000

@@ -1,0 +1,110 @@
+# Python
+django-backend/venv/
+django-backend/__pycache__/
+django-backend/**/__pycache__/
+django-backend/**/*.pyc
+django-backend/**/*.pyo
+django-backend/**/*.pyd
+django-backend/.Python
+django-backend/pip-log.txt
+django-backend/pip-delete-this-directory.txt
+django-backend/.env
+django-backend/db.sqlite3
+django-backend/media/
+
+# Flutter/Dart
+otp_phone_auth/.dart_tool/
+otp_phone_auth/.flutter-plugins
+otp_phone_auth/.flutter-plugins-dependencies
+otp_phone_auth/.packages
+otp_phone_auth/.pub-cache/
+otp_phone_auth/.pub/
+otp_phone_auth/build/
+otp_phone_auth/flutter_*.png
+otp_phone_auth/linked_*.ds
+otp_phone_auth/unlinked.ds
+otp_phone_auth/unlinked_spec.ds
+
+# Android
+otp_phone_auth/android/.gradle/
+otp_phone_auth/android/captures/
+otp_phone_auth/android/gradlew
+otp_phone_auth/android/gradlew.bat
+otp_phone_auth/android/local.properties
+otp_phone_auth/android/**/GeneratedPluginRegistrant.java
+otp_phone_auth/android/key.properties
+otp_phone_auth/android/.gradle
+otp_phone_auth/android/gradle/
+otp_phone_auth/android/build/
+
+# iOS
+otp_phone_auth/ios/**/*.mode1v3
+otp_phone_auth/ios/**/*.mode2v3
+otp_phone_auth/ios/**/*.moved-aside
+otp_phone_auth/ios/**/*.pbxuser
+otp_phone_auth/ios/**/*.perspectivev3
+otp_phone_auth/ios/**/*sync/
+otp_phone_auth/ios/**/.sconsign.dblite
+otp_phone_auth/ios/**/.tags*
+otp_phone_auth/ios/**/.vagrant/
+otp_phone_auth/ios/**/DerivedData/
+otp_phone_auth/ios/**/Icon?
+otp_phone_auth/ios/**/Pods/
+otp_phone_auth/ios/**/.symlinks/
+otp_phone_auth/ios/**/profile
+otp_phone_auth/ios/**/xcuserdata
+otp_phone_auth/ios/.generated/
+otp_phone_auth/ios/Flutter/App.framework
+otp_phone_auth/ios/Flutter/Flutter.framework
+otp_phone_auth/ios/Flutter/Flutter.podspec
+otp_phone_auth/ios/Flutter/Generated.xcconfig
+otp_phone_auth/ios/Flutter/app.flx
+otp_phone_auth/ios/Flutter/app.zip
+otp_phone_auth/ios/Flutter/flutter_assets/
+otp_phone_auth/ios/Flutter/flutter_export_environment.sh
+otp_phone_auth/ios/ServiceDefinitions.json
+otp_phone_auth/ios/Runner/GeneratedPluginRegistrant.*
+
+# Web
+otp_phone_auth/web/
+
+# Windows
+otp_phone_auth/windows/flutter/generated_plugin_registrant.cc
+otp_phone_auth/windows/flutter/generated_plugin_registrant.h
+otp_phone_auth/windows/flutter/generated_plugins.cmake
+
+# macOS
+otp_phone_auth/macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Coverage
+coverage/
+
+# Symbols
+app.*.symbols
+
+# Exceptions to above rules.
+!otp_phone_auth/android/app/src/main/
+!otp_phone_auth/ios/Runner/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Large files
+*.zip
+*.tar.gz
+*.rar
+
+# Unnecessary folders
+flutter_application_1/
+spring-backend/
+.kiro/
+.claude/
+data/
+
+# Documentation (optional - you can keep these)
+# *.md
