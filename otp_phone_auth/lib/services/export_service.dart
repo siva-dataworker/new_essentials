@@ -10,7 +10,7 @@ class ExportService {
   ExportService._internal();
 
   final _authService = AuthService();
-  static const String baseUrl = 'http://localhost:8000/api';
+  static const String baseUrl = 'https://new-essentials.onrender.com/api';
 
   Future<Map<String, String>> _getHeaders() async {
     final token = await _authService.getToken();

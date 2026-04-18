@@ -8,7 +8,7 @@ class BudgetManagementService {
   BudgetManagementService._internal();
 
   final _authService = AuthService();
-  static const String baseUrl = 'http://localhost:8000/api';
+  static const String baseUrl = 'https://new-essentials.onrender.com/api';
 
   // Cache for global labour rates — loaded once, cleared when admin updates a rate
   static List<Map<String, dynamic>>? _globalRatesCache;

@@ -8,7 +8,7 @@ class BudgetService {
   BudgetService._internal();
 
   final _authService = AuthService();
-  static const String baseUrl = 'http://localhost:8000/api';
+  static const String baseUrl = 'https://new-essentials.onrender.com/api';
 
   /// Set budget for a site
   Future<Map<String, dynamic>?> setBudget(String siteId, double budgetAmount) async {
