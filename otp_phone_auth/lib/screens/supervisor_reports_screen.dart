@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../utils/app_colors.dart';
 import '../services/construction_service.dart';
 
@@ -431,11 +432,34 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        // TODO: Open file URL
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Opening: $fileUrl')),
-                        );
+                      onPressed: () async {
+                        try {
+                          final url = Uri.parse(fileUrl);
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(
+                              url,
+                              mode: LaunchMode.externalApplication,
+                            );
+                          } else {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Could not open document'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error opening document: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
                       },
                       icon: const Icon(Icons.download, size: 18),
                       label: const Text('View Document'),
