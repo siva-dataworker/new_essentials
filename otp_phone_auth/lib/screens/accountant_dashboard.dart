@@ -470,11 +470,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ?AppColors.deepNavy: const Color(0xFFF8F9FA),
+          color: selected ? AppColors.deepNavy : const Color(0xFFF8F9FA),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected
-                ?AppColors.deepNavy: const Color(0xFF1A1A2E).withValues(alpha: 0.2),
+                ? AppColors.deepNavy : const Color(0xFF1A1A2E).withValues(alpha: 0.2),
           ),
         ),
         child: Text(
@@ -482,7 +482,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            color: selected ?AppColors.deepNavy: const Color(0xFF1A1A2E),
+            color: selected ? Colors.white : const Color(0xFF1A1A2E),
           ),
         ),
       ),

@@ -237,18 +237,19 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
           _selectedRole = role;
         });
       },
-      selectedColor: AppColors.deepNavy,
-      checkmarkColor: Colors.white,
+      selectedColor: Colors.white,
+      checkmarkColor: AppColors.deepNavy,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.deepNavy,
+        color: AppColors.deepNavy,
         fontWeight: FontWeight.w600,
         fontSize: 13,
       ),
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: AppColors.cleanWhite,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
           color: isSelected ? AppColors.deepNavy : AppColors.deepNavy.withValues(alpha: 0.3),
+          width: isSelected ? 2 : 1,
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

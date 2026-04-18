@@ -757,11 +757,12 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: const Color(0xFF1A1A2E),
+        backgroundColor: Colors.white,
         elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.deepNavy),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: AppColors.deepNavy),
+            icon: const Icon(Icons.add_circle_outline),
             onPressed: () {
               Navigator.push(
                 context,
@@ -773,7 +774,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
             tooltip: 'Assign Working Sites',
           ),
           IconButton(
-            icon: const Icon(Icons.logout_rounded, color: AppColors.deepNavy),
+            icon: const Icon(Icons.logout_rounded),
             onPressed: _logout,
           ),
         ],
@@ -963,8 +964,11 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        toolbarHeight: 70,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               siteName,
@@ -974,6 +978,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                 fontSize: 18,
               ),
             ),
+            const SizedBox(height: 2),
             Text(
               'Accountant View',
               style: TextStyle(
@@ -985,6 +990,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
         ),
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
         iconTheme: const IconThemeData(color: AppColors.deepNavy),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -1051,6 +1057,9 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.transparent,
+            ),
             onPressed: _logout,
           ),
         ],
@@ -1075,10 +1084,10 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                         duration: const Duration(milliseconds: 150),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: selected ?AppColors.deepNavy: AppColors.lightSlate,
+                          color: selected ? AppColors.deepNavy : AppColors.lightSlate,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: selected ?AppColors.deepNavy: AppColors.deepNavy.withValues(alpha: 0.2),
+                            color: selected ? AppColors.deepNavy : AppColors.deepNavy.withValues(alpha: 0.2),
                           ),
                         ),
                         child: Text(
@@ -1086,7 +1095,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                            color: selected ?AppColors.deepNavy: AppColors.deepNavy,
+                            color: selected ? Colors.white : AppColors.deepNavy,
                           ),
                         ),
                       ),
@@ -1128,10 +1137,10 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                           decoration: BoxDecoration(
-                            color: selected ?const Color(0xFF1A1A2E): AppColors.lightSlate,
+                            color: selected ? const Color(0xFF1A1A2E) : AppColors.lightSlate,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: selected ?AppColors.deepNavy: AppColors.deepNavy.withValues(alpha: 0.2),
+                              color: selected ? AppColors.deepNavy : AppColors.deepNavy.withValues(alpha: 0.2),
                             ),
                           ),
                           child: Text(
@@ -1139,7 +1148,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                              color: selected ?AppColors.deepNavy: AppColors.deepNavy,
+                              color: selected ? Colors.white : AppColors.deepNavy,
                             ),
                           ),
                         ),
@@ -1289,10 +1298,10 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: selected ?const Color(0xFF1A1A2E): Colors.white,
+                            color: selected ? const Color(0xFF1A1A2E) : Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: selected ?AppColors.deepNavy: AppColors.deepNavy.withValues(alpha: 0.2),
+                              color: selected ? AppColors.deepNavy : AppColors.deepNavy.withValues(alpha: 0.2),
                               width: 1.5,
                             ),
                           ),
@@ -1302,7 +1311,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                               Icon(
                                 time == 'Morning' ? Icons.wb_sunny : Icons.nightlight_round,
                                 size: 18,
-                                color: selected ?AppColors.deepNavy: AppColors.deepNavy,
+                                color: selected ? Colors.white : AppColors.deepNavy,
                               ),
                               const SizedBox(width: 8),
                               Text(
@@ -1310,7 +1319,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                                  color: selected ?AppColors.deepNavy: AppColors.deepNavy,
+                                  color: selected ? Colors.white : AppColors.deepNavy,
                                 ),
                               ),
                             ],
@@ -1478,23 +1487,39 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
   }
 
   Future<Map<String, dynamic>> _loadSupervisorPhotos() async {
+    print('🔍 [PHOTOS] _loadSupervisorPhotos called');
+    print('🔍 [PHOTOS] _selectedSite = $_selectedSite');
+    
     if (_selectedSite == null) {
+      print('❌ [PHOTOS] No site selected');
       return {'success': false, 'photos': []};
     }
 
     try {
       final token = await _authService.getToken();
+      print('🔍 [PHOTOS] Token obtained');
+      
+      final url = '${AuthService.baseUrl}/construction/supervisor-photos-for-accountant/?site_id=$_selectedSite';
+      print('🔍 [PHOTOS] Calling API: $url');
+      
       final response = await http.get(
-        Uri.parse('${AuthService.baseUrl}/construction/supervisor-photos-for-accountant/?site_id=$_selectedSite'),
+        Uri.parse(url),
         headers: {'Authorization': 'Bearer $token'},
       );
 
+      print('🔍 [PHOTOS] Response status: ${response.statusCode}');
+      print('🔍 [PHOTOS] Response body: ${response.body}');
+
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final data = json.decode(response.body);
+        print('✅ [PHOTOS] Loaded ${data['photos']?.length ?? 0} photos');
+        return data;
       } else {
+        print('❌ [PHOTOS] Failed with status: ${response.statusCode}');
         throw Exception('Failed to load photos: ${response.statusCode}');
       }
     } catch (e) {
+      print('❌ [PHOTOS] Error: $e');
       throw Exception('Error loading photos: $e');
     }
   }
@@ -1724,10 +1749,10 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                           decoration: BoxDecoration(
-                            color: selected ?AppColors.deepNavy: AppColors.lightSlate,
+                            color: selected ? AppColors.deepNavy : AppColors.lightSlate,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: selected ?AppColors.deepNavy: AppColors.deepNavy.withValues(alpha: 0.2),
+                              color: selected ? AppColors.deepNavy : AppColors.deepNavy.withValues(alpha: 0.2),
                             ),
                           ),
                           child: Text(
@@ -1735,7 +1760,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                              color: selected ?AppColors.deepNavy: AppColors.deepNavy,
+                              color: selected ? Colors.white : AppColors.deepNavy,
                             ),
                           ),
                         ),

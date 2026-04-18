@@ -1004,11 +1004,12 @@ class _RoleChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ?AppColors.deepNavy: AppColors.lightSlate,
+          color: selected ? Colors.white : AppColors.lightSlate,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected
-                ?AppColors.deepNavy: AppColors.deepNavy.withValues(alpha: 0.2),
+                ? AppColors.deepNavy : AppColors.deepNavy.withValues(alpha: 0.2),
+            width: selected ? 2 : 1,
           ),
         ),
         child: Text(
@@ -1016,7 +1017,7 @@ class _RoleChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            color: selected ? Colors.white : AppColors.deepNavy,
+            color: AppColors.deepNavy,
           ),
         ),
       ),
@@ -1158,11 +1159,11 @@ class _EntryTypeChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ?AppColors.deepNavy: AppColors.cleanWhite,
+          color: selected ? Colors.white : AppColors.cleanWhite,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected
-                ?AppColors.deepNavy: AppColors.deepNavy.withValues(alpha: 0.2),
+                ? AppColors.deepNavy : AppColors.deepNavy.withValues(alpha: 0.2),
             width: selected ? 2 : 1,
           ),
           boxShadow: selected
@@ -1180,7 +1181,7 @@ class _EntryTypeChip extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: selected ? Colors.white : AppColors.deepNavy,
+              color: selected ? AppColors.deepNavy : AppColors.deepNavy,
               size: 18,
             ),
             const SizedBox(width: 6),
@@ -1189,7 +1190,7 @@ class _EntryTypeChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: selected ? FontWeight.bold : FontWeight.w600,
-                color: selected ? Colors.white : AppColors.deepNavy,
+                color: selected ? AppColors.deepNavy : AppColors.deepNavy,
               ),
             ),
           ],

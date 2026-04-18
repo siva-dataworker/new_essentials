@@ -92,7 +92,7 @@ class _AccountantBillsScreenState extends State<AccountantBillsScreen> with Sing
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text('Bills & Agreements - ${widget.siteName}'),
         backgroundColor: AppColors.deepNavy,

@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../services/construction_service.dart';
 import '../services/auth_service.dart';
 import '../utils/performance_config.dart';
@@ -11,6 +13,7 @@ class ConstructionProvider with ChangeNotifier {
   bool _isLoadingHistory = false;
   bool _isLoadingAccountantData = false;
   bool _isLoadingAccountantPhotos = false;
+  bool _isLoadingSupervisorPhotos = false;
   bool _isLoadingArchitectData = false;
   bool _isSubmitting = false;
 
@@ -18,6 +21,7 @@ class ConstructionProvider with ChangeNotifier {
   bool _historyLoaded = false;
   bool _accountantDataLoaded = false;
   bool _accountantPhotosLoaded = false;
+  bool _supervisorPhotosLoaded = false;
   bool _architectDataLoaded = false;
   bool _sitesLoaded = false;
   bool _areasLoaded = false;
@@ -31,6 +35,7 @@ class ConstructionProvider with ChangeNotifier {
   List<Map<String, dynamic>> _accountantLabourEntries = [];
   List<Map<String, dynamic>> _accountantMaterialEntries = [];
   List<Map<String, dynamic>> _accountantPhotos = [];
+  List<Map<String, dynamic>> _supervisorPhotos = [];
   List<Map<String, dynamic>> _architectDocuments = [];
   List<Map<String, dynamic>> _architectComplaints = [];
   List<Map<String, dynamic>> _sites = [];
@@ -44,6 +49,7 @@ class ConstructionProvider with ChangeNotifier {
   bool get isLoadingHistory => _isLoadingHistory;
   bool get isLoadingAccountantData => _isLoadingAccountantData;
   bool get isLoadingAccountantPhotos => _isLoadingAccountantPhotos;
+  bool get isLoadingSupervisorPhotos => _isLoadingSupervisorPhotos;
   bool get isLoadingArchitectData => _isLoadingArchitectData;
   bool get isSubmitting => _isSubmitting;
   List<Map<String, dynamic>> get labourEntries => _labourEntries;
@@ -51,6 +57,7 @@ class ConstructionProvider with ChangeNotifier {
   List<Map<String, dynamic>> get accountantLabourEntries => _accountantLabourEntries;
   List<Map<String, dynamic>> get accountantMaterialEntries => _accountantMaterialEntries;
   List<Map<String, dynamic>> get accountantPhotos => _accountantPhotos;
+  List<Map<String, dynamic>> get supervisorPhotos => _supervisorPhotos;
   List<Map<String, dynamic>> get architectDocuments => _architectDocuments;
   List<Map<String, dynamic>> get architectComplaints => _architectComplaints;
   List<Map<String, dynamic>> get sites => _sites;
@@ -363,9 +370,11 @@ class ConstructionProvider with ChangeNotifier {
     print('🗑️ [ACCOUNTANT PROVIDER] Clearing accountant cache...');
     _accountantDataLoaded = false;
     _accountantPhotosLoaded = false;
+    _supervisorPhotosLoaded = false;
     _accountantLabourEntries.clear();
     _accountantMaterialEntries.clear();
     _accountantPhotos.clear();
+    _supervisorPhotos.clear();
     notifyListeners();
   }
 
@@ -424,6 +433,67 @@ class ConstructionProvider with ChangeNotifier {
       _isLoadingAccountantPhotos = false;
       notifyListeners();
       print('🔍 [ACCOUNTANT PHOTOS PROVIDER] loadAccountantPhotos completed');
+    }
+  }
+
+  // Load supervisor photos for accountant
+  Future<void> loadSupervisorPhotos({
+    bool forceRefresh = false,
+    String? siteId,
+  }) async {
+    print('🔍 [SUPERVISOR PHOTOS PROVIDER] loadSupervisorPhotos called (forceRefresh: $forceRefresh, siteId: $siteId)');
+    print('🔍 [SUPERVISOR PHOTOS PROVIDER] _supervisorPhotosLoaded = $_supervisorPhotosLoaded');
+    
+    // Only load if not already loaded or force refresh
+    if (_supervisorPhotosLoaded && !forceRefresh) {
+      print('🔍 [SUPERVISOR PHOTOS PROVIDER] Skipping load - already loaded and not forcing refresh');
+      return;
+    }
+    
+    _isLoadingSupervisorPhotos = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      print('🔍 [SUPERVISOR PHOTOS PROVIDER] Fetching from API...');
+      final authService = AuthService();
+      final token = await authService.getToken();
+      
+      final response = await http.get(
+        Uri.parse('${AuthService.baseUrl}/construction/supervisor-photos-for-accountant/?site_id=$siteId'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        _supervisorPhotos = List<Map<String, dynamic>>.from(result['photos'] ?? []);
+        
+        print('🔍 [SUPERVISOR PHOTOS PROVIDER] Loaded ${_supervisorPhotos.length} photos');
+        
+        // Debug: Check photo types
+        final morningPhotos = _supervisorPhotos.where((photo) => 
+          (photo['time_of_day'] as String? ?? '').toLowerCase() == 'morning').toList();
+        final eveningPhotos = _supervisorPhotos.where((photo) => 
+          (photo['time_of_day'] as String? ?? '').toLowerCase() == 'evening').toList();
+        
+        print('📸 [SUPERVISOR PHOTOS PROVIDER] Morning photos: ${morningPhotos.length}');
+        print('📸 [SUPERVISOR PHOTOS PROVIDER] Evening photos: ${eveningPhotos.length}');
+        
+        if (_supervisorPhotos.isNotEmpty) {
+          print('📝 [SUPERVISOR PHOTOS PROVIDER] Sample photo: ${_supervisorPhotos[0]['supervisor_name']} - ${_supervisorPhotos[0]['time_of_day']}');
+        }
+        
+        _supervisorPhotosLoaded = true;
+      } else {
+        throw Exception('Failed to load photos: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ [SUPERVISOR PHOTOS PROVIDER] Error loading photos: $e');
+      _error = e.toString();
+    } finally {
+      _isLoadingSupervisorPhotos = false;
+      notifyListeners();
+      print('🔍 [SUPERVISOR PHOTOS PROVIDER] loadSupervisorPhotos completed');
     }
   }
 
@@ -504,6 +574,7 @@ class ConstructionProvider with ChangeNotifier {
     _accountantLabourEntries = [];
     _accountantMaterialEntries = [];
     _accountantPhotos = [];
+    _supervisorPhotos = [];
     _architectDocuments = [];
     _architectComplaints = [];
     _sites = [];
@@ -513,6 +584,7 @@ class ConstructionProvider with ChangeNotifier {
     _historyLoaded = false;
     _accountantDataLoaded = false;
     _accountantPhotosLoaded = false;
+    _supervisorPhotosLoaded = false;
     _architectDataLoaded = false;
     _sitesLoaded = false;
     _areasLoaded = false;
