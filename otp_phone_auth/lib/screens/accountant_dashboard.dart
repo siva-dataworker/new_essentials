@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import '../models/user_model.dart';
 import '../providers/construction_provider.dart';
 import '../services/auth_service.dart';
 import '../services/construction_service.dart';
+import '../services/cache_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/common_widgets.dart';
 import 'accountant_reports_screen.dart';
@@ -27,14 +29,15 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
   late String _profileName;
   late String _profilePhone;
   
-  // Cache management
-  static final Map<String, List<Map<String, dynamic>>> _dataCache = {};
-  static final Map<String, DateTime> _cacheTimestamps = {};
-  static const Duration _cacheExpiry = Duration(minutes: 8); // Cache expires after 8 minutes
+  // Background refresh timers
+  Timer? _labourRefreshTimer;
+  Timer? _materialRefreshTimer;
+  Timer? _dashboardRefreshTimer;
   
   // Data variables
   List<Map<String, dynamic>> _labourEntries = [];
   List<Map<String, dynamic>> _materialEntries = [];
+  Map<String, dynamic>? _dashboardData;
   bool _isLoading = true;
   String? _error;
   
@@ -51,33 +54,130 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     _profileName = widget.user.name ?? 'Accountant';
     _profilePhone = widget.user.phoneNumber;
     _loadAccountantDataWithCache();
+    _startBackgroundRefresh();
+  }
+  
+  @override
+  void dispose() {
+    _labourRefreshTimer?.cancel();
+    _materialRefreshTimer?.cancel();
+    _dashboardRefreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadAccountantDataWithCache() async {
-    print('🏗️ [ACCOUNTANT] Loading data with cache check...');
+    print('🏗️ [ACCOUNTANT] Loading data with persistent cache...');
     
-    // Check if we have valid cached data
-    if (_dataCache.containsKey('labour') && _dataCache.containsKey('material') && 
-        _cacheTimestamps.containsKey('accountant_data')) {
-      final cacheTime = _cacheTimestamps['accountant_data']!;
-      final now = DateTime.now();
-      
-      if (now.difference(cacheTime) < _cacheExpiry) {
-        print('🎯 [ACCOUNTANT] Using cached data - instant load');
-        setState(() {
-          _labourEntries = List<Map<String, dynamic>>.from(_dataCache['labour']!);
-          _materialEntries = List<Map<String, dynamic>>.from(_dataCache['material']!);
-          _isLoading = false;
-          _error = null;
-        });
-        return;
-      } else {
-        print('⏰ [ACCOUNTANT] Cache expired, refreshing...');
-      }
+    // Load from persistent cache FIRST (instant - 0ms)
+    final cachedLabour = await CacheService.loadAccountantLabour();
+    final cachedMaterial = await CacheService.loadAccountantMaterial();
+    final cachedDashboard = await CacheService.loadAccountantDashboard();
+    
+    if (cachedLabour != null || cachedMaterial != null) {
+      print('🎯 [ACCOUNTANT] Using persistent cached data - instant load');
+      setState(() {
+        if (cachedLabour != null) _labourEntries = cachedLabour;
+        if (cachedMaterial != null) _materialEntries = cachedMaterial;
+        if (cachedDashboard != null) _dashboardData = cachedDashboard;
+        _isLoading = false;
+        _error = null;
+      });
     }
     
-    // Load fresh data
-    await _loadAccountantData();
+    // Refresh from API in background (silent)
+    _refreshAllDataInBackground();
+  }
+  
+  void _startBackgroundRefresh() {
+    // Refresh labour entries every 60 seconds
+    _labourRefreshTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) => _refreshLabourInBackground(),
+    );
+    
+    // Refresh material entries every 60 seconds
+    _materialRefreshTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) => _refreshMaterialInBackground(),
+    );
+    
+    // Refresh dashboard every 90 seconds
+    _dashboardRefreshTimer = Timer.periodic(
+      const Duration(seconds: 90),
+      (_) => _refreshDashboardInBackground(),
+    );
+  }
+  
+  Future<void> _refreshAllDataInBackground() async {
+    await Future.wait([
+      _refreshLabourInBackground(),
+      _refreshMaterialInBackground(),
+      _refreshDashboardInBackground(),
+    ]);
+  }
+  
+  Future<void> _refreshLabourInBackground() async {
+    try {
+      final provider = context.read<ConstructionProvider>();
+      await provider.loadAccountantData(forceRefresh: true);
+      
+      final newData = List<Map<String, dynamic>>.from(provider.accountantLabourEntries);
+      await CacheService.saveAccountantLabour(newData);
+      
+      if (mounted) {
+        setState(() {
+          _labourEntries = newData;
+        });
+      }
+      print('✅ [ACCOUNTANT] Labour data refreshed in background');
+    } catch (e) {
+      print('⚠️ [ACCOUNTANT] Background refresh failed for labour: $e');
+      // Silent failure - keep showing cached data
+    }
+  }
+  
+  Future<void> _refreshMaterialInBackground() async {
+    try {
+      final provider = context.read<ConstructionProvider>();
+      await provider.loadAccountantData(forceRefresh: true);
+      
+      final newData = List<Map<String, dynamic>>.from(provider.accountantMaterialEntries);
+      await CacheService.saveAccountantMaterial(newData);
+      
+      if (mounted) {
+        setState(() {
+          _materialEntries = newData;
+        });
+      }
+      print('✅ [ACCOUNTANT] Material data refreshed in background');
+    } catch (e) {
+      print('⚠️ [ACCOUNTANT] Background refresh failed for material: $e');
+      // Silent failure - keep showing cached data
+    }
+  }
+  
+  Future<void> _refreshDashboardInBackground() async {
+    try {
+      // Create dashboard summary data
+      final dashboardData = {
+        'total_labour_entries': _labourEntries.length,
+        'total_material_entries': _materialEntries.length,
+        'total_workers': _labourEntries.fold<int>(0, (sum, entry) => sum + (entry['labour_count'] as int? ?? 0)),
+        'last_updated': DateTime.now().toIso8601String(),
+      };
+      
+      await CacheService.saveAccountantDashboard(dashboardData);
+      
+      if (mounted) {
+        setState(() {
+          _dashboardData = dashboardData;
+        });
+      }
+      print('✅ [ACCOUNTANT] Dashboard data refreshed in background');
+    } catch (e) {
+      print('⚠️ [ACCOUNTANT] Background refresh failed for dashboard: $e');
+      // Silent failure - keep showing cached data
+    }
   }
 
   Future<void> _loadAccountantData() async {
@@ -97,11 +197,20 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       _labourEntries = List<Map<String, dynamic>>.from(provider.accountantLabourEntries);
       _materialEntries = List<Map<String, dynamic>>.from(provider.accountantMaterialEntries);
       
-      // Cache the data
-      _dataCache['labour'] = _labourEntries;
-      _dataCache['material'] = _materialEntries;
-      _cacheTimestamps['accountant_data'] = DateTime.now();
-      print('💾 [ACCOUNTANT] Data cached successfully');
+      // Save to persistent cache
+      await CacheService.saveAccountantLabour(_labourEntries);
+      await CacheService.saveAccountantMaterial(_materialEntries);
+      
+      // Create and save dashboard data
+      final dashboardData = {
+        'total_labour_entries': _labourEntries.length,
+        'total_material_entries': _materialEntries.length,
+        'total_workers': _labourEntries.fold<int>(0, (sum, entry) => sum + (entry['labour_count'] as int? ?? 0)),
+        'last_updated': DateTime.now().toIso8601String(),
+      };
+      await CacheService.saveAccountantDashboard(dashboardData);
+      
+      print('💾 [ACCOUNTANT] Data cached successfully to persistent storage');
       
     } catch (e) {
       _error = e.toString();
@@ -117,11 +226,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
   void _forceRefresh() {
     print('🔄 [ACCOUNTANT] Force refresh requested');
-    // Clear cache
-    _dataCache.clear();
-    _cacheTimestamps.clear();
-    
-    // Load fresh data
+    // Load fresh data (will update cache automatically)
     _loadAccountantData();
   }
 
@@ -153,20 +258,20 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
   Widget _buildDashboardScreen() {
     return Scaffold(
-      backgroundColor: AppColors.lightSlate,
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: CommonWidgets.buildAppBar(
         context,
         title: 'Dashboard - $_profileName',
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.deepNavy),
+            icon: const Icon(Icons.refresh, color: const Color(0xFF1A1A2E)),
             onPressed: _forceRefresh,
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () async => _forceRefresh(),
-        color: AppColors.deepNavy,
+        color: const Color(0xFF1A1A2E),
         child: _isLoading
             ? CommonWidgets.buildLoadingIndicator(
                 context,
@@ -217,7 +322,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppColors.deepNavy,
+              color: const Color(0xFF1A1A2E),
             ),
           ),
           const SizedBox(height: 16),
@@ -229,7 +334,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   title: 'Labour Entries',
                   value: totalLabourEntries.toString(),
                   icon: Icons.people,
-                  color: AppColors.statusCompleted,
+                  color: const Color(0xFF4CAF50),
                 ),
               ),
               const SizedBox(width: 12),
@@ -238,7 +343,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   title: 'Material Entries',
                   value: totalMaterialEntries.toString(),
                   icon: Icons.inventory_2,
-                  color: AppColors.deepNavy,
+                  color: const Color(0xFF1A1A2E),
                 ),
               ),
             ],
@@ -253,7 +358,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   title: 'Total Workers',
                   value: totalWorkers.toString(),
                   icon: Icons.engineering,
-                  color: AppColors.safetyOrange,
+                  color: const Color(0xFF1A1A2E),
                 ),
               ),
               const SizedBox(width: 12),
@@ -262,7 +367,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   title: 'Active Sites',
                   value: uniqueSites.length.toString(),
                   icon: Icons.location_city,
-                  color: AppColors.primaryPurple,
+                  color: const Color(0xFF1A1A2E),
                 ),
               ),
             ],
@@ -276,7 +381,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.deepNavy,
+              color: const Color(0xFF1A1A2E),
             ),
           ),
           const SizedBox(height: 10),
@@ -323,7 +428,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
+                    color: const Color(0xFF1A1A2E),
                   ),
                 ),
               ),
@@ -332,11 +437,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   onPressed: _expandedDates.contains('material') ? _collapseMaterial : _expandMaterial,
                   icon: Icon(
                     _expandedDates.contains('material') ? Icons.expand_less : Icons.expand_more,
-                    color: AppColors.deepNavy,
+                    color: const Color(0xFF1A1A2E),
                   ),
                   label: Text(
                     _expandedDates.contains('material') ? 'Collapse' : 'View All',
-                    style: const TextStyle(color: AppColors.deepNavy),
+                    style: const TextStyle(color: const Color(0xFF1A1A2E)),
                   ),
                 ),
             ],
@@ -365,12 +470,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.deepNavy : AppColors.lightSlate,
+          color: selected ?AppColors.deepNavy: const Color(0xFFF8F9FA),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected
-                ? AppColors.deepNavy
-                : AppColors.deepNavy.withValues(alpha: 0.2),
+                ?AppColors.deepNavy: const Color(0xFF1A1A2E).withValues(alpha: 0.2),
           ),
         ),
         child: Text(
@@ -378,7 +482,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            color: selected ? Colors.white : AppColors.deepNavy,
+            color: selected ?AppColors.deepNavy: const Color(0xFF1A1A2E),
           ),
         ),
       ),
@@ -402,7 +506,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         alignment: Alignment.center,
         child: Text(
           'No ${_selectedLabourRole ?? ''} labour entries found',
-          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          style: const TextStyle(fontSize: 14, color: const Color(0xFF6B7280)),
         ),
       );
     }
@@ -472,7 +576,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppColors.deepNavy.withValues(alpha: 0.04),
+            color: const Color(0xFF1A1A2E).withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -502,13 +606,13 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: isLabour 
-                            ? AppColors.statusCompleted.withValues(alpha: 0.1)
-                            : AppColors.deepNavy.withValues(alpha: 0.1),
+                            ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
+                            : const Color(0xFF1A1A2E).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
                         isLabour ? Icons.people : Icons.inventory_2,
-                        color: isLabour ? AppColors.statusCompleted : AppColors.deepNavy,
+                        color: isLabour ? const Color(0xFF4CAF50) : const Color(0xFF1A1A2E),
                         size: 20,
                       ),
                     ),
@@ -522,7 +626,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.deepNavy,
+                              color: const Color(0xFF1A1A2E),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -530,7 +634,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                             '${entries.length} ${isLabour ? 'labour' : 'material'} ${entries.length == 1 ? 'entry' : 'entries'}',
                             style: const TextStyle(
                               fontSize: 14,
-                              color: AppColors.textSecondary,
+                              color: const Color(0xFF6B7280),
                             ),
                           ),
                         ],
@@ -541,7 +645,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                       duration: const Duration(milliseconds: 200),
                       child: const Icon(
                         Icons.keyboard_arrow_down,
-                        color: AppColors.deepNavy,
+                        color: const Color(0xFF1A1A2E),
                       ),
                     ),
                   ],
@@ -609,10 +713,10 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.statusCompleted.withValues(alpha: 0.05),
+        color: const Color(0xFF4CAF50).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: AppColors.statusCompleted.withValues(alpha: 0.2),
+          color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -627,7 +731,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
+                    color: const Color(0xFF1A1A2E),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -635,7 +739,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   fullSiteName,
                   style: const TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: const Color(0xFF6B7280),
                   ),
                 ),
               ],
@@ -646,7 +750,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: AppColors.statusCompleted,
+              color: const Color(0xFF4CAF50),
             ),
           ),
         ],
@@ -660,10 +764,10 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.deepNavy.withValues(alpha: 0.05),
+        color: const Color(0xFF1A1A2E).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: AppColors.deepNavy.withValues(alpha: 0.2),
+          color: const Color(0xFF1A1A2E).withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -678,7 +782,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
+                    color: const Color(0xFF1A1A2E),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -686,7 +790,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   fullSiteName,
                   style: const TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: const Color(0xFF6B7280),
                   ),
                 ),
               ],
@@ -697,7 +801,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: AppColors.deepNavy,
+              color: const Color(0xFF1A1A2E),
             ),
           ),
         ],
@@ -718,14 +822,14 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
             children: [
-              Icon(Icons.edit_outlined, color: AppColors.deepNavy, size: 22),
+              Icon(Icons.edit_outlined, color: const Color(0xFF1A1A2E), size: 22),
               SizedBox(width: 8),
               Text(
                 'Edit Profile',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.deepNavy,
+                  color: const Color(0xFF1A1A2E),
                 ),
               ),
             ],
@@ -740,11 +844,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   controller: nameCtrl,
                   decoration: InputDecoration(
                     labelText: 'Full Name',
-                    prefixIcon: const Icon(Icons.person_outline, color: AppColors.deepNavy),
+                    prefixIcon: const Icon(Icons.person_outline, color: const Color(0xFF1A1A2E)),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.deepNavy, width: 2),
+                      borderSide: const BorderSide(color: const Color(0xFF1A1A2E), width: 2),
                     ),
                   ),
                   validator: (v) =>
@@ -759,11 +863,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: InputDecoration(
                     labelText: 'Phone Number',
-                    prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.deepNavy),
+                    prefixIcon: const Icon(Icons.phone_outlined, color: const Color(0xFF1A1A2E)),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.deepNavy, width: 2),
+                      borderSide: const BorderSide(color: const Color(0xFF1A1A2E), width: 2),
                     ),
                     counterText: '',
                   ),
@@ -779,11 +883,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
           actions: [
             TextButton(
               onPressed: isSaving ? null : () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              child: const Text('Cancel', style: TextStyle(color: const Color(0xFF6B7280))),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.deepNavy,
+                backgroundColor:const Color(0xFF1A1A2E),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
@@ -812,7 +916,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                               ? 'Profile updated successfully!'
                               : result['error'] ?? 'Update failed'),
                           backgroundColor: result['success'] == true
-                              ? AppColors.statusCompleted
+                              ? const Color(0xFF4CAF50)
                               : Colors.red,
                         ),
                       );
@@ -866,7 +970,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
   Widget _buildProfileScreen() {
     return Scaffold(
-      backgroundColor: AppColors.lightSlate,
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: CommonWidgets.buildAppBar(
         context,
         title: 'Profile',
@@ -883,7 +987,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.deepNavy.withValues(alpha: 0.04),
+                    color: const Color(0xFF1A1A2E).withValues(alpha: 0.04),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -896,11 +1000,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      gradient: AppColors.navyGradient,
+                      gradient: LinearGradient(colors: [Color(0xFF1A1A2E), Color(0xFF16213E)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.deepNavy.withValues(alpha: 0.3),
+                          color: const Color(0xFF1A1A2E).withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -927,7 +1031,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.deepNavy,
+                      color: const Color(0xFF1A1A2E),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -936,7 +1040,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                     widget.user.role.displayName,
                     style: const TextStyle(
                       fontSize: 14,
-                      color: AppColors.textSecondary,
+                      color: const Color(0xFF6B7280),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -1059,12 +1163,12 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.lightSlate,
+        color: const Color(0xFFF8F9FA),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.deepNavy.withValues(alpha: 0.1)),
+        border: Border.all(color: const Color(0xFF1A1A2E).withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.deepNavy.withValues(alpha: 0.05),
+            color: const Color(0xFF1A1A2E).withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1072,7 +1176,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.deepNavy, size: 20),
+          Icon(icon, color: const Color(0xFF1A1A2E), size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1082,7 +1186,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   title,
                   style: const TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: const Color(0xFF6B7280),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1091,7 +1195,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.deepNavy,
+                    color: const Color(0xFF1A1A2E),
                   ),
                 ),
               ],
@@ -1115,7 +1219,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppColors.deepNavy.withValues(alpha: 0.04),
+            color: const Color(0xFF1A1A2E).withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1133,12 +1237,12 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.deepNavy.withValues(alpha: 0.1),
+                    color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     icon,
-                    color: AppColors.deepNavy,
+                    color: const Color(0xFF1A1A2E),
                     size: 20,
                   ),
                 ),
@@ -1152,7 +1256,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.deepNavy,
+                          color: const Color(0xFF1A1A2E),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -1160,7 +1264,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                         subtitle,
                         style: const TextStyle(
                           fontSize: 14,
-                          color: AppColors.textSecondary,
+                          color: const Color(0xFF6B7280),
                         ),
                       ),
                     ],
@@ -1169,7 +1273,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 const Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
-                  color: AppColors.textSecondary,
+                  color: const Color(0xFF6B7280),
                 ),
               ],
             ),

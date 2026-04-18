@@ -8,7 +8,8 @@ class AuthService {
   AuthService._internal();
 
   // Django backend URL
-  static const String baseUrl = 'https://essentials-construction-project.onrender.com/api';
+  static const String baseUrl = 'http://localhost:8000/api';
+  static const Duration requestTimeout = Duration(seconds: 10);
   
   String? _token;
   Map<String, dynamic>? _currentUser;
@@ -75,7 +76,7 @@ class AuthService {
           'full_name': fullName,
           'role': role,
         }),
-      );
+      ).timeout(requestTimeout);
       
       final data = json.decode(response.body);
       
@@ -95,7 +96,9 @@ class AuthService {
     } catch (e) {
       return {
         'success': false,
-        'error': 'Network error: $e',
+        'error': e.toString().contains('TimeoutException') 
+            ? 'Connection timeout - please check your internet'
+            : 'Network error: $e',
       };
     }
   }
@@ -113,7 +116,7 @@ class AuthService {
           'username': username,
           'password': password,
         }),
-      );
+      ).timeout(requestTimeout);
       
       final data = json.decode(response.body);
       
@@ -141,7 +144,9 @@ class AuthService {
     } catch (e) {
       return {
         'success': false,
-        'error': 'Network error: $e',
+        'error': e.toString().contains('TimeoutException')
+            ? 'Connection timeout - please check your internet'
+            : 'Network error: $e',
       };
     }
   }

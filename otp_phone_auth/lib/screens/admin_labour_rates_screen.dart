@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/budget_management_service.dart';
 import '../utils/app_colors.dart';
+import '../utils/smooth_animations.dart';
 
 class AdminLabourRatesScreen extends StatefulWidget {
   const AdminLabourRatesScreen({super.key});
@@ -90,11 +91,11 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.safetyOrange.withValues(alpha: 0.12),
+                color: const Color(0xFF1A1A2E).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.currency_rupee,
-                  color: AppColors.safetyOrange, size: 20),
+                  color: const Color(0xFF1A1A2E), size: 20),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -105,10 +106,10 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                       style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.deepNavy)),
+                          color: const Color(0xFF1A1A2E))),
                   Text(labourType,
                       style: const TextStyle(
-                          fontSize: 12, color: AppColors.textSecondary)),
+                          fontSize: 12, color: const Color(0xFF6B7280))),
                 ],
               ),
             ),
@@ -126,7 +127,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                 decoration: InputDecoration(
                   labelText: 'Daily Rate (₹)',
                   prefixIcon: const Icon(Icons.currency_rupee,
-                      color: AppColors.deepNavy, size: 18),
+                      color: const Color(0xFF1A1A2E), size: 18),
                   helperText: effectiveRate != null
                       ? 'Current: ₹${effectiveRate.toStringAsFixed(0)}/day'
                       : null,
@@ -135,7 +136,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide:
-                        const BorderSide(color: AppColors.deepNavy, width: 2),
+                        const BorderSide(color: const Color(0xFF1A1A2E), width: 2),
                   ),
                 ),
                 autofocus: true,
@@ -152,13 +153,13 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                 decoration: InputDecoration(
                   labelText: 'Notes (optional)',
                   prefixIcon: const Icon(Icons.note_outlined,
-                      color: AppColors.textSecondary, size: 18),
+                      color: const Color(0xFF6B7280), size: 18),
                   border:
                       OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide:
-                        const BorderSide(color: AppColors.deepNavy, width: 2),
+                        const BorderSide(color: const Color(0xFF1A1A2E), width: 2),
                   ),
                 ),
               ),
@@ -169,11 +170,11 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Cancel',
-                style: TextStyle(color: AppColors.textSecondary)),
+                style: TextStyle(color: const Color(0xFF6B7280))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.safetyOrange,
+              backgroundColor: const Color(0xFF1A1A2E),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
@@ -203,7 +204,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
             SnackBar(
               content:
                   Text('Rate for $labourType updated to ₹${ctrl.text}/day'),
-              backgroundColor: AppColors.statusCompleted,
+              backgroundColor: const Color(0xFF4CAF50),
             ),
           );
           await _loadRates();
@@ -233,29 +234,29 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightSlate,
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text('Labour Rates',
             style: TextStyle(
-                color: AppColors.deepNavy,
+                color: const Color(0xFF1A1A2E),
                 fontWeight: FontWeight.bold,
                 fontSize: 18)),
-        backgroundColor: AppColors.cleanWhite,
+        backgroundColor: Colors.white,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.deepNavy),
+        iconTheme: const IconThemeData(color: const Color(0xFF1A1A2E)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.deepNavy),
+            icon: const Icon(Icons.refresh, color: const Color(0xFF1A1A2E)),
             onPressed: _loadRates,
           ),
         ],
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.safetyOrange))
+              child: CircularProgressIndicator(color: const Color(0xFF1A1A2E)))
           : RefreshIndicator(
               onRefresh: _loadRates,
-              color: AppColors.safetyOrange,
+              color: const Color(0xFF1A1A2E),
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
@@ -264,22 +265,22 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                     padding: const EdgeInsets.all(14),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: AppColors.safetyOrange.withValues(alpha: 0.08),
+                      color: const Color(0xFF1A1A2E).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: AppColors.safetyOrange.withValues(alpha: 0.2)),
+                          color: const Color(0xFF1A1A2E).withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       children: [
                         const Icon(Icons.info_outline,
-                            color: AppColors.safetyOrange, size: 18),
+                            color: const Color(0xFF1A1A2E), size: 18),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             'Tap any row to set an admin rate. Updated rates will be shown to supervisors and site engineers.',
                             style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.safetyOrange
+                                color: const Color(0xFF1A1A2E)
                                     .withValues(alpha: 0.9)),
                           ),
                         ),
@@ -296,7 +297,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                       padding: EdgeInsets.only(top: 16),
                       child: Center(
                           child: CircularProgressIndicator(
-                              color: AppColors.safetyOrange)),
+                              color: const Color(0xFF1A1A2E))),
                     ),
                 ],
               ),
@@ -315,17 +316,17 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.cleanWhite,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: hasAdminRate
-                ? AppColors.safetyOrange.withValues(alpha: 0.3)
-                : AppColors.deepNavy.withValues(alpha: 0.08),
+                ? const Color(0xFF1A1A2E).withValues(alpha: 0.3)
+                : const Color(0xFF1A1A2E).withValues(alpha: 0.08),
             width: hasAdminRate ? 1.5 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.deepNavy.withValues(alpha: 0.04),
+              color: const Color(0xFF1A1A2E).withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -338,15 +339,15 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: hasAdminRate
-                    ? AppColors.safetyOrange.withValues(alpha: 0.1)
-                    : AppColors.deepNavy.withValues(alpha: 0.07),
+                    ? const Color(0xFF1A1A2E).withValues(alpha: 0.1)
+                    : const Color(0xFF1A1A2E).withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 Icons.engineering,
                 color: hasAdminRate
-                    ? AppColors.safetyOrange
-                    : AppColors.textSecondary,
+                    ? const Color(0xFF1A1A2E)
+                    : const Color(0xFF6B7280),
                 size: 20,
               ),
             ),
@@ -362,17 +363,17 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                     style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.deepNavy),
+                        color: const Color(0xFF1A1A2E)),
                   ),
                   const SizedBox(height: 3),
                   if (hasAdminRate && setBy != null)
                     Text('Set by $setBy',
                         style: const TextStyle(
-                            fontSize: 11, color: AppColors.textSecondary))
+                            fontSize: 11, color: const Color(0xFF6B7280)))
                   else
                     const Text('Canonical default',
                         style: TextStyle(
-                            fontSize: 11, color: AppColors.textSecondary)),
+                            fontSize: 11, color: const Color(0xFF6B7280))),
                 ],
               ),
             ),
@@ -386,8 +387,8 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: hasAdminRate
-                        ? AppColors.safetyOrange
-                        : AppColors.deepNavy.withValues(alpha: 0.08),
+                        ? const Color(0xFF1A1A2E)
+                        : const Color(0xFF1A1A2E).withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -399,7 +400,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                       fontWeight: FontWeight.bold,
                       color: hasAdminRate
                           ? Colors.white
-                          : AppColors.textSecondary,
+                          : const Color(0xFF6B7280),
                     ),
                   ),
                 ),
@@ -409,8 +410,8 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                   style: TextStyle(
                     fontSize: 10,
                     color: hasAdminRate
-                        ? AppColors.safetyOrange
-                        : AppColors.textSecondary,
+                        ? const Color(0xFF1A1A2E)
+                        : const Color(0xFF6B7280),
                   ),
                 ),
               ],
@@ -418,7 +419,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
 
             const SizedBox(width: 8),
             const Icon(Icons.edit_outlined,
-                size: 16, color: AppColors.textSecondary),
+                size: 16, color: const Color(0xFF6B7280)),
           ],
         ),
       ),

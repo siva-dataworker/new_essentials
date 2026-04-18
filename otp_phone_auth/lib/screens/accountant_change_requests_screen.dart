@@ -44,7 +44,7 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.lightSlate,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
@@ -152,7 +152,7 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
               Navigator.pop(context, true);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.statusCompleted,
+              backgroundColor: AppColors.deepNavy,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text(
@@ -180,7 +180,7 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Change applied successfully'),
-            backgroundColor: AppColors.statusCompleted,
+            backgroundColor: const Color(0xFF1A1A2E),
           ),
         );
         // Requests are automatically reloaded by provider
@@ -203,7 +203,7 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
         final isLoading = provider.isLoadingRequests;
 
         return Scaffold(
-          backgroundColor: AppColors.lightSlate,
+          backgroundColor: const Color(0xFF1A1A2E),
           appBar: AppBar(
             title: const Text(
               'Change Requests',
@@ -213,7 +213,7 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
                 fontWeight: FontWeight.bold,
               ),
             ),
-            backgroundColor: AppColors.cleanWhite,
+            backgroundColor: const Color(0xFF1A1A2E),
             elevation: 0,
             iconTheme: const IconThemeData(color: AppColors.deepNavy),
           ),
@@ -283,7 +283,7 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: AppColors.statusOverdue.withValues(alpha: 0.3),
@@ -368,7 +368,7 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.lightSlate,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Column(
@@ -449,7 +449,7 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
                 icon: const Icon(Icons.edit, size: 18),
                 label: const Text('Handle Request'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.statusCompleted,
+                  backgroundColor:const Color(0xFF1A1A2E),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   padding: const EdgeInsets.symmetric(vertical: 12),

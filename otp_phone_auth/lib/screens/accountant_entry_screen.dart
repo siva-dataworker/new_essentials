@@ -3,11 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../services/auth_service.dart';
 import '../services/construction_service.dart';
 import '../services/document_service.dart';
 import '../services/labor_mismatch_service.dart';
+import '../services/cache_service.dart';
 import '../providers/construction_provider.dart';
 import '../providers/change_request_provider.dart';
 import '../utils/app_colors.dart';
@@ -53,6 +55,15 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
   String _selectedSiteEngineerTab = 'Photos'; // Photos | Labor | Materials | Documents
   String _selectedPhotoTimeOfDay = 'Morning'; // Morning | Evening (for Photos tab)
   final Set<String> _expandedDates = {};
+  
+  // Background refresh timers for site-specific data
+  Timer? _labourRefreshTimer;
+  Timer? _materialsRefreshTimer;
+  Timer? _requestsRefreshTimer;
+  Timer? _photosRefreshTimer;
+  
+  // Site-specific data cache (role + tab combinations)
+  final Map<String, List<Map<String, dynamic>>> _siteDataCache = {};
 
 
   @override
@@ -61,6 +72,15 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
     _loadUserData();
     _loadAreas();
   }
+  
+  @override
+  void dispose() {
+    _labourRefreshTimer?.cancel();
+    _materialsRefreshTimer?.cancel();
+    _requestsRefreshTimer?.cancel();
+    _photosRefreshTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> _loadUserData() async {
     final user = await _authService.getCurrentUser();
@@ -68,13 +88,26 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
   }
 
   Future<void> _loadAreas() async {
-    setState(() => _isLoadingAreas = true);
+    // Load from cache FIRST (instant - 0ms)
+    final cachedAreas = await CacheService.loadAreas();
+    if (cachedAreas != null && cachedAreas.isNotEmpty) {
+      setState(() {
+        _areas = cachedAreas;
+        _isLoadingAreas = false;
+      });
+    } else {
+      setState(() => _isLoadingAreas = true);
+    }
+    
+    // Refresh from API in background
     try {
       final provider = context.read<ConstructionProvider>();
       final response = await provider.getAreas();
       if (response['success']) {
+        final newAreas = List<String>.from(response['areas']);
+        await CacheService.saveAreas(newAreas);
         setState(() {
-          _areas = List<String>.from(response['areas']);
+          _areas = newAreas;
         });
       }
     } catch (e) {
@@ -85,20 +118,32 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
   }
 
   Future<void> _loadStreets(String area) async {
-    setState(() {
-      _isLoadingStreets = true;
-      _selectedStreet = null;
-      _selectedSite = null;
-      _streets = [];
-      _sites = [];
-    });
+    // Load from cache FIRST (instant - 0ms)
+    final cachedStreets = await CacheService.loadStreets(area);
+    if (cachedStreets != null && cachedStreets.isNotEmpty) {
+      setState(() {
+        _streets = cachedStreets;
+        _isLoadingStreets = false;
+      });
+    } else {
+      setState(() {
+        _isLoadingStreets = true;
+        _selectedStreet = null;
+        _selectedSite = null;
+        _streets = [];
+        _sites = [];
+      });
+    }
     
+    // Refresh from API in background
     try {
       final provider = context.read<ConstructionProvider>();
       final response = await provider.getStreets(area);
       if (response['success']) {
+        final newStreets = List<String>.from(response['streets']);
+        await CacheService.saveStreets(area, newStreets);
         setState(() {
-          _streets = List<String>.from(response['streets']);
+          _streets = newStreets;
         });
       }
     } catch (e) {
@@ -109,18 +154,30 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
   }
 
   Future<void> _loadSites(String area, String street) async {
-    setState(() {
-      _isLoadingSites = true;
-      _selectedSite = null;
-      _sites = [];
-    });
+    // Load from cache FIRST (instant - 0ms)
+    final cachedSites = await CacheService.loadDropdownSites(area, street);
+    if (cachedSites != null && cachedSites.isNotEmpty) {
+      setState(() {
+        _sites = cachedSites;
+        _isLoadingSites = false;
+      });
+    } else {
+      setState(() {
+        _isLoadingSites = true;
+        _selectedSite = null;
+        _sites = [];
+      });
+    }
     
+    // Refresh from API in background
     try {
       final provider = context.read<ConstructionProvider>();
       final response = await provider.getSitesByAreaStreet(area, street);
       if (response['success']) {
+        final newSites = List<Map<String, dynamic>>.from(response['sites']);
+        await CacheService.saveDropdownSites(area, street, newSites);
         setState(() {
-          _sites = List<Map<String, dynamic>>.from(response['sites']);
+          _sites = newSites;
         });
       }
     } catch (e) {
@@ -170,30 +227,218 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
     setState(() => _selectedSite = siteId);
     
     if (siteId != null) {
-      // Automatically enter the site and load role-specific data
-      _loadRoleSpecificData();
+      // Load all role+tab combinations from cache and start background refresh
+      _loadAllSiteDataWithCache(siteId);
+    }
+  }
+  
+  // Load all 12 combinations (3 roles × 4 tabs) from cache
+  Future<void> _loadAllSiteDataWithCache(String siteId) async {
+    print('🏗️ [SITE_VIEW] Loading all data for site: $siteId');
+    
+    final roles = ['Supervisor', 'Site Engineer', 'Architect'];
+    
+    // Load all combinations from cache first (instant)
+    for (final role in roles) {
+      await Future.wait([
+        _loadLabourDataWithCache(siteId, role),
+        _loadMaterialsDataWithCache(siteId, role),
+        _loadRequestsDataWithCache(siteId, role),
+        _loadPhotosDataWithCache(siteId, role),
+      ]);
+    }
+    
+    // Start background refresh for current role
+    _startBackgroundRefresh(siteId, _selectedRole);
+    
+    // Load mismatch data
+    _loadMismatchData();
+  }
+  
+  Future<void> _loadLabourDataWithCache(String siteId, String role) async {
+    final cacheKey = '${siteId}_${role.toLowerCase()}_labour';
+    
+    // Load from cache FIRST (instant - 0ms)
+    final cachedData = await CacheService.loadSiteLabourData(siteId, role);
+    if (cachedData != null && cachedData.isNotEmpty) {
+      setState(() {
+        _siteDataCache[cacheKey] = cachedData;
+      });
+      print('✅ [SITE_VIEW] Loaded labour from cache: $role');
+    }
+    
+    // Refresh from API in background (silent)
+    _refreshLabourDataInBackground(siteId, role);
+  }
+  
+  Future<void> _loadMaterialsDataWithCache(String siteId, String role) async {
+    final cacheKey = '${siteId}_${role.toLowerCase()}_materials';
+    
+    // Load from cache FIRST (instant - 0ms)
+    final cachedData = await CacheService.loadSiteMaterialsData(siteId, role);
+    if (cachedData != null && cachedData.isNotEmpty) {
+      setState(() {
+        _siteDataCache[cacheKey] = cachedData;
+      });
+      print('✅ [SITE_VIEW] Loaded materials from cache: $role');
+    }
+    
+    // Refresh from API in background (silent)
+    _refreshMaterialsDataInBackground(siteId, role);
+  }
+  
+  Future<void> _loadRequestsDataWithCache(String siteId, String role) async {
+    final cacheKey = '${siteId}_${role.toLowerCase()}_requests';
+    
+    // Load from cache FIRST (instant - 0ms)
+    final cachedData = await CacheService.loadSiteRequestsData(siteId, role);
+    if (cachedData != null && cachedData.isNotEmpty) {
+      setState(() {
+        _siteDataCache[cacheKey] = cachedData;
+      });
+      print('✅ [SITE_VIEW] Loaded requests from cache: $role');
+    }
+    
+    // Refresh from API in background (silent)
+    _refreshRequestsDataInBackground(siteId, role);
+  }
+  
+  Future<void> _loadPhotosDataWithCache(String siteId, String role) async {
+    final cacheKey = '${siteId}_${role.toLowerCase()}_photos';
+    
+    // Load from cache FIRST (instant - 0ms)
+    final cachedData = await CacheService.loadSitePhotosData(siteId, role);
+    if (cachedData != null && cachedData.isNotEmpty) {
+      setState(() {
+        _siteDataCache[cacheKey] = cachedData;
+      });
+      print('✅ [SITE_VIEW] Loaded photos from cache: $role');
+    }
+    
+    // Refresh from API in background (silent)
+    _refreshPhotosDataInBackground(siteId, role);
+  }
+  
+  void _startBackgroundRefresh(String siteId, String role) {
+    // Cancel existing timers
+    _labourRefreshTimer?.cancel();
+    _materialsRefreshTimer?.cancel();
+    _requestsRefreshTimer?.cancel();
+    _photosRefreshTimer?.cancel();
+    
+    // Refresh labour data every 60 seconds
+    _labourRefreshTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) => _refreshLabourDataInBackground(siteId, role),
+    );
+    
+    // Refresh materials data every 60 seconds
+    _materialsRefreshTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) => _refreshMaterialsDataInBackground(siteId, role),
+    );
+    
+    // Refresh requests data every 90 seconds
+    _requestsRefreshTimer = Timer.periodic(
+      const Duration(seconds: 90),
+      (_) => _refreshRequestsDataInBackground(siteId, role),
+    );
+    
+    // Refresh photos data every 120 seconds
+    _photosRefreshTimer = Timer.periodic(
+      const Duration(seconds: 120),
+      (_) => _refreshPhotosDataInBackground(siteId, role),
+    );
+    
+    print('🔄 [SITE_VIEW] Background refresh started for: $role');
+  }
+  
+  Future<void> _refreshLabourDataInBackground(String siteId, String role) async {
+    try {
+      final provider = context.read<ConstructionProvider>();
+      await provider.loadSupervisorHistory(siteId: siteId, forceRefresh: true);
+      
+      final newData = List<Map<String, dynamic>>.from(provider.labourEntries);
+      await CacheService.saveSiteLabourData(siteId, role, newData);
+      
+      if (mounted) {
+        final cacheKey = '${siteId}_${role.toLowerCase()}_labour';
+        setState(() {
+          _siteDataCache[cacheKey] = newData;
+        });
+      }
+      print('✅ [SITE_VIEW] Labour data refreshed: $role');
+    } catch (e) {
+      print('⚠️ [SITE_VIEW] Background refresh failed for labour: $e');
+    }
+  }
+  
+  Future<void> _refreshMaterialsDataInBackground(String siteId, String role) async {
+    try {
+      final provider = context.read<ConstructionProvider>();
+      await provider.loadSupervisorHistory(siteId: siteId, forceRefresh: true);
+      
+      final newData = List<Map<String, dynamic>>.from(provider.materialEntries);
+      await CacheService.saveSiteMaterialsData(siteId, role, newData);
+      
+      if (mounted) {
+        final cacheKey = '${siteId}_${role.toLowerCase()}_materials';
+        setState(() {
+          _siteDataCache[cacheKey] = newData;
+        });
+      }
+      print('✅ [SITE_VIEW] Materials data refreshed: $role');
+    } catch (e) {
+      print('⚠️ [SITE_VIEW] Background refresh failed for materials: $e');
+    }
+  }
+  
+  Future<void> _refreshRequestsDataInBackground(String siteId, String role) async {
+    try {
+      final changeProvider = context.read<ChangeRequestProvider>();
+      await changeProvider.loadMyChangeRequests();
+      
+      final newData = List<Map<String, dynamic>>.from(changeProvider.myChangeRequests);
+      await CacheService.saveSiteRequestsData(siteId, role, newData);
+      
+      if (mounted) {
+        final cacheKey = '${siteId}_${role.toLowerCase()}_requests';
+        setState(() {
+          _siteDataCache[cacheKey] = newData;
+        });
+      }
+      print('✅ [SITE_VIEW] Requests data refreshed: $role');
+    } catch (e) {
+      print('⚠️ [SITE_VIEW] Background refresh failed for requests: $e');
+    }
+  }
+  
+  Future<void> _refreshPhotosDataInBackground(String siteId, String role) async {
+    try {
+      final provider = context.read<ConstructionProvider>();
+      await provider.loadAccountantPhotos(forceRefresh: true, siteId: siteId);
+      
+      final newData = List<Map<String, dynamic>>.from(provider.accountantPhotos);
+      await CacheService.saveSitePhotosData(siteId, role, newData);
+      
+      if (mounted) {
+        final cacheKey = '${siteId}_${role.toLowerCase()}_photos';
+        setState(() {
+          _siteDataCache[cacheKey] = newData;
+        });
+      }
+      print('✅ [SITE_VIEW] Photos data refreshed: $role');
+    } catch (e) {
+      print('⚠️ [SITE_VIEW] Background refresh failed for photos: $e');
     }
   }
 
   void _loadRoleSpecificData() {
     if (_selectedSite == null) return;
-    final provider = context.read<ConstructionProvider>();
-    final changeProvider = context.read<ChangeRequestProvider>();
+    
+    // Data already loaded from cache, just restart timers for new role
+    _startBackgroundRefresh(_selectedSite!, _selectedRole);
     _loadMismatchData();
-    switch (_selectedRole) {
-      case 'Supervisor':
-        provider.loadSupervisorHistory(siteId: _selectedSite);
-        changeProvider.loadMyChangeRequests();
-        break;
-      case 'Site Engineer':
-        // Load labour and material entries for Site Engineer
-        provider.loadSupervisorHistory(siteId: _selectedSite, forceRefresh: true);
-        provider.loadAccountantPhotos(forceRefresh: true, siteId: _selectedSite);
-        break;
-      case 'Architect':
-        provider.loadArchitectData(forceRefresh: true, siteId: _selectedSite);
-        break;
-    }
   }
 
   Future<void> _loadMismatchData() async {
@@ -229,7 +474,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
       onTap: () => _showPhotoDetail(photo),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.cleanWhite,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -248,7 +493,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: AppColors.lightSlate,
+                  color: Colors.white,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 ),
                 child: ClipRRect(
@@ -258,7 +503,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        color: AppColors.lightSlate,
+                        color: Colors.white,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -282,7 +527,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return Container(
-                        color: AppColors.lightSlate,
+                        color: Colors.white,
                         child: Center(
                           child: CircularProgressIndicator(
                             color: AppColors.deepNavy,
@@ -372,7 +617,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
             maxHeight: MediaQuery.of(context).size.height * 0.8,
           ),
           decoration: BoxDecoration(
-            color: AppColors.cleanWhite,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -418,7 +663,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           height: 200,
-                          color: AppColors.lightSlate,
+                          color: Colors.white,
                           child: const Center(
                             child: Text('Image not available'),
                           ),
@@ -503,7 +748,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
 
   Widget _buildSiteSelectionScreen() {
     return Scaffold(
-      backgroundColor: AppColors.lightSlate,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           'Select Site',
@@ -512,7 +757,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: AppColors.cleanWhite,
+        backgroundColor: const Color(0xFF1A1A2E),
         elevation: 0,
         actions: [
           IconButton(
@@ -542,7 +787,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.cleanWhite,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -607,7 +852,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.cleanWhite,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -716,7 +961,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
     final siteName = site['display_name'] ?? site['site_name'] ?? 'Site';
     
     return Scaffold(
-      backgroundColor: AppColors.lightSlate,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -738,7 +983,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
             ),
           ],
         ),
-        backgroundColor: AppColors.cleanWhite,
+        backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.deepNavy),
         leading: IconButton(
@@ -812,7 +1057,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(52),
           child: Container(
-            color: AppColors.cleanWhite,
+            color: Colors.white,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -830,10 +1075,10 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                         duration: const Duration(milliseconds: 150),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: selected ? AppColors.deepNavy : AppColors.lightSlate,
+                          color: selected ?AppColors.deepNavy: AppColors.lightSlate,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: selected ? AppColors.deepNavy : AppColors.deepNavy.withValues(alpha: 0.2),
+                            color: selected ?AppColors.deepNavy: AppColors.deepNavy.withValues(alpha: 0.2),
                           ),
                         ),
                         child: Text(
@@ -841,7 +1086,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                            color: selected ? Colors.white : AppColors.deepNavy,
+                            color: selected ?AppColors.deepNavy: AppColors.deepNavy,
                           ),
                         ),
                       ),
@@ -868,7 +1113,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
           children: [
             // Sub-filter chips: Labour | Materials | Requests | Photos
             Container(
-              color: AppColors.cleanWhite,
+              color: Colors.white,
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -883,10 +1128,10 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                           decoration: BoxDecoration(
-                            color: selected ? AppColors.statusCompleted : AppColors.lightSlate,
+                            color: selected ?const Color(0xFF1A1A2E): AppColors.lightSlate,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: selected ? AppColors.statusCompleted : AppColors.deepNavy.withValues(alpha: 0.2),
+                              color: selected ?AppColors.deepNavy: AppColors.deepNavy.withValues(alpha: 0.2),
                             ),
                           ),
                           child: Text(
@@ -894,7 +1139,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                              color: selected ? Colors.white : AppColors.deepNavy,
+                              color: selected ?AppColors.deepNavy: AppColors.deepNavy,
                             ),
                           ),
                         ),
@@ -997,7 +1242,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                   icon: const Icon(Icons.refresh),
                   label: const Text('Refresh Photos'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.statusCompleted,
+                    backgroundColor:const Color(0xFF1A1A2E),
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -1030,7 +1275,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
           children: [
             // Morning / Evening tabs
             Container(
-              color: AppColors.lightSlate,
+              color: Colors.white,
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               child: Row(
                 children: ['Morning', 'Evening'].map((time) {
@@ -1044,10 +1289,10 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: selected ? AppColors.statusCompleted : Colors.white,
+                            color: selected ?const Color(0xFF1A1A2E): Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: selected ? AppColors.statusCompleted : AppColors.deepNavy.withValues(alpha: 0.2),
+                              color: selected ?AppColors.deepNavy: AppColors.deepNavy.withValues(alpha: 0.2),
                               width: 1.5,
                             ),
                           ),
@@ -1057,7 +1302,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                               Icon(
                                 time == 'Morning' ? Icons.wb_sunny : Icons.nightlight_round,
                                 size: 18,
-                                color: selected ? Colors.white : AppColors.deepNavy,
+                                color: selected ?AppColors.deepNavy: AppColors.deepNavy,
                               ),
                               const SizedBox(width: 8),
                               Text(
@@ -1065,7 +1310,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                                  color: selected ? Colors.white : AppColors.deepNavy,
+                                  color: selected ?AppColors.deepNavy: AppColors.deepNavy,
                                 ),
                               ),
                             ],
@@ -1464,7 +1709,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
           children: [
             // Sub-filter chips: Photos | Labor | Materials | Documents
             Container(
-              color: AppColors.cleanWhite,
+              color: Colors.white,
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -1479,10 +1724,10 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                           decoration: BoxDecoration(
-                            color: selected ? AppColors.deepNavy : AppColors.lightSlate,
+                            color: selected ?AppColors.deepNavy: AppColors.lightSlate,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: selected ? AppColors.deepNavy : AppColors.deepNavy.withValues(alpha: 0.2),
+                              color: selected ?AppColors.deepNavy: AppColors.deepNavy.withValues(alpha: 0.2),
                             ),
                           ),
                           child: Text(
@@ -1490,7 +1735,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                              color: selected ? Colors.white : AppColors.deepNavy,
+                              color: selected ?AppColors.deepNavy: AppColors.deepNavy,
                             ),
                           ),
                         ),
@@ -1581,7 +1826,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('Refresh Photos'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.deepNavy,
+                backgroundColor:AppColors.deepNavy,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -1696,7 +1941,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('Refresh Materials'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.deepNavy,
+                backgroundColor:AppColors.deepNavy,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -1786,7 +2031,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                   icon: const Icon(Icons.refresh),
                   label: const Text('Refresh Data'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.deepNavy,
+                    backgroundColor:AppColors.deepNavy,
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -1844,7 +2089,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -1982,7 +2227,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: priorityColor.withValues(alpha: 0.3),
@@ -2233,7 +2478,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
             requestMessage,
             style: const TextStyle(
               fontSize: 14,
-              color: AppColors.textPrimary,
+              color: Colors.black,
             ),
           ),
           if (request['created_at'] != null) ...[
@@ -2633,7 +2878,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.lightSlate,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: hasPendingRequest ? AppColors.safetyOrange.withValues(alpha: 0.3) : AppColors.borderColor,
@@ -2788,7 +3033,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
               value ?? 'N/A',
               style: const TextStyle(
                 fontSize: 13,
-                color: AppColors.textPrimary,
+                color: Colors.black,
               ),
             ),
           ),
@@ -3176,7 +3421,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.deepNavy,
+                  backgroundColor:AppColors.deepNavy,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
@@ -3227,7 +3472,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: mismatchColor.withValues(alpha: 0.3), width: 2),
         boxShadow: [
@@ -3451,7 +3696,7 @@ class _AccountantDocumentsViewState extends State<_AccountantDocumentsView> with
   }
 
   Future<void> _openDocument(String fileUrl) async {
-    final url = 'https://essentials-construction-project.onrender.com$fileUrl';
+    final url = 'http://localhost:8000$fileUrl';
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else {
@@ -3496,7 +3741,7 @@ class _AccountantDocumentsViewState extends State<_AccountantDocumentsView> with
     return Column(
       children: [
         Container(
-          color: AppColors.cleanWhite,
+          color: Colors.white,
           child: TabBar(
             controller: _docTabController,
             labelColor: AppColors.deepNavy,
@@ -3553,7 +3798,7 @@ class _AccountantDocumentsViewState extends State<_AccountantDocumentsView> with
               icon: Icon(Icons.refresh),
               label: Text('Refresh'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.deepNavy,
+                backgroundColor:AppColors.deepNavy,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -3584,7 +3829,7 @@ class _AccountantDocumentsViewState extends State<_AccountantDocumentsView> with
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [AppColors.cardShadow],
       ),

@@ -50,7 +50,7 @@ class AppTheme {
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.safetyOrange,
+        backgroundColor: AppColors.deepNavy,
         foregroundColor: Colors.white,
         elevation: 4,
       ),

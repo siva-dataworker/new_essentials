@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import '../services/auth_service.dart';
 import '../services/construction_service.dart';
 import '../services/notification_service.dart';
-import '../utils/app_colors.dart';
+import '../services/cache_service.dart';
+import '../utils/smooth_animations.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'login_screen.dart';
 import 'admin_labour_rates_screen.dart';
 import 'admin_budget_management_screen.dart';
 import 'admin_client_complaints_screen.dart';
+import 'admin_manage_users_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -22,12 +25,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
   final _authService = AuthService();
   final _notificationService = NotificationService();
   int _selectedIndex = 0;
-
-  // User Management State
-  bool _showNewUsers = true;
-  List<Map<String, dynamic>> _pendingUsers = [];
-  List<Map<String, dynamic>> _allUsers = [];
-  bool _isLoading = false;
+  
+  // Background refresh timers
+  Timer? _notificationsRefreshTimer;
+  Timer? _sitesRefreshTimer;
 
   // Profile state
   Map<String, dynamic>? _currentAdminUser;
@@ -35,18 +36,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
   String _profilePhone = '';
 
   // Sites tab state
-  static const String _sitesBaseUrl = 'https://essentials-construction-project.onrender.com/api';
+  static const String _sitesBaseUrl = 'http://localhost:8000/api';
   List<String> _areas = [];
   List<String> _streets = [];
   List<Map<String, dynamic>> _sites = [];
   String? _selectedArea;
   String? _selectedStreet;
   bool _sitesLoading = false;
+  
+  // Cache for streets and sites
+  final Map<String, List<String>> _streetsCache = {};
+  final Map<String, List<Map<String, dynamic>>> _sitesCache = {};
 
   // Notifications state
   List<Map<String, dynamic>> _notifications = [];
   bool _notificationsLoading = false;
   int _unreadCount = 0;
+  bool _notificationsLoaded = false; // Cache flag
 
   @override
   void initState() {
@@ -54,6 +60,41 @@ class _AdminDashboardState extends State<AdminDashboard> {
     _loadAdminUser();
     _loadData();
     _loadAreas();
+    _startBackgroundRefresh();
+  }
+  
+  @override
+  void dispose() {
+    _stopBackgroundRefresh();
+    super.dispose();
+  }
+  
+  void _startBackgroundRefresh() {
+    // Refresh notifications every 30 seconds
+    _notificationsRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (timer) {
+        if (_selectedIndex == 1 && mounted) {
+          _loadNotifications(forceRefresh: true);
+        }
+      },
+    );
+    
+    // Refresh sites data every 60 seconds
+    _sitesRefreshTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (timer) {
+        if (_selectedIndex == 0 && mounted) {
+          // Silently refresh areas
+          _loadAreas();
+        }
+      },
+    );
+  }
+  
+  void _stopBackgroundRefresh() {
+    _notificationsRefreshTimer?.cancel();
+    _sitesRefreshTimer?.cancel();
   }
 
   Future<void> _loadAdminUser() async {
@@ -68,77 +109,34 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
   
   void _loadData() {
-    if (_selectedIndex == 0) {
-      // Users tab
-      if (_showNewUsers) {
-        _loadPendingUsers();
-      } else {
-        _loadAllUsers();
-      }
-    } else if (_selectedIndex == 2) {
+    if (_selectedIndex == 1) {
       // Notifications tab
       _loadNotifications();
     }
     // Add other tab data loading here
   }
 
-  Future<void> _loadPendingUsers() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final token = await _authService.getToken();
-      final response = await http.get(
-        Uri.parse('https://essentials-construction-project.onrender.com/api/admin/pending-users/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${token ?? ''}',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+  Future<void> _loadNotifications({bool forceRefresh = false}) async {
+    // Load from persistent cache first (instant display)
+    if (!forceRefresh && !_notificationsLoaded) {
+      final cached = await CacheService.loadNotifications();
+      if (cached != null && mounted) {
         setState(() {
-          _pendingUsers = List<Map<String, dynamic>>.from(data['users']);
+          _notifications = cached['notifications'];
+          _unreadCount = cached['unread_count'];
+          _notificationsLoaded = true;
         });
+        print('✅ [NOTIFICATIONS] Loaded ${_notifications.length} from persistent cache');
       }
-    } catch (e) {
-      print('Error loading pending users: $e');
-    } finally {
-      setState(() => _isLoading = false);
     }
-  }
-
-  Future<void> _loadAllUsers() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final token = await _authService.getToken();
-      final response = await http.get(
-        Uri.parse('https://essentials-construction-project.onrender.com/api/admin/all-users/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${token ?? ''}',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _allUsers = List<Map<String, dynamic>>.from(data['users']);
-        });
-      }
-    } catch (e) {
-      print('Error loading all users: $e');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _loadNotifications() async {
+    
+    // Skip API call if already loaded and not forcing refresh
+    if (_notificationsLoaded && !forceRefresh) return;
+    
     setState(() => _notificationsLoading = true);
 
     try {
-      print('🔍 [NOTIFICATIONS] Loading notifications...');
+      print('🔍 [NOTIFICATIONS] Loading notifications from API...');
       final result = await _notificationService.getNotifications();
       
       print('🔍 [NOTIFICATIONS] Result: ${result['success']}');
@@ -146,12 +144,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
       print('🔍 [NOTIFICATIONS] Unread count: ${result['unread_count']}');
       
       if (result['success'] == true && mounted) {
+        final notifications = List<Map<String, dynamic>>.from(result['notifications'] ?? []);
+        final unreadCount = result['unread_count'] ?? 0;
+        
+        // Save to persistent cache
+        await CacheService.saveNotifications(notifications, unreadCount);
+        
         setState(() {
-          _notifications = List<Map<String, dynamic>>.from(result['notifications'] ?? []);
-          _unreadCount = result['unread_count'] ?? 0;
+          _notifications = notifications;
+          _unreadCount = unreadCount;
+          _notificationsLoaded = true;
         });
         
-        print('✅ [NOTIFICATIONS] Loaded ${_notifications.length} notifications');
+        print('✅ [NOTIFICATIONS] Loaded ${_notifications.length} notifications and saved to cache');
       } else {
         print('❌ [NOTIFICATIONS] Error: ${result['error']}');
         if (mounted) {
@@ -185,7 +190,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       final result = await _notificationService.markAsRead(notificationId);
       
       if (result['success'] == true) {
-        _loadNotifications(); // Refresh list
+        _loadNotifications(forceRefresh: true); // Refresh list
       }
     } catch (e) {
       print('Error marking notification as read: $e');
@@ -203,74 +208,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             backgroundColor: Colors.green,
           ),
         );
-        _loadNotifications(); // Refresh list
+        _loadNotifications(forceRefresh: true); // Refresh list
       }
     } catch (e) {
       print('Error marking all notifications as read: $e');
-    }
-  }
-
-  Future<void> _approveUser(String userId, String username) async {
-    try {
-      final token = await _authService.getToken();
-      final response = await http.post(
-        Uri.parse('https://essentials-construction-project.onrender.com/api/admin/approve-user/$userId/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${token ?? ''}',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('User $username approved successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _loadPendingUsers(); // Refresh list
-      } else {
-        throw Exception('Failed to approve user');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error approving user: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Future<void> _rejectUser(String userId, String username) async {
-    try {
-      final token = await _authService.getToken();
-      final response = await http.post(
-        Uri.parse('https://essentials-construction-project.onrender.com/api/admin/reject-user/$userId/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${token ?? ''}',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('User $username rejected'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        _loadPendingUsers(); // Refresh list
-      } else {
-        throw Exception('Failed to reject user');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error rejecting user: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 
@@ -282,7 +223,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Sign Out',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+          style: TextStyle(fontWeight: FontWeight.bold, color: const Color(0xFF1A1A2E)),
         ),
         content: const Text('Are you sure you want to sign out?'),
         actions: [
@@ -290,13 +231,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: const Color(0xFF6B7280)),
             ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.statusOverdue,
+              backgroundColor: const Color(0xFFF44336),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text(
@@ -322,58 +263,29 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightSlate,
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: Text(
           _getAppBarTitle(),
           style: const TextStyle(
-            color: AppColors.deepNavy,
+            color: const Color(0xFF1A1A2E),
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: AppColors.cleanWhite,
+        backgroundColor: Colors.white,
         elevation: 0,
         actions: [
           // Notification badge
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: AppColors.deepNavy),
-                onPressed: () {
-                  setState(() => _selectedIndex = 2);
-                },
-              ),
-              if (_pendingUsers.isNotEmpty)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.safetyOrange,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      '${_pendingUsers.length}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined, color: const Color(0xFF1A1A2E)),
+            onPressed: () {
+              setState(() => _selectedIndex = 1);
+            },
           ),
           // Logout button
           IconButton(
-            icon: const Icon(Icons.logout, color: AppColors.deepNavy),
+            icon: const Icon(Icons.logout, color: const Color(0xFF1A1A2E)),
             onPressed: _logout,
             tooltip: 'Sign Out',
           ),
@@ -386,7 +298,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _buildBottomNav() {
     const items = [
-      _NavItem(Icons.people_outline, Icons.people, 'Users'),
       _NavItem(Icons.location_city_outlined, Icons.location_city, 'Sites'),
       _NavItem(Icons.notifications_outlined, Icons.notifications, 'Alerts'),
       _NavItem(Icons.report_problem_outlined, Icons.report_problem, 'Issues'),
@@ -395,10 +306,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: AppColors.deepNavy.withValues(alpha: 0.10),
+            color: const Color(0xFF1A1A2E).withValues(alpha: 0.10),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -426,12 +337,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    gradient: selected ? AppColors.orangeGradient : null,
+                    gradient: selected ? LinearGradient(colors: [Color(0xFF1A1A2E), Color(0xFF16213E)], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
                     borderRadius: BorderRadius.circular(30),
                     boxShadow: selected
                         ? [
                             BoxShadow(
-                              color: AppColors.safetyOrange.withValues(alpha: 0.35),
+                              color: const Color(0xFF1A1A2E).withValues(alpha: 0.35),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             )
@@ -442,28 +353,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Badge dot for Alerts tab
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Icon(
-                            selected ? item.activeIcon : item.icon,
-                            color: selected ? Colors.white : AppColors.textSecondary,
-                            size: 22,
-                          ),
-                          if (i == 2 && _pendingUsers.isNotEmpty)
-                            Positioned(
-                              right: -4,
-                              top: -4,
-                              child: Container(
-                                width: 9,
-                                height: 9,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.statusOverdue,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                        ],
+                      Icon(
+                        selected ? item.activeIcon : item.icon,
+                        color: selected ? Colors.white : const Color(0xFF6B7280),
+                        size: 22,
                       ),
                       if (selected) ...[
                         const SizedBox(width: 6),
@@ -490,14 +383,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
   String _getAppBarTitle() {
     switch (_selectedIndex) {
       case 0:
-        return 'User Management';
-      case 1:
         return 'Site Management';
-      case 2:
+      case 1:
         return 'Notifications';
-      case 3:
+      case 2:
         return 'Client Issues';
-      case 4:
+      case 3:
         return 'Profile';
       default:
         return 'Admin Dashboard';
@@ -505,235 +396,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildBody() {
-    switch (_selectedIndex) {
-      case 0:
-        return _buildUsersTab();
-      case 1:
-        return _buildSitesTab();
-      case 2:
-        return _buildNotificationsTab();
-      case 3:
-        return _buildClientComplaintsTab();
-      case 4:
-        return _buildProfileTab();
-      default:
-        return _buildUsersTab();
-    }
-  }
-
-  Widget _buildClientComplaintsTab() {
-    return const AdminClientComplaintsScreen();
-  }
-
-  Widget _buildUsersTab() {
-    return Column(
+    return IndexedStack(
+      index: _selectedIndex,
       children: [
-        // Instagram-style toggle buttons
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: AppColors.cleanWhite,
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x0F000000),
-                blurRadius: 4,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildPillButton(
-                  'New Users',
-                  _showNewUsers,
-                  () {
-                    setState(() {
-                      _showNewUsers = true;
-                      _loadPendingUsers();
-                    });
-                  },
-                  badge: _pendingUsers.length,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildPillButton(
-                  'All Users',
-                  !_showNewUsers,
-                  () {
-                    setState(() {
-                      _showNewUsers = false;
-                      _loadAllUsers();
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Content
-        Expanded(
-          child: _isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.safetyOrange,
-                  ),
-                )
-              : _showNewUsers
-                  ? _buildNewUsersList()
-                  : _buildExistingUsersList(),
-        ),
+        _buildSitesTab(),
+        _buildNotificationsTab(),
+        const AdminClientComplaintsScreen(),
+        _buildProfileTab(),
       ],
-    );
-  }
-
-  Widget _buildPillButton(String label, bool isSelected, VoidCallback onTap, {int badge = 0}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(25),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          gradient: isSelected ? AppColors.orangeGradient : null,
-          color: isSelected ? null : AppColors.lightSlate,
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.safetyOrange.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
-              ),
-            ),
-            if (badge > 0) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.white : AppColors.safetyOrange,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '$badge',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: isSelected ? AppColors.safetyOrange : Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNewUsersList() {
-    if (_pendingUsers.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                gradient: AppColors.orangeGradient,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle_outline,
-                size: 60,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'All Caught Up!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.deepNavy,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'No pending user approvals',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadPendingUsers,
-      color: AppColors.safetyOrange,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _pendingUsers.length,
-        itemBuilder: (context, index) {
-          final user = _pendingUsers[index];
-          return _buildPendingUserCard(user);
-        },
-      ),
-    );
-  }
-
-  Widget _buildExistingUsersList() {
-    if (_allUsers.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.people_outline,
-              size: 80,
-              color: AppColors.textSecondary.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No users found',
-              style: TextStyle(
-                fontSize: 18,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadAllUsers,
-      color: AppColors.safetyOrange,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _allUsers.length,
-        itemBuilder: (context, index) {
-          final user = _allUsers[index];
-          return _buildExistingUserCard(user);
-        },
-      ),
     );
   }
 
@@ -741,28 +411,48 @@ class _AdminDashboardState extends State<AdminDashboard> {
     setState(() => _sitesLoading = true);
     try {
       final token = await _authService.getToken();
+      print('🔍 Loading areas from: $_sitesBaseUrl/construction/areas/');
       final res = await http.get(
         Uri.parse('$_sitesBaseUrl/construction/areas/'),
         headers: {'Authorization': 'Bearer ${token ?? ''}'},
       );
+      print('🔍 Areas response status: ${res.statusCode}');
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
+        print('🔍 Areas data: $data');
         if (mounted) {
           setState(() {
             _areas = List<String>.from(data['areas'] ?? []);
           });
         }
+        print('🔍 Loaded ${_areas.length} areas');
+      } else {
+        print('❌ Failed to load areas: ${res.statusCode} - ${res.body}');
       }
-    } catch (_) {}
+    } catch (e) {
+      print('❌ Error loading areas: $e');
+    }
     if (mounted) setState(() => _sitesLoading = false);
   }
 
   Future<void> _loadStreets(String area) async {
+    // Always clear sites and selected street when area changes
+    setState(() {
+      _sites = [];
+      _selectedStreet = null;
+    });
+    
+    // Check cache first
+    if (_streetsCache.containsKey(area)) {
+      setState(() {
+        _streets = _streetsCache[area]!;
+      });
+      return;
+    }
+    
     setState(() {
       _sitesLoading = true;
       _streets = [];
-      _sites = [];
-      _selectedStreet = null;
     });
     try {
       final token = await _authService.getToken();
@@ -772,17 +462,33 @@ class _AdminDashboardState extends State<AdminDashboard> {
       );
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
+        final streets = List<String>.from(data['streets'] ?? []);
+        // Cache the streets
+        _streetsCache[area] = streets;
         if (mounted) {
           setState(() {
-            _streets = List<String>.from(data['streets'] ?? []);
+            _streets = streets;
           });
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      print('❌ Error loading streets: $e');
+    }
     if (mounted) setState(() => _sitesLoading = false);
   }
 
   Future<void> _loadSites(String area, String street) async {
+    // Create cache key
+    final cacheKey = '$area|$street';
+    
+    // Check cache first
+    if (_sitesCache.containsKey(cacheKey)) {
+      setState(() {
+        _sites = _sitesCache[cacheKey]!;
+      });
+      return;
+    }
+    
     setState(() {
       _sitesLoading = true;
       _sites = [];
@@ -796,13 +502,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
       );
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
+        final sites = List<Map<String, dynamic>>.from(data['sites'] ?? []);
+        // Cache the sites
+        _sitesCache[cacheKey] = sites;
         if (mounted) {
           setState(() {
-            _sites = List<Map<String, dynamic>>.from(data['sites'] ?? []);
+            _sites = sites;
           });
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      print('❌ Error loading sites: $e');
+    }
     if (mounted) setState(() => _sitesLoading = false);
   }
 
@@ -811,13 +522,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
       children: [
         // Global Labour Rates card
         Container(
-          color: AppColors.cleanWhite,
+          color: Colors.white,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: GestureDetector(
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (_) => const AdminLabourRatesScreen()),
+              SmoothPageRoute(
+                  page: const AdminLabourRatesScreen()),
             ),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -825,8 +536,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.safetyOrange,
-                    AppColors.safetyOrange.withValues(alpha: 0.8),
+                    const Color(0xFF1A1A2E),
+                    const Color(0xFF1A1A2E).withValues(alpha: 0.8),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -869,7 +580,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         // Header
         Container(
-          color: AppColors.cleanWhite,
+          color: Colors.white,
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -878,7 +589,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.deepNavy)),
+                      color: const Color(0xFF1A1A2E))),
               const SizedBox(height: 12),
               // Area dropdown
               DropdownButtonFormField<String>(
@@ -886,7 +597,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 decoration: InputDecoration(
                   labelText: 'Select Area',
                   prefixIcon: const Icon(Icons.location_city,
-                      color: AppColors.deepNavy, size: 20),
+                      color: const Color(0xFF1A1A2E), size: 20),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10)),
                   contentPadding:
@@ -912,7 +623,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   decoration: InputDecoration(
                     labelText: 'Select Street',
                     prefixIcon: const Icon(Icons.streetview,
-                        color: AppColors.deepNavy, size: 20),
+                        color: const Color(0xFF1A1A2E), size: 20),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10)),
                     contentPadding: const EdgeInsets.symmetric(
@@ -941,7 +652,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: _sitesLoading
               ? const Center(
                   child: CircularProgressIndicator(
-                      color: AppColors.safetyOrange))
+                      color: const Color(0xFF1A1A2E)))
               : _selectedArea == null
                   ? Center(
                       child: Column(
@@ -950,11 +661,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           Icon(Icons.location_on_outlined,
                               size: 60,
                               color:
-                                  AppColors.textSecondary.withValues(alpha: 0.4)),
+                                  const Color(0xFF6B7280).withValues(alpha: 0.4)),
                           const SizedBox(height: 12),
                           Text('Select an area to view sites',
                               style: TextStyle(
-                                  color: AppColors.textSecondary,
+                                  color: const Color(0xFF6B7280),
                                   fontSize: 14)),
                         ],
                       ),
@@ -963,17 +674,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ? Center(
                           child: Text('Select a street to view sites',
                               style: TextStyle(
-                                  color: AppColors.textSecondary,
+                                  color: const Color(0xFF6B7280),
                                   fontSize: 14)),
                         )
                       : _sites.isEmpty
                           ? Center(
                               child: Text('No sites found',
                                   style: TextStyle(
-                                      color: AppColors.textSecondary,
+                                      color: const Color(0xFF6B7280),
                                       fontSize: 14)),
                             )
                           : ListView.builder(
+                              physics: const SmoothScrollPhysics(),
                               padding: const EdgeInsets.all(14),
                               itemCount: _sites.length,
                               itemBuilder: (context, i) {
@@ -982,8 +694,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     site['id']?.toString() ?? '';
                                 final siteName =
                                     site['display_name'] ?? site['site_name'] ?? 'Site ${i + 1}';
-                                return _buildSiteManagementCard(
-                                    siteId, siteName);
+                                return AnimatedListItem(
+                                  index: i,
+                                  child: _buildSiteManagementCard(
+                                      siteId, siteName),
+                                );
                               },
                             ),
         ),
@@ -995,17 +710,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: AppColors.deepNavy.withValues(alpha: 0.06),
+            color: const Color(0xFF1A1A2E).withValues(alpha: 0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
         border: Border.all(
-            color: AppColors.deepNavy.withValues(alpha: 0.08)),
+            color: const Color(0xFF1A1A2E).withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1015,7 +730,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             padding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.deepNavy.withValues(alpha: 0.04),
+              color: const Color(0xFF1A1A2E).withValues(alpha: 0.04),
               borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(14)),
             ),
@@ -1024,11 +739,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: AppColors.safetyOrange.withValues(alpha: 0.12),
+                    color: const Color(0xFF1A1A2E).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.apartment,
-                      color: AppColors.safetyOrange, size: 18),
+                      color: const Color(0xFF1A1A2E), size: 18),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -1037,7 +752,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.deepNavy),
+                        color: const Color(0xFF1A1A2E)),
                   ),
                 ),
               ],
@@ -1049,11 +764,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
             child: _buildSiteActionButton(
               icon: Icons.account_balance_wallet_outlined,
               label: 'Budget Management',
-              color: AppColors.deepNavy,
+              color: const Color(0xFF1A1A2E),
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => AdminBudgetManagementScreen(
+                SmoothPageRoute(
+                  page: AdminBudgetManagementScreen(
                     siteId: siteId,
                     siteName: siteName,
                   ),
@@ -1099,105 +814,114 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildNotificationsTab() {
-    if (_notificationsLoading) {
-      return Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
-    }
-
-    if (_notifications.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                gradient: AppColors.orangeGradient,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.notifications_outlined,
-                size: 50,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Work Notifications',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.deepNavy,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Notifications for work not done\nwill appear here',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _loadNotifications,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Refresh Notifications'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.safetyOrange,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        // Header with actions
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.cleanWhite,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              const Text(
-                'Notifications',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.deepNavy,
-                ),
-              ),
-              if (_unreadCount > 0) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(12),
+    return RefreshIndicator(
+      onRefresh: () => _loadNotifications(forceRefresh: true),
+      color: const Color(0xFF1A1A2E),
+      child: _notificationsLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF1A1A2E)),
+            )
+          : _notifications.isEmpty
+              ? SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: MediaQuery.of(context).size.height - 200,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.notifications_outlined,
+                              size: 50,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Work Notifications',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A1A2E),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Notifications for work not done\nwill appear here',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Color(0xFF6B7280),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () => _loadNotifications(forceRefresh: true),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Refresh Notifications'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1A1A2E),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: Text(
-                    '$_unreadCount',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                )
+              : Column(
+                  children: [
+                    // Header with actions
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Text(
+                            'Notifications',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A1A2E),
+                            ),
+                          ),
+                          if (_unreadCount > 0) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '$_unreadCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -1205,7 +929,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.refresh),
-                onPressed: _loadNotifications,
+                onPressed: () => _loadNotifications(forceRefresh: true),
                 tooltip: 'Refresh',
               ),
               if (_unreadCount > 0)
@@ -1214,33 +938,34 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   icon: const Icon(Icons.done_all, size: 18),
                   label: const Text('Mark all read'),
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
+                    foregroundColor: const Color(0xFF1A1A2E),
                   ),
                 ),
             ],
           ),
         ),
-        // Notifications list
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _loadNotifications,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _notifications.length,
-              itemBuilder: (context, index) {
-                final notification = _notifications[index];
-                return _buildNotificationCard(notification);
-              },
-            ),
-          ),
-        ),
-      ],
+                    // Notifications list
+                    Expanded(
+                      child: ListView.builder(
+                        physics: const SmoothScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _notifications.length,
+                        itemBuilder: (context, index) {
+                          final notification = _notifications[index];
+                          return AnimatedListItem(
+                            index: index,
+                            child: _buildNotificationCard(notification),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
     );
   }
 
   Widget _buildNotificationCard(Map<String, dynamic> notification) {
     final isRead = notification['is_read'] == true;
-    final notificationType = notification['notification_type'] ?? 'late_entry';
     final message = notification['message'] ?? 'No message';
     final createdAt = notification['created_at'] ?? '';
     final siteName = notification['site_name'] ?? 'Unknown Site';
@@ -1303,7 +1028,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: isRead ? 0 : 2,
-      color: isRead ? AppColors.lightSlate : Colors.white,
+      color: isRead ? const Color(0xFFF8F9FA) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
@@ -1370,7 +1095,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           timeAgo,
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textSecondary,
+                            color: const Color(0xFF6B7280),
                           ),
                         ),
                       ],
@@ -1415,7 +1140,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   Icon(
                     Icons.location_on,
                     size: 16,
-                    color: AppColors.textSecondary,
+                    color: const Color(0xFF6B7280),
                   ),
                   const SizedBox(width: 4),
                   Expanded(
@@ -1423,7 +1148,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       siteName,
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: const Color(0xFF6B7280),
                       ),
                     ),
                   ),
@@ -1435,7 +1160,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   Icon(
                     Icons.person,
                     size: 16,
-                    color: AppColors.textSecondary,
+                    color: const Color(0xFF6B7280),
                   ),
                   const SizedBox(width: 4),
                   Expanded(
@@ -1443,7 +1168,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       supervisorName,
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: const Color(0xFF6B7280),
                       ),
                     ),
                   ),
@@ -1456,14 +1181,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     Icon(
                       Icons.access_time,
                       size: 16,
-                      color: AppColors.textSecondary,
+                      color: const Color(0xFF6B7280),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'Submitted at: $actualTime',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: const Color(0xFF6B7280),
                       ),
                     ),
                   ],
@@ -1489,11 +1214,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.cleanWhite,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.deepNavy.withValues(alpha: 0.07),
+                  color: const Color(0xFF1A1A2E).withValues(alpha: 0.07),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -1505,7 +1230,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    gradient: AppColors.orangeGradient,
+                    gradient: LinearGradient(colors: [Color(0xFF1A1A2E), Color(0xFF16213E)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -1527,14 +1252,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
+                    color: const Color(0xFF1A1A2E),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    gradient: AppColors.orangeGradient,
+                    gradient: LinearGradient(colors: [Color(0xFF1A1A2E), Color(0xFF16213E)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
@@ -1562,7 +1287,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           _buildSectionHeader('Account'),
           _buildProfileActionTile(
             icon: Icons.edit_outlined,
-            color: AppColors.deepNavy,
+            color: const Color(0xFF1A1A2E),
             title: 'Edit Profile',
             subtitle: 'Update name and phone',
             onTap: _showEditProfileDialog,
@@ -1573,6 +1298,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
           // ── Management ──
           _buildSectionHeader('Management'),
           _buildProfileActionTile(
+            icon: Icons.people_outline,
+            color: const Color(0xFF4CAF50),
+            title: 'Manage Users',
+            subtitle: 'View all users and pending requests',
+            onTap: _showManageUsersScreen,
+          ),
+          _buildProfileActionTile(
+            icon: Icons.add_location_alt_outlined,
+            color: const Color(0xFF1A1A2E),
+            title: 'Create Site',
+            subtitle: 'Add new area, street, and site',
+            onTap: _showCreateSiteDialog,
+          ),
+          _buildProfileActionTile(
             icon: Icons.person_add_outlined,
             color: const Color(0xFF2196F3),
             title: 'Create User',
@@ -1581,7 +1320,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
           _buildProfileActionTile(
             icon: Icons.admin_panel_settings_outlined,
-            color: AppColors.safetyOrange,
+            color: const Color(0xFF1A1A2E),
             title: 'Create Admin',
             subtitle: 'Add another admin account',
             onTap: _showCreateAdminDialog,
@@ -1605,7 +1344,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               label: const Text('Sign Out',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.statusOverdue,
+                backgroundColor: const Color(0xFFF44336),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -1629,7 +1368,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: AppColors.textSecondary,
+            color: const Color(0xFF6B7280),
             letterSpacing: 0.8,
           ),
         ),
@@ -1641,10 +1380,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, size: 16, color: AppColors.textSecondary),
+        Icon(icon, size: 16, color: const Color(0xFF6B7280)),
         const SizedBox(width: 6),
         Text(value,
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+            style: TextStyle(fontSize: 14, color: const Color(0xFF6B7280))),
       ],
     );
   }
@@ -1662,11 +1401,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.cleanWhite,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: AppColors.deepNavy.withValues(alpha: 0.05),
+              color: const Color(0xFF1A1A2E).withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -1695,12 +1434,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   const SizedBox(height: 2),
                   Text(subtitle,
                       style: TextStyle(
-                          fontSize: 12, color: AppColors.textSecondary)),
+                          fontSize: 12, color: const Color(0xFF6B7280))),
                 ],
               ),
             ),
             Icon(Icons.arrow_forward_ios,
-                color: AppColors.textSecondary, size: 16),
+                color: const Color(0xFF6B7280), size: 16),
           ],
         ),
       ),
@@ -1723,7 +1462,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Edit Profile',
               style: TextStyle(
-                  color: AppColors.deepNavy, fontWeight: FontWeight.bold)),
+                  color: const Color(0xFF1A1A2E), fontWeight: FontWeight.bold)),
           content: Form(
             key: formKey,
             child: Column(
@@ -1734,13 +1473,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   decoration: InputDecoration(
                     labelText: 'Full Name',
                     prefixIcon: const Icon(Icons.person_outline,
-                        color: AppColors.deepNavy),
+                        color: const Color(0xFF1A1A2E)),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                          color: AppColors.deepNavy, width: 2),
+                          color: const Color(0xFF1A1A2E), width: 2),
                     ),
                   ),
                   validator: (v) => (v == null || v.trim().isEmpty)
@@ -1757,13 +1496,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     labelText: 'Phone Number',
                     counterText: '',
                     prefixIcon: const Icon(Icons.phone_outlined,
-                        color: AppColors.deepNavy),
+                        color: const Color(0xFF1A1A2E)),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                          color: AppColors.deepNavy, width: 2),
+                          color: const Color(0xFF1A1A2E), width: 2),
                     ),
                   ),
                   validator: (v) {
@@ -1781,11 +1520,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
             TextButton(
               onPressed: isSaving ? null : () => Navigator.pop(ctx),
               child: Text('Cancel',
-                  style: TextStyle(color: AppColors.textSecondary)),
+                  style: TextStyle(color: const Color(0xFF6B7280))),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.deepNavy,
+                backgroundColor: const Color(0xFF1A1A2E),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
@@ -1814,7 +1553,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             ? 'Profile updated!'
                             : result['error'] ?? 'Update failed'),
                         backgroundColor: result['success'] == true
-                            ? AppColors.statusCompleted
+                            ? const Color(0xFF4CAF50)
                             : Colors.red,
                       ));
                     },
@@ -1832,6 +1571,141 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
     nameCtrl.dispose();
     phoneCtrl.dispose();
+  }
+
+  // ── Manage Users ──────────────────────────────────────────
+
+  void _showManageUsersScreen() {
+    Navigator.push(
+      context,
+      SmoothPageRoute(
+        page: const AdminManageUsersScreen(),
+      ),
+    );
+  }
+
+  // ── Create Site ───────────────────────────────────────────
+
+  Future<void> _showCreateSiteDialog() async {
+    final areaCtrl = TextEditingController();
+    final streetCtrl = TextEditingController();
+    final siteNameCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool isSaving = false;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDS) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Create Site',
+              style: TextStyle(
+                  color: Color(0xFF1A1A2E), fontWeight: FontWeight.bold)),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _dialogField(areaCtrl, 'Area', Icons.location_city,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Required'
+                            : null),
+                    const SizedBox(height: 12),
+                    _dialogField(streetCtrl, 'Street', Icons.streetview,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Required'
+                            : null),
+                    const SizedBox(height: 12),
+                    _dialogField(siteNameCtrl, 'Site Name', Icons.apartment,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Required'
+                            : null),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSaving ? null : () => Navigator.pop(ctx),
+              child: Text('Cancel',
+                  style: TextStyle(color: const Color(0xFF6B7280))),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1A1A2E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: isSaving
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setDS(() => isSaving = true);
+                      
+                      try {
+                        final token = await _authService.getToken();
+                        final response = await http.post(
+                          Uri.parse('$_sitesBaseUrl/construction/sites/create/'),
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ${token ?? ''}',
+                          },
+                          body: json.encode({
+                            'area': areaCtrl.text.trim(),
+                            'street': streetCtrl.text.trim(),
+                            'site_name': siteNameCtrl.text.trim(),
+                          }),
+                        );
+
+                        if (!ctx.mounted) return;
+                        Navigator.pop(ctx);
+
+                        if (response.statusCode == 201) {
+                          // Clear sites cache to force refresh
+                          await CacheService.clearSites();
+                          _loadAreas(); // Refresh areas
+                          
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Site created successfully!'),
+                              backgroundColor: Color(0xFF4CAF50),
+                            ),
+                          );
+                        } else {
+                          final error = json.decode(response.body);
+                          throw Exception(error['error'] ?? 'Failed to create site');
+                        }
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+              child: isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Text('Create'),
+            ),
+          ],
+        ),
+      ),
+    );
+    areaCtrl.dispose();
+    streetCtrl.dispose();
+    siteNameCtrl.dispose();
   }
 
   // ── Create User ───────────────────────────────────────────
@@ -2103,7 +1977,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 onPressed: isSaving ? null : () => Navigator.pop(ctx),
                 child: Text('Cancel',
                     style:
-                        TextStyle(color: AppColors.textSecondary)),
+                        TextStyle(color: const Color(0xFF6B7280))),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -2171,10 +2045,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               content: Text(success ? '✅ $message' : '❌ $message'),
                               backgroundColor: success
-                                  ? AppColors.statusCompleted
+                                  ? const Color(0xFF4CAF50)
                                   : Colors.red,
                             ));
-                            if (success) _loadAllUsers();
                           }
                         } catch (e) {
                           if (ctx.mounted) Navigator.pop(ctx);
@@ -2225,7 +2098,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               borderRadius: BorderRadius.circular(16)),
           title: const Text('Create Admin',
               style: TextStyle(
-                  color: AppColors.safetyOrange,
+                  color: const Color(0xFF1A1A2E),
                   fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
             child: Form(
@@ -2273,11 +2146,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
             TextButton(
               onPressed: isSaving ? null : () => Navigator.pop(ctx),
               child: Text('Cancel',
-                  style: TextStyle(color: AppColors.textSecondary)),
+                  style: TextStyle(color: const Color(0xFF6B7280))),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.safetyOrange,
+                backgroundColor: const Color(0xFF1A1A2E),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
@@ -2312,7 +2185,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               ? data['message'] ?? 'Admin created!'
                               : data['error'] ?? 'Failed'),
                           backgroundColor: res.statusCode == 201
-                              ? AppColors.statusCompleted
+                              ? const Color(0xFF4CAF50)
                               : Colors.red,
                         ));
                       } catch (e) {
@@ -2385,7 +2258,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             TextButton(
               onPressed: isSaving ? null : () => Navigator.pop(ctx),
               child: Text('Cancel',
-                  style: TextStyle(color: AppColors.textSecondary)),
+                  style: TextStyle(color: const Color(0xFF6B7280))),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -2419,7 +2292,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               ? data['message'] ?? 'Role created!'
                               : data['error'] ?? 'Failed'),
                           backgroundColor: res.statusCode == 201
-                              ? AppColors.statusCompleted
+                              ? const Color(0xFF4CAF50)
                               : Colors.red,
                         ));
                       } catch (e) {
@@ -2466,11 +2339,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
       decoration: InputDecoration(
         labelText: label,
         counterText: maxLength != null ? '' : null,
-        prefixIcon: Icon(icon, color: AppColors.deepNavy),
+        prefixIcon: Icon(icon, color: const Color(0xFF1A1A2E)),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.deepNavy, width: 2),
+          borderSide: const BorderSide(color: const Color(0xFF1A1A2E), width: 2),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -2479,414 +2352,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildPendingUserCard(Map<String, dynamic> user) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.deepNavy.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with avatar and role badge
-            Row(
-              children: [
-                // Avatar
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.orangeGradient,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      (user['full_name'] ?? 'U').substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user['username'] ?? 'Unknown',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.deepNavy,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: AppColors.navyGradient,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          user['role'] ?? 'Unknown',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // User details with icons
-            _buildInstagramDetailRow(Icons.person_outline, user['full_name'] ?? 'N/A'),
-            const SizedBox(height: 12),
-            _buildInstagramDetailRow(Icons.email_outlined, user['email'] ?? 'N/A'),
-            const SizedBox(height: 12),
-            _buildInstagramDetailRow(Icons.phone_outlined, user['phone'] ?? 'N/A'),
-            const SizedBox(height: 12),
-            _buildInstagramDetailRow(
-              Icons.calendar_today_outlined,
-              'Registered ${_formatDate(user['created_at'])}',
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Instagram-style pill action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: _buildActionPillButton(
-                    'Approve',
-                    Icons.check_circle_outline,
-                    AppColors.statusCompleted,
-                    () => _showApproveDialog(user['id'], user['username']),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildActionPillButton(
-                    'Reject',
-                    Icons.cancel_outlined,
-                    AppColors.statusOverdue,
-                    () => _showRejectDialog(user['id'], user['username']),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Removed unused user card methods - Users tab removed from bottom navigation
+  // User management now accessed via Profile → Manage Users button
+  // Methods removed: _buildPendingUserCard, _buildExistingUserCard, 
+  // _buildInstagramDetailRow, _buildActionPillButton, _formatDate
 
-  Widget _buildInstagramDetailRow(IconData icon, String text) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.lightSlate,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, size: 18, color: AppColors.deepNavy),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionPillButton(String label, IconData icon, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(25),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: color, width: 1.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExistingUserCard(Map<String, dynamic> user) {
-    final status = user['status'] ?? 'UNKNOWN';
-    final isActive = user['is_active'] ?? true;
-    
-    Color statusColor = AppColors.textSecondary;
-    if (status == 'APPROVED') statusColor = AppColors.statusCompleted;
-    if (status == 'REJECTED') statusColor = AppColors.statusOverdue;
-    if (status == 'PENDING') statusColor = AppColors.statusPending;
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.deepNavy.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with avatar and badges
-            Row(
-              children: [
-                // Avatar
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.navyGradient,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      (user['full_name'] ?? 'U').substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user['username'] ?? 'Unknown',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.deepNavy,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          // Status badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: statusColor.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              status,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: statusColor,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          // Role badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.lightSlate,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              user['role'] ?? 'Unknown',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.deepNavy,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                // Active indicator
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: isActive ? AppColors.statusCompleted : AppColors.textSecondary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // User details
-            _buildInstagramDetailRow(Icons.person_outline, user['full_name'] ?? 'N/A'),
-            const SizedBox(height: 10),
-            _buildInstagramDetailRow(Icons.email_outlined, user['email'] ?? 'N/A'),
-            const SizedBox(height: 10),
-            _buildInstagramDetailRow(Icons.phone_outlined, user['phone'] ?? 'N/A'),
-            const SizedBox(height: 10),
-            _buildInstagramDetailRow(
-              Icons.calendar_today_outlined,
-              'Joined ${_formatDate(user['created_at'])}',
-            ),
-            if (user['last_login'] != null) ...[
-              const SizedBox(height: 10),
-              _buildInstagramDetailRow(
-                Icons.login_outlined,
-                'Last login ${_formatDate(user['last_login'])}',
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(String? dateStr) {
-    if (dateStr == null) return 'N/A';
-    try {
-      final date = DateTime.parse(dateStr);
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (e) {
-      return dateStr;
-    }
-  }
-
-  void _showApproveDialog(String userId, String username) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Approve User',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.deepNavy),
-        ),
-        content: Text('Are you sure you want to approve $username?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _approveUser(userId, username);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.statusCompleted,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text(
-              'Approve',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRejectDialog(String userId, String username) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Reject User',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.deepNavy),
-        ),
-        content: Text('Are you sure you want to reject $username?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _rejectUser(userId, username);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.statusOverdue,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text(
-              'Reject',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Removed user management dialog methods - use Manage Users screen instead
+  // void _showApproveDialog(...) { ... }
+  // void _showRejectDialog(...) { ... }
 }
 
 class _NavItem {

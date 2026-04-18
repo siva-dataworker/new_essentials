@@ -62,28 +62,21 @@ class _LoginScreenState extends State<LoginScreen>
       final user = authProvider.currentUser!;
       final role = user['role'];
       
-      print('🔐 LOGIN SUCCESS');
-      print('🔐 User: ${user['username']}');
-      print('🔐 Role: "$role"');
-      print('🔐 Role type: ${role.runtimeType}');
+      // Debug logs removed for performance
       
       Widget dashboard;
       
       // Normalize role for comparison (case-insensitive)
       final roleNormalized = role?.toString().toLowerCase() ?? '';
-      print('🔐 Normalized role: "$roleNormalized"');
       
       switch (roleNormalized) {
         case 'admin':
-          print('🔐 → AdminDashboard');
           dashboard = const AdminDashboard();
           break;
         case 'supervisor':
-          print('🔐 → SupervisorDashboardFeed');
           dashboard = const SupervisorDashboardFeed();
           break;
         case 'site engineer':
-          print('🔐 → SiteEngineerDashboard');
           final u = UserModel(
             uid: user['id'],
             phoneNumber: user['phone'] ?? '',
@@ -95,7 +88,6 @@ class _LoginScreenState extends State<LoginScreen>
           dashboard = SiteEngineerDashboard(user: u);
           break;
         case 'accountant':
-          print('🔐 → AccountantDashboard');
           final u = UserModel(
             uid: user['id'],
             phoneNumber: user['phone'] ?? '',
@@ -107,7 +99,6 @@ class _LoginScreenState extends State<LoginScreen>
           dashboard = AccountantDashboard(user: u);
           break;
         case 'architect':
-          print('🔐 → ArchitectDashboard');
           final u = UserModel(
             uid: user['id'],
             phoneNumber: user['phone'] ?? '',
@@ -119,7 +110,6 @@ class _LoginScreenState extends State<LoginScreen>
           dashboard = ArchitectDashboard(user: u);
           break;
         case 'owner':
-          print('🔐 → OwnerDashboard');
           final u = UserModel(
             uid: user['id'],
             phoneNumber: user['phone'] ?? '',
@@ -131,11 +121,9 @@ class _LoginScreenState extends State<LoginScreen>
           dashboard = OwnerDashboard(user: u);
           break;
         case 'client':
-          print('🔐 ✅ → ClientDashboard');
           dashboard = const ClientDashboard();
           break;
         default:
-          print('🔐 ⚠️ Unknown role "$role", defaulting to Supervisor');
           dashboard = const SupervisorDashboardFeed();
       }
       

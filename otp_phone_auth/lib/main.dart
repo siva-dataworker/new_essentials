@@ -20,6 +20,10 @@ import 'providers/site_engineer_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/material_provider.dart';
 import 'providers/admin_provider.dart';
+import 'providers/supervisor_provider.dart';
+import 'providers/accountant_provider.dart';
+import 'providers/architect_provider.dart';
+import 'providers/client_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,10 +56,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SiteEngineerProvider()),
         ChangeNotifierProvider(create: (_) => MaterialProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
-        ChangeNotifierProvider(create: (_) => SiteEngineerProvider()),
-        ChangeNotifierProvider(create: (_) => MaterialProvider()),
-        ChangeNotifierProvider(create: (_) => AdminProvider()),
-        ChangeNotifierProvider(create: (_) => MaterialProvider()),
+        ChangeNotifierProvider(create: (_) => SupervisorProvider()),
+        ChangeNotifierProvider(create: (_) => AccountantProvider()),
+        ChangeNotifierProvider(create: (_) => ArchitectProvider()),
+        ChangeNotifierProvider(create: (_) => ClientProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

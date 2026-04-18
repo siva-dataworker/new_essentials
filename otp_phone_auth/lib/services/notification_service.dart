@@ -8,7 +8,7 @@ class NotificationService {
   NotificationService._internal();
 
   final _authService = AuthService();
-  static const String baseUrl = 'https://essentials-construction-project.onrender.com/api';
+  static const String baseUrl = 'http://localhost:8000/api';
 
   Future<Map<String, String>> _getHeaders() async {
     final token = await _authService.getToken();

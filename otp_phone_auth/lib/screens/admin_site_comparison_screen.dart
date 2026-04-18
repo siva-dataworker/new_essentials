@@ -1,291 +1,298 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import '../utils/app_colors.dart';
-import '../services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/admin_provider.dart';
+import '../utils/smooth_animations.dart';
 
 class AdminSiteComparisonScreen extends StatefulWidget {
-  final List<Map<String, dynamic>> sites;
-  
-  const AdminSiteComparisonScreen({Key? key, required this.sites}) : super(key: key);
+  const AdminSiteComparisonScreen({super.key});
 
   @override
   State<AdminSiteComparisonScreen> createState() => _AdminSiteComparisonScreenState();
 }
 
 class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
-  final _authService = AuthService();
-  
   String? _site1Id;
   String? _site2Id;
   Map<String, dynamic>? _comparisonData;
-  bool _isLoading = false;
 
-  Future<void> _compareSites() async {
+  @override
+  void initState() {
+    super.initState();
+    // Load sites using provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AdminProvider>().loadSites();
+    });
+  }
+
+  Future<void> _compareSites(AdminProvider provider) async {
     if (_site1Id == null || _site2Id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select both sites')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select both sites')),
+        );
+      }
       return;
     }
 
     if (_site1Id == _site2Id) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select different sites')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select different sites')),
+        );
+      }
       return;
     }
 
-    setState(() => _isLoading = true);
-
-    try {
-      final token = await _authService.getToken();
-      final response = await http.post(
-        Uri.parse('${AuthService.baseUrl}/admin/sites/compare/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${token ?? ''}',
-        },
-        body: json.encode({
-          'site1_id': _site1Id,
-          'site2_id': _site2Id,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _comparisonData = data;
-        });
+    final data = await provider.compareSites(_site1Id!, _site2Id!);
+    if (mounted) {
+      if (data != null) {
+        setState(() => _comparisonData = data);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error comparing sites')),
+        );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.lightSlate,
-      appBar: AppBar(
-        title: const Text(
-          'Site Comparison',
-          style: TextStyle(
-            color: AppColors.deepNavy,
-            fontWeight: FontWeight.bold,
+    return Consumer<AdminProvider>(
+      builder: (context, adminProvider, child) {
+        final isLoading = adminProvider.isLoading('comparison');
+        
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8F9FA),
+          appBar: AppBar(
+            title: const Text(
+              'Site Comparison',
+              style: TextStyle(
+                color: Color(0xFF1A1A2E),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            backgroundColor: Colors.white,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Color(0xFF1A1A2E)),
+            actions: [
+              if (_site1Id != null && _site2Id != null)
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => _compareSites(adminProvider),
+                  tooltip: 'Refresh',
+                ),
+            ],
           ),
-        ),
-        backgroundColor: AppColors.cleanWhite,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.deepNavy),
-      ),
-      body: Column(
-        children: [
-          // Site selectors
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: AppColors.cleanWhite,
-            child: Column(
-              children: [
-                Row(
+          body: Column(
+            children: [
+              // Site selectors
+              Container(
+                padding: const EdgeInsets.all(16),
+                color: Colors.white,
+                child: Column(
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Site 1',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.deepNavy,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          DropdownButtonFormField<String>(
-                            value: _site1Id,
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              fillColor: AppColors.lightSlate,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                            ),
-                            hint: const Text('Select', style: TextStyle(fontSize: 13)),
-                            items: widget.sites.map((site) {
-                              return DropdownMenuItem<String>(
-                                value: site['id'],
-                                child: Text(
-                                  site['site_name'],
-                                  style: const TextStyle(fontSize: 13),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Site 1',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1A2E),
                                 ),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() => _site1Id = value);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
-                      child: Icon(Icons.compare_arrows, color: AppColors.safetyOrange),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Site 2',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.deepNavy,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          DropdownButtonFormField<String>(
-                            value: _site2Id,
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
                               ),
-                              filled: true,
-                              fillColor: AppColors.lightSlate,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                            ),
-                            hint: const Text('Select', style: TextStyle(fontSize: 13)),
-                            items: widget.sites.map((site) {
-                              return DropdownMenuItem<String>(
-                                value: site['id'],
-                                child: Text(
-                                  site['site_name'],
-                                  style: const TextStyle(fontSize: 13),
+                              const SizedBox(height: 8),
+                              DropdownButtonFormField<String>(
+                                value: _site1Id,
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8F9FA),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
                                 ),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() => _site2Id = value);
-                            },
+                                hint: const Text('Select', style: TextStyle(fontSize: 13)),
+                                items: adminProvider.sites.map((site) {
+                                  return DropdownMenuItem<String>(
+                                    value: site['id'].toString(),
+                                    child: Text(
+                                      site['site_name'] ?? 'Unnamed Site',
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() => _site1Id = value);
+                                },
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Icon(Icons.compare_arrows, color: Color(0xFF1A1A2E)),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Site 2',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1A1A2E),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              DropdownButtonFormField<String>(
+                                value: _site2Id,
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8F9FA),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                hint: const Text('Select', style: TextStyle(fontSize: 13)),
+                                items: adminProvider.sites.map((site) {
+                                  return DropdownMenuItem<String>(
+                                    value: site['id'].toString(),
+                                    child: Text(
+                                      site['site_name'] ?? 'Unnamed Site',
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() => _site2Id = value);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: isLoading ? null : () => _compareSites(adminProvider),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1A1A2E),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
+                      child: isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Compare',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _compareSites,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.safetyOrange,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Compare',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+              ),
+              
+              // Comparison results
+              Expanded(
+                child: _comparisonData == null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.compare_arrows,
+                              size: 80,
+                              color: const Color(0xFF6B7280).withValues(alpha: 0.5),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Select two sites to compare',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: () => _compareSites(adminProvider),
+                        color: const Color(0xFF1A1A2E),
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              _buildComparisonCard(
+                                'Built-up Area',
+                                '${_comparisonData!['site1']['built_up_area'] ?? '0'} sq ft',
+                                '${_comparisonData!['site2']['built_up_area'] ?? '0'} sq ft',
+                                Icons.square_foot,
+                              ),
+                              _buildComparisonCard(
+                                'Project Value',
+                                '₹${_formatAmount(_comparisonData!['site1']['project_value'])}',
+                                '₹${_formatAmount(_comparisonData!['site2']['project_value'])}',
+                                Icons.account_balance_wallet,
+                              ),
+                              _buildComparisonCard(
+                                'Total Cost',
+                                '₹${_formatAmount(_comparisonData!['site1']['total_cost'])}',
+                                '₹${_formatAmount(_comparisonData!['site2']['total_cost'])}',
+                                Icons.account_balance,
+                              ),
+                              _buildComparisonCard(
+                                'Profit/Loss',
+                                '₹${_formatAmount(_comparisonData!['site1']['profit_loss'])}',
+                                '₹${_formatAmount(_comparisonData!['site2']['profit_loss'])}',
+                                Icons.trending_up,
+                              ),
+                              _buildComparisonCard(
+                                'Total Labour',
+                                '${_comparisonData!['site1']['total_labour_count'] ?? '0'}',
+                                '${_comparisonData!['site2']['total_labour_count'] ?? '0'}',
+                                Icons.people,
+                              ),
+                              _buildComparisonCard(
+                                'Material Cost',
+                                '₹${_formatAmount(_comparisonData!['site1']['total_material_cost'])}',
+                                '₹${_formatAmount(_comparisonData!['site2']['total_material_cost'])}',
+                                Icons.inventory_2,
+                              ),
+                            ],
                           ),
                         ),
-                ),
-              ],
-            ),
+                      ),
+              ),
+            ],
           ),
-          
-          // Comparison results
-          Expanded(
-            child: _comparisonData == null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.compare_arrows,
-                          size: 80,
-                          color: AppColors.textSecondary.withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Select two sites to compare',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _buildComparisonCard(
-                          'Built-up Area',
-                          '${_comparisonData!['site1']['built_up_area'] ?? '0'} sq ft',
-                          '${_comparisonData!['site2']['built_up_area'] ?? '0'} sq ft',
-                          Icons.square_foot,
-                        ),
-                        _buildComparisonCard(
-                          'Project Value',
-                          '₹${_formatAmount(_comparisonData!['site1']['project_value'])}',
-                          '₹${_formatAmount(_comparisonData!['site2']['project_value'])}',
-                          Icons.account_balance_wallet,
-                        ),
-                        _buildComparisonCard(
-                          'Total Cost',
-                          '₹${_formatAmount(_comparisonData!['site1']['total_cost'])}',
-                          '₹${_formatAmount(_comparisonData!['site2']['total_cost'])}',
-                          Icons.account_balance,
-                        ),
-                        _buildComparisonCard(
-                          'Profit/Loss',
-                          '₹${_formatAmount(_comparisonData!['site1']['profit_loss'])}',
-                          '₹${_formatAmount(_comparisonData!['site2']['profit_loss'])}',
-                          Icons.trending_up,
-                        ),
-                        _buildComparisonCard(
-                          'Total Labour',
-                          '${_comparisonData!['site1']['total_labour_count'] ?? '0'}',
-                          '${_comparisonData!['site2']['total_labour_count'] ?? '0'}',
-                          Icons.people,
-                        ),
-                        _buildComparisonCard(
-                          'Material Cost',
-                          '₹${_formatAmount(_comparisonData!['site1']['total_material_cost'])}',
-                          '₹${_formatAmount(_comparisonData!['site2']['total_material_cost'])}',
-                          Icons.inventory_2,
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -294,21 +301,21 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Icon(icon, color: AppColors.safetyOrange, size: 20),
+              Icon(icon, color: const Color(0xFF1A1A2E), size: 20),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.deepNavy,
+                  color: Color(0xFF1A1A2E),
                 ),
               ),
             ],
@@ -320,7 +327,7 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.lightSlate,
+                    color: const Color(0xFFF8F9FA),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -329,7 +336,7 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.deepNavy,
+                      color: Color(0xFF1A1A2E),
                     ),
                   ),
                 ),
@@ -339,7 +346,7 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.lightSlate,
+                    color: const Color(0xFFF8F9FA),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -348,7 +355,7 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.deepNavy,
+                      color: Color(0xFF1A1A2E),
                     ),
                   ),
                 ),

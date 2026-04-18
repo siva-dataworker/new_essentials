@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import 'admin_site_comparison_screen.dart';
 import 'admin_site_documents_screen.dart';
 import 'admin_material_purchases_screen.dart';
+import '../utils/smooth_animations.dart';
 
 class AdminProfitLossScreen extends StatefulWidget {
   const AdminProfitLossScreen({Key? key}) : super(key: key);
@@ -85,26 +86,25 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightSlate,
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
           'Complete Accounts',
           style: TextStyle(
-            color: AppColors.deepNavy,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: AppColors.cleanWhite,
+        backgroundColor: const Color(0xFF1A1A2E),
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.deepNavy),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.compare_arrows),
+            icon: const Icon(Icons.compare_arrows, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => AdminSiteComparisonScreen(sites: _sites),
+                SmoothPageRoute(page: AdminSiteComparisonScreen(sites: _sites),
                 ),
               );
             },
@@ -117,7 +117,13 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
           // Site selector
           Container(
             padding: const EdgeInsets.all(16),
-            color: AppColors.cleanWhite,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -126,40 +132,51 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
+                    color: Colors.white70,
                   ),
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: _selectedSiteId,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: AppColors.lightSlate,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  hint: const Text('Choose a site'),
-                  items: _sites.map((site) {
-                    return DropdownMenuItem<String>(
-                      value: site['id'],
-                      child: Text(site['site_name']),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      final site = _sites.firstWhere((s) => s['id'] == value);
-                      setState(() {
-                        _selectedSiteId = value;
-                        _selectedSiteName = site['site_name'];
-                      });
-                      _loadProfitLossData(value);
-                    }
-                  },
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedSiteId,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF1A1A2E), width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    hint: const Text('Choose a site'),
+                    items: _sites.map((site) {
+                      return DropdownMenuItem<String>(
+                        value: site['id'],
+                        child: Text(site['site_name']),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        final site = _sites.firstWhere((s) => s['id'] == value);
+                        setState(() {
+                          _selectedSiteId = value;
+                          _selectedSiteName = site['site_name'];
+                        });
+                        _loadProfitLossData(value);
+                      }
+                    },
+                  ),
                 ),
               ],
             ),
@@ -169,7 +186,7 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
           Expanded(
             child: _isLoadingData
                 ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.deepNavy),
+                    child: CircularProgressIndicator(color: const Color(0xFF1A1A2E)),
                   )
                 : _profitLossData == null
                     ? Center(
@@ -179,14 +196,14 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
                             Icon(
                               Icons.account_balance_outlined,
                               size: 80,
-                              color: AppColors.textSecondary.withOpacity(0.5),
+                              color: const Color(0xFF6B7280).withOpacity(0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Select a site to view accounts',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: AppColors.textSecondary,
+                                color: const Color(0xFF6B7280),
                               ),
                             ),
                           ],
@@ -218,13 +235,19 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: isProfit ? AppColors.orangeGradient : LinearGradient(
-          colors: [Colors.red.shade400, Colors.red.shade600],
-        ),
+        gradient: isProfit
+            ? const LinearGradient(
+                colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : LinearGradient(
+                colors: [Colors.red.shade400, Colors.red.shade600],
+              ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: (isProfit ? AppColors.safetyOrange : Colors.red).withOpacity(0.3),
+            color: (isProfit ? const Color(0xFF1A1A2E) : Colors.red).withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -321,8 +344,15 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,7 +362,7 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppColors.deepNavy,
+              color: const Color(0xFF1A1A2E),
             ),
           ),
           const SizedBox(height: 16),
@@ -340,21 +370,21 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
             'Labour Cost',
             _profitLossData?['labour_cost'],
             Icons.people,
-            AppColors.statusCompleted,
+            const Color(0xFF4CAF50),
           ),
           const Divider(height: 24),
           _buildCostRow(
             'Material Cost',
             _profitLossData?['material_cost'],
             Icons.inventory_2,
-            AppColors.safetyOrange,
+            const Color(0xFF1A1A2E),
           ),
           const Divider(height: 24),
           _buildCostRow(
             'Total Cost',
             _profitLossData?['total_cost'],
             Icons.account_balance,
-            AppColors.deepNavy,
+            const Color(0xFF1A1A2E),
           ),
         ],
       ),
@@ -378,7 +408,7 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
             label,
             style: const TextStyle(
               fontSize: 14,
-              color: AppColors.deepNavy,
+              color: const Color(0xFF1A1A2E),
             ),
           ),
         ),
@@ -402,7 +432,7 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
         _buildActionButton(
           'View Material Purchases',
           Icons.shopping_cart,
-          AppColors.safetyOrange,
+          const Color(0xFF1A1A2E),
           () {
             Navigator.push(
               context,
@@ -419,7 +449,7 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
         _buildActionButton(
           'View Site Documents',
           Icons.folder,
-          AppColors.deepNavy,
+          const Color(0xFF1A1A2E),
           () {
             Navigator.push(
               context,
@@ -439,13 +469,20 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
   Widget _buildActionButton(String label, IconData icon, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.cleanWhite,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: color.withOpacity(0.2)),
         ),
         child: Row(
           children: [

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../services/construction_service.dart';
-import '../utils/app_colors.dart';
+import '../services/cache_service.dart';
+import '../utils/smooth_animations.dart';
 
 class AdminClientComplaintsScreen extends StatefulWidget {
   const AdminClientComplaintsScreen({super.key});
@@ -9,20 +11,69 @@ class AdminClientComplaintsScreen extends StatefulWidget {
   State<AdminClientComplaintsScreen> createState() => _AdminClientComplaintsScreenState();
 }
 
-class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScreen> {
+class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScreen> with AutomaticKeepAliveClientMixin {
   final _constructionService = ConstructionService();
   List<dynamic> _complaints = [];
   bool _isLoading = false;
   String? _selectedStatus;
+  final Map<String?, List<dynamic>> _complaintsCache = {}; // Cache by status
+  Timer? _refreshTimer; // Background refresh timer
+  
+  @override
+  bool get wantKeepAlive => true; // Keep state alive
 
   @override
   void initState() {
     super.initState();
     _loadComplaints();
+    _startBackgroundRefresh();
+  }
+  
+  @override
+  void dispose() {
+    _stopBackgroundRefresh();
+    super.dispose();
+  }
+  
+  void _startBackgroundRefresh() {
+    // Refresh complaints every 60 seconds
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (timer) {
+        if (mounted) {
+          _loadComplaints(forceRefresh: true);
+        }
+      },
+    );
+  }
+  
+  void _stopBackgroundRefresh() {
+    _refreshTimer?.cancel();
   }
 
-  Future<void> _loadComplaints() async {
+  Future<void> _loadComplaints({bool forceRefresh = false}) async {
     if (!mounted) return;
+    
+    // Load from persistent cache first (instant display)
+    if (!forceRefresh && !_complaintsCache.containsKey(_selectedStatus)) {
+      final cached = await CacheService.loadComplaints(_selectedStatus);
+      if (cached != null && mounted) {
+        setState(() {
+          _complaints = cached;
+          _complaintsCache[_selectedStatus] = cached;
+        });
+        print('✅ [ADMIN] Loaded ${_complaints.length} complaints from persistent cache');
+      }
+    }
+    
+    // Check memory cache
+    if (_complaintsCache.containsKey(_selectedStatus) && !forceRefresh) {
+      setState(() {
+        _complaints = _complaintsCache[_selectedStatus]!;
+      });
+      return;
+    }
+    
     setState(() => _isLoading = true);
     
     try {
@@ -32,13 +83,20 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
       );
       
       if (mounted) {
+        final complaints = response['complaints'] as List? ?? [];
+        
+        // Save to persistent cache
+        await CacheService.saveComplaints(complaints, _selectedStatus);
+        
+        // Cache the complaints in memory
+        _complaintsCache[_selectedStatus] = complaints;
         setState(() {
-          _complaints = response['complaints'] as List? ?? [];
+          _complaints = complaints;
           _isLoading = false;
         });
+        
+        print('✅ [ADMIN] Loaded ${_complaints.length} complaints and saved to cache');
       }
-      
-      print('✅ [ADMIN] Loaded ${_complaints.length} complaints');
     } catch (e) {
       print('❌ [ADMIN] Error loading complaints: $e');
       if (mounted) {
@@ -79,11 +137,12 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Material(
-      color: AppColors.lightSlate,
+      color: const Color(0xFFF8F9FA),
       child: RefreshIndicator(
-        onRefresh: _loadComplaints,
-        color: AppColors.deepNavy,
+        onRefresh: () => _loadComplaints(forceRefresh: true),
+        color: const Color(0xFF1A1A2E),
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _complaints.isEmpty
@@ -92,18 +151,18 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                     children: [
                       // Filter bar with dropdown
                       Container(
-                        color: AppColors.cleanWhite,
+                        color: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: Row(
                           children: [
-                            const Icon(Icons.filter_list, color: AppColors.deepNavy, size: 20),
+                            const Icon(Icons.filter_list, color: const Color(0xFF1A1A2E), size: 20),
                             const SizedBox(width: 8),
                             const Text(
                               'Filter:',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.deepNavy,
+                                color: const Color(0xFF1A1A2E),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -118,10 +177,10 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                                   child: DropdownButton<String>(
                                     value: _selectedStatus ?? 'ALL',
                                     isExpanded: true,
-                                    icon: const Icon(Icons.arrow_drop_down, color: AppColors.deepNavy),
+                                    icon: const Icon(Icons.arrow_drop_down, color: const Color(0xFF1A1A2E)),
                                     style: const TextStyle(
                                       fontSize: 14,
-                                      color: AppColors.deepNavy,
+                                      color: const Color(0xFF1A1A2E),
                                     ),
                                     onChanged: (value) {
                                       setState(() {
@@ -146,7 +205,8 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                       // Complaints list
                       Expanded(
                         child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
+                          physics: const SmoothScrollPhysics(),
+                              padding: const EdgeInsets.all(16),
                           itemCount: _complaints.length,
                           itemBuilder: (context, index) {
                             final complaint = _complaints[index];
@@ -201,12 +261,12 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -216,9 +276,13 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
             // Header with title and priority
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.deepNavy.withOpacity(0.05),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Row(
                 children: [
@@ -228,14 +292,14 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.deepNavy,
+                        color: Colors.white,
                       ),
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _getPriorityColor(priority),
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -271,7 +335,7 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.deepNavy,
+                          color: const Color(0xFF1A1A2E),
                         ),
                       ),
                     ],
@@ -294,7 +358,7 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.deepNavy,
+                            color: const Color(0xFF1A1A2E),
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -376,12 +440,12 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                         'Tap for details',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.deepNavy,
+                          color: const Color(0xFF1A1A2E),
                           fontStyle: FontStyle.italic,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_ios, size: 12, color: AppColors.deepNavy),
+                      Icon(Icons.arrow_forward_ios, size: 12, color: const Color(0xFF1A1A2E)),
                     ],
                   ),
                 ],
@@ -419,7 +483,7 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.deepNavy,
+                  color: const Color(0xFF1A1A2E),
                 ),
               ),
             ),
@@ -520,7 +584,7 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                 description,
                 style: const TextStyle(
                   fontSize: 14,
-                  color: AppColors.deepNavy,
+                  color: const Color(0xFF1A1A2E),
                 ),
               ),
               
@@ -577,7 +641,7 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
             value,
             style: const TextStyle(
               fontSize: 14,
-              color: AppColors.deepNavy,
+              color: const Color(0xFF1A1A2E),
             ),
           ),
         ),

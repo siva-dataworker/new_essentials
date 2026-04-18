@@ -99,7 +99,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
         final isLoading = provider.isLoadingAccountantData;
 
         return Scaffold(
-          backgroundColor: AppColors.lightSlate,
+          backgroundColor: const Color(0xFF1A1A2E),
           appBar: AppBar(
             title: Text(
               widget.site['display_name'] ?? widget.site['site_name'] ?? 'Site Details',
@@ -109,7 +109,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                 fontWeight: FontWeight.bold,
               ),
             ),
-            backgroundColor: AppColors.cleanWhite,
+            backgroundColor: const Color(0xFF1A1A2E),
             elevation: 0,
             iconTheme: const IconThemeData(color: AppColors.deepNavy),
             bottom: TabBar(
@@ -188,7 +188,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: AppColors.deepNavy.withValues(alpha: 0.06),
@@ -244,7 +244,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
         fontWeight: FontWeight.w600,
         fontSize: 13,
       ),
-      backgroundColor: AppColors.lightSlate,
+      backgroundColor: const Color(0xFF1A1A2E),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
@@ -345,12 +345,12 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
     final extraCost = entry['extra_cost'] != null ? double.tryParse(entry['extra_cost'].toString()) ?? 0 : 0;
     final hasExtraCost = extraCost > 0;
     final submittedByRole = entry['submitted_by_role'] ?? entry['user_role'] ?? 'Supervisor';
-    final roleColor = submittedByRole == 'Site Engineer' ? Colors.purple : AppColors.deepNavy;
+    final roleColor = submittedByRole == 'Site Engineer' ? Color(0xFF1A1A2E) : AppColors.deepNavy;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: roleColor.withValues(alpha: 0.3),
@@ -461,23 +461,23 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
+                  color: Color(0xFF1A1A2E).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange.shade200),
+                  border: Border.all(color: Color(0xFF1A1A2E).withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.attach_money, size: 16, color: Colors.orange.shade700),
+                        Icon(Icons.attach_money, size: 16, color: Color(0xFF1A1A2E)),
                         const SizedBox(width: 4),
                         Text(
                           'Extra Cost: ₹${extraCost.toStringAsFixed(0)}',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: Colors.orange.shade900,
+                            color: Color(0xFF1A1A2E),
                           ),
                         ),
                       ],
@@ -506,12 +506,12 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
     final extraCost = entry['extra_cost'] != null ? double.tryParse(entry['extra_cost'].toString()) ?? 0 : 0;
     final hasExtraCost = extraCost > 0;
     final submittedByRole = entry['submitted_by_role'] ?? entry['user_role'] ?? 'Supervisor';
-    final roleColor = submittedByRole == 'Site Engineer' ? Colors.purple : AppColors.deepNavy;
+    final roleColor = submittedByRole == 'Site Engineer' ? Color(0xFF1A1A2E) : AppColors.deepNavy;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: roleColor.withValues(alpha: 0.3),
@@ -622,23 +622,23 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
+                  color: Color(0xFF1A1A2E).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange.shade200),
+                  border: Border.all(color: Color(0xFF1A1A2E).withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.attach_money, size: 16, color: Colors.orange.shade700),
+                        Icon(Icons.attach_money, size: 16, color: Color(0xFF1A1A2E)),
                         const SizedBox(width: 4),
                         Text(
                           'Extra Cost: ₹${extraCost.toStringAsFixed(0)}',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: Colors.orange.shade900,
+                            color: Color(0xFF1A1A2E),
                           ),
                         ),
                       ],
@@ -717,7 +717,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: AppColors.statusOverdue.withValues(alpha: 0.3),
@@ -802,7 +802,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.lightSlate,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Column(
@@ -875,7 +875,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                 icon: const Icon(Icons.edit, size: 18),
                 label: const Text('Handle Request'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.statusCompleted,
+                  backgroundColor:const Color(0xFF1A1A2E),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -912,7 +912,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.lightSlate,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
@@ -1020,7 +1020,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
               Navigator.pop(context, true);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.statusCompleted,
+              backgroundColor: AppColors.deepNavy,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text(
@@ -1045,7 +1045,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Change applied successfully'),
-            backgroundColor: AppColors.statusCompleted,
+            backgroundColor: const Color(0xFF1A1A2E),
           ),
         );
       } else {

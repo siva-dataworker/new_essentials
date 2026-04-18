@@ -12,7 +12,6 @@ class AdminProvider with ChangeNotifier {
   bool _isLoadingSites = false;
   
   // Cache for site-specific data
-  final Map<String, Map<String, dynamic>> _siteMetricsCache = {};
   final Map<String, List<Map<String, dynamic>>> _labourDataCache = {};
   final Map<String, List<Map<String, dynamic>>> _billsDataCache = {};
   final Map<String, Map<String, dynamic>> _profitLossCache = {};

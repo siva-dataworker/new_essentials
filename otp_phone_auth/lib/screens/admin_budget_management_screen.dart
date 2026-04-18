@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../services/budget_management_service.dart';
-import '../utils/app_colors.dart';
+import '../services/cache_service.dart';
+import '../utils/smooth_animations.dart';
 
 class AdminBudgetManagementScreen extends StatefulWidget {
   final String siteId;
@@ -20,6 +22,9 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
     with SingleTickerProviderStateMixin {
   final _budgetService = BudgetManagementService();
   late TabController _tabController;
+  
+  // Background refresh timer
+  Timer? _refreshTimer;
 
   // Budget allocation data
   Map<String, dynamic>? _budgetAllocation;
@@ -33,65 +38,142 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
   List<Map<String, dynamic>> _clientRequirements = [];
   bool _isLoadingRequirements = false;
   bool _requirementsExpanded = false;
+  
+  // Cache flags to prevent redundant loading
+  bool _budgetLoaded = false;
+  bool _utilizationLoaded = false;
+  bool _requirementsLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    // Add listener to load utilization only on first access
     _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
-        _loadTabData(_tabController.index);
+      if (_tabController.indexIsChanging && _tabController.index == 1) {
+        // Load utilization only if not already loaded
+        if (!_utilizationLoaded) {
+          _loadUtilization();
+        }
       }
     });
     _loadBudgetAllocation();
-    _loadClientRequirements(); // Load requirements on init
+    _loadClientRequirements();
+    _startBackgroundRefresh();
   }
 
   @override
   void dispose() {
+    _stopBackgroundRefresh();
     _tabController.dispose();
     super.dispose();
   }
+  
+  void _startBackgroundRefresh() {
+    // Refresh budget data every 90 seconds
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 90),
+      (timer) {
+        if (mounted) {
+          // Silently refresh current tab data
+          if (_tabController.index == 0) {
+            _loadBudgetAllocation(forceRefresh: true);
+            _loadClientRequirements(forceRefresh: true);
+          } else {
+            _loadUtilization(forceRefresh: true);
+          }
+        }
+      },
+    );
+  }
+  
+  void _stopBackgroundRefresh() {
+    _refreshTimer?.cancel();
+  }
 
-  void _loadTabData(int index) {
-    switch (index) {
-      case 0:
-        _loadBudgetAllocation();
-        _loadClientRequirements();
-        break;
-      case 1:
-        _loadUtilization();
-        break;
+  Future<void> _loadBudgetAllocation({bool forceRefresh = false}) async {
+    // Load from persistent cache first (instant display)
+    if (!forceRefresh && !_budgetLoaded) {
+      final cached = await CacheService.loadBudgetAllocation(widget.siteId);
+      if (cached != null && mounted) {
+        setState(() {
+          _budgetAllocation = cached;
+          _budgetLoaded = true;
+        });
+        print('✅ [BUDGET] Loaded allocation from persistent cache');
+      }
+    }
+    
+    // Skip if already loaded and not forcing refresh
+    if (_budgetLoaded && !forceRefresh) return;
+    
+    setState(() => _isLoadingBudget = true);
+    final budget = await _budgetService.getBudgetAllocation(widget.siteId);
+    
+    if (budget != null) {
+      // Save to persistent cache
+      await CacheService.saveBudgetAllocation(widget.siteId, budget);
+    }
+    
+    if (mounted) {
+      setState(() {
+        _budgetAllocation = budget;
+        _isLoadingBudget = false;
+        _budgetLoaded = true;
+      });
+      print('✅ [BUDGET] Loaded allocation from API and saved to cache');
     }
   }
 
-  Future<void> _loadBudgetAllocation() async {
-    setState(() => _isLoadingBudget = true);
-    final budget = await _budgetService.getBudgetAllocation(widget.siteId);
-    setState(() {
-      _budgetAllocation = budget;
-      _isLoadingBudget = false;
-    });
-  }
-
-  Future<void> _loadClientRequirements() async {
+  Future<void> _loadClientRequirements({bool forceRefresh = false}) async {
+    // Skip if already loaded and not forcing refresh
+    if (_requirementsLoaded && !forceRefresh) return;
+    
     print('🔍 Loading client requirements for site: ${widget.siteId}');
     setState(() => _isLoadingRequirements = true);
     final requirements = await _budgetService.getClientRequirements(widget.siteId);
     print('📦 Received ${requirements.length} requirements');
-    setState(() {
-      _clientRequirements = requirements;
-      _isLoadingRequirements = false;
-    });
+    if (mounted) {
+      setState(() {
+        _clientRequirements = requirements;
+        _isLoadingRequirements = false;
+        _requirementsLoaded = true;
+      });
+    }
   }
 
-  Future<void> _loadUtilization() async {
+  Future<void> _loadUtilization({bool forceRefresh = false}) async {
+    // Load from persistent cache first (instant display)
+    if (!forceRefresh && !_utilizationLoaded) {
+      final cached = await CacheService.loadBudgetUtilization(widget.siteId);
+      if (cached != null && mounted) {
+        setState(() {
+          _utilization = cached;
+          _utilizationLoaded = true;
+        });
+        print('✅ [BUDGET] Loaded utilization from persistent cache');
+      }
+    }
+    
+    // Skip if already loaded and not forcing refresh
+    if (_utilizationLoaded && !forceRefresh) return;
+    
     setState(() => _isLoadingUtilization = true);
     final utilization = await _budgetService.getBudgetUtilization(widget.siteId);
-    setState(() {
-      _utilization = utilization;
-      _isLoadingUtilization = false;
-    });
+    
+    if (utilization != null) {
+      // Save to persistent cache
+      await CacheService.saveBudgetUtilization(widget.siteId, utilization);
+    }
+    
+    if (mounted) {
+      setState(() {
+        _utilization = utilization;
+        _isLoadingUtilization = false;
+        _utilizationLoaded = true;
+      });
+      print('✅ [BUDGET] Loaded utilization from API and saved to cache');
+    }
   }
 
   String _formatCurrency(dynamic amount) {
@@ -111,9 +193,14 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: Text('Budget - ${widget.siteName}'),
-        backgroundColor: AppColors.primary,
+        title: Text(
+          'Budget - ${widget.siteName}',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: const Color(0xFF1A1A2E),
+        iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
@@ -136,95 +223,101 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
   }
 
   Widget _buildAllocationTab() {
-    if (_isLoadingBudget) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (_budgetAllocation != null) ...[
-            _buildBudgetCard(
-              'Total Budget',
-              _formatCurrency(_budgetAllocation!['total_budget']),
-              Icons.account_balance_wallet,
-              Colors.blue,
-            ),
-            const SizedBox(height: 12),
-            if (_budgetAllocation!['material_budget'] != null)
-              _buildBudgetCard(
-                'Material Budget',
-                _formatCurrency(_budgetAllocation!['material_budget']),
-                Icons.inventory_2,
-                Colors.brown,
-              ),
-            const SizedBox(height: 12),
-            if (_budgetAllocation!['labour_budget'] != null)
-              _buildBudgetCard(
-                'Labour Budget',
-                _formatCurrency(_budgetAllocation!['labour_budget']),
-                Icons.people,
-                AppColors.safetyOrange,
-              ),
-            const SizedBox(height: 12),
-            if (_budgetAllocation!['other_budget'] != null)
-              _buildBudgetCard(
-                'Other Budget',
-                _formatCurrency(_budgetAllocation!['other_budget']),
-                Icons.more_horiz,
-                Colors.purple,
-              ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Details',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    return RefreshIndicator(
+      onRefresh: () async {
+        await _loadBudgetAllocation(forceRefresh: true);
+        await _loadClientRequirements(forceRefresh: true);
+      },
+      color: const Color(0xFF1A1A2E),
+      child: _isLoadingBudget
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_budgetAllocation != null) ...[
+                    _buildBudgetCard(
+                      'Total Budget',
+                      _formatCurrency(_budgetAllocation!['total_budget']),
+                      Icons.account_balance_wallet,
+                      Colors.blue,
                     ),
                     const SizedBox(height: 12),
-                    _buildDetailRow('Allocated By', _budgetAllocation!['allocated_by'] ?? 'N/A'),
-                    _buildDetailRow('Date', _budgetAllocation!['allocated_date']?.substring(0, 10) ?? 'N/A'),
-                    _buildDetailRow('Status', _budgetAllocation!['status'] ?? 'N/A'),
-                    if (_budgetAllocation!['notes'] != null && _budgetAllocation!['notes'].toString().isNotEmpty)
-                      _buildDetailRow('Notes', _budgetAllocation!['notes']),
+                    if (_budgetAllocation!['material_budget'] != null)
+                      _buildBudgetCard(
+                        'Material Budget',
+                        _formatCurrency(_budgetAllocation!['material_budget']),
+                        Icons.inventory_2,
+                        Colors.brown,
+                      ),
+                    const SizedBox(height: 12),
+                    if (_budgetAllocation!['labour_budget'] != null)
+                      _buildBudgetCard(
+                        'Labour Budget',
+                        _formatCurrency(_budgetAllocation!['labour_budget']),
+                        Icons.people,
+                        const Color(0xFF1A1A2E),
+                      ),
+                    const SizedBox(height: 12),
+                    if (_budgetAllocation!['other_budget'] != null)
+                      _buildBudgetCard(
+                        'Other Budget',
+                        _formatCurrency(_budgetAllocation!['other_budget']),
+                        Icons.more_horiz,
+                        Colors.purple,
+                      ),
+                    const SizedBox(height: 16),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Details',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 12),
+                            _buildDetailRow('Allocated By', _budgetAllocation!['allocated_by'] ?? 'N/A'),
+                            _buildDetailRow('Date', _budgetAllocation!['allocated_date']?.substring(0, 10) ?? 'N/A'),
+                            _buildDetailRow('Status', _budgetAllocation!['status'] ?? 'N/A'),
+                            if (_budgetAllocation!['notes'] != null && _budgetAllocation!['notes'].toString().isNotEmpty)
+                              _buildDetailRow('Notes', _budgetAllocation!['notes']),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.account_balance_wallet_outlined, size: 80, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('No budget allocated yet', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
                   ],
-                ),
-              ),
-            ),
-          ] else ...[
-            const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.account_balance_wallet_outlined, size: 80, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('No budget allocated yet', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => _showAllocateBudgetDialog(),
+                    icon: const Icon(Icons.add),
+                    label: Text(_budgetAllocation == null ? 'Allocate Budget' : 'Update Budget'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1A1A2E),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Recent Updates Dropdown
+                  _buildRecentUpdatesDropdown(),
                 ],
               ),
             ),
-          ],
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => _showAllocateBudgetDialog(),
-            icon: const Icon(Icons.add),
-            label: Text(_budgetAllocation == null ? 'Allocate Budget' : 'Update Budget'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.all(16),
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Recent Updates Dropdown
-          _buildRecentUpdatesDropdown(),
-        ],
-      ),
     );
   }
 
@@ -240,7 +333,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
                 borderRadius: _requirementsExpanded
                     ? const BorderRadius.vertical(top: Radius.circular(4))
                     : BorderRadius.circular(4),
@@ -250,10 +343,10 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.2),
+                      color: const Color(0xFF1A1A2E).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.update, color: AppColors.primary, size: 20),
+                    child: const Icon(Icons.update, color: const Color(0xFF1A1A2E), size: 20),
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
@@ -262,7 +355,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: const Color(0xFF1A1A2E),
                       ),
                     ),
                   ),
@@ -270,7 +363,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
+                        color: const Color(0xFF1A1A2E),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -285,7 +378,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
                   const SizedBox(width: 8),
                   Icon(
                     _requirementsExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: AppColors.primary,
+                    color: const Color(0xFF1A1A2E),
                   ),
                 ],
               ),
@@ -332,15 +425,15 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
                   return ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     leading: CircleAvatar(
-                      backgroundColor: AppColors.safetyOrange.withValues(alpha: 0.2),
-                      child: const Icon(Icons.person, color: AppColors.safetyOrange, size: 20),
+                      backgroundColor: const Color(0xFF1A1A2E).withValues(alpha: 0.2),
+                      child: const Icon(Icons.person, color: const Color(0xFF1A1A2E), size: 20),
                     ),
                     title: Text(
                       req['description'] ?? 'No description',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.deepNavy,
+                        color: const Color(0xFF1A1A2E),
                       ),
                     ),
                     subtitle: Column(
@@ -349,14 +442,14 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(Icons.location_on, size: 14, color: AppColors.deepNavy),
+                            const Icon(Icons.location_on, size: 14, color: const Color(0xFF1A1A2E)),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 siteName,
                                 style: const TextStyle(
                                   fontSize: 13,
-                                  color: AppColors.deepNavy,
+                                  color: const Color(0xFF1A1A2E),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -377,7 +470,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
                     trailing: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.statusCompleted.withValues(alpha: 0.1),
+                        color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -385,7 +478,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.statusCompleted,
+                          color: const Color(0xFF4CAF50),
                         ),
                       ),
                     ),
@@ -399,122 +492,116 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
   }
 
   Widget _buildUtilizationTab() {
-    if (_isLoadingUtilization) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_utilization == null) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.pie_chart_outline, size: 80, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('No utilization data available', style: TextStyle(fontSize: 16, color: Colors.grey)),
-          ],
-        ),
-      );
-    }
-
-    final summary = _utilization!['summary'];
-    final materialBreakdown = List<Map<String, dynamic>>.from(_utilization!['material_breakdown'] ?? []);
-    final labourBreakdown = List<Map<String, dynamic>>.from(_utilization!['labour_breakdown'] ?? []);
-
     return RefreshIndicator(
-      onRefresh: _loadUtilization,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Summary Card
-            Card(
-              color: _getStatusColor(summary['status']),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Text(
-                      _formatCurrency(summary['total_spent']),
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+      onRefresh: () => _loadUtilization(forceRefresh: true),
+      color: const Color(0xFF1A1A2E),
+      child: _isLoadingUtilization
+          ? const Center(child: CircularProgressIndicator())
+          : _utilization == null
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.pie_chart_outline, size: 80, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text('No utilization data available', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Summary Card
+                      Card(
+                        color: _getStatusColor(_utilization!['summary']['status']),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              Text(
+                                _formatCurrency(_utilization!['summary']['total_spent']),
+                                style: const TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const Text(
+                                'Total Spent',
+                                style: TextStyle(fontSize: 16, color: Colors.white70),
+                              ),
+                              const SizedBox(height: 16),
+                              LinearProgressIndicator(
+                                value: (_utilization!['summary']['utilization_percentage'] ?? 0) / 100,
+                                backgroundColor: Colors.white30,
+                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                minHeight: 10,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${(_utilization!['summary']['utilization_percentage'] ?? 0).toStringAsFixed(1)}% Utilized',
+                                style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                    const Text(
-                      'Total Spent',
-                      style: TextStyle(fontSize: 16, color: Colors.white70),
-                    ),
-                    const SizedBox(height: 16),
-                    LinearProgressIndicator(
-                      value: (summary['utilization_percentage'] ?? 0) / 100,
-                      backgroundColor: Colors.white30,
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                      minHeight: 10,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${(summary['utilization_percentage'] ?? 0).toStringAsFixed(1)}% Utilized',
-                      style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-            // Budget Overview
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSmallCard('Total Budget', _formatCurrency(summary['total_budget']), Colors.blue),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildSmallCard('Remaining', _formatCurrency(summary['remaining_budget']), Colors.green),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSmallCard('Material', _formatCurrency(summary['total_material_cost']), Colors.brown),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildSmallCard('Labour', _formatCurrency(summary['total_labour_cost']), AppColors.safetyOrange),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+                      // Budget Overview
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSmallCard('Total Budget', _formatCurrency(_utilization!['summary']['total_budget']), Colors.blue),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildSmallCard('Remaining', _formatCurrency(_utilization!['summary']['remaining_budget']), Colors.green),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSmallCard('Material', _formatCurrency(_utilization!['summary']['total_material_cost']), Colors.brown),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildSmallCard('Labour', _formatCurrency(_utilization!['summary']['total_labour_cost']), const Color(0xFF1A1A2E)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
 
-            // Material Breakdown
-            if (materialBreakdown.isNotEmpty) ...[
-              const Text('Material Breakdown', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ...materialBreakdown.map((m) => Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: const Icon(Icons.inventory_2, color: Colors.brown),
-                      title: Text(m['material_type'] ?? 'Unknown'),
-                      subtitle: Text('${m['total_quantity']} ${m['unit']}'),
-                      trailing: Text(_formatCurrency(m['total_cost']), style: const TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  )),
-              const SizedBox(height: 16),
-            ],
+                      // Material Breakdown
+                      if ((List<Map<String, dynamic>>.from(_utilization!['material_breakdown'] ?? [])).isNotEmpty) ...[
+                        const Text('Material Breakdown', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        ...(List<Map<String, dynamic>>.from(_utilization!['material_breakdown'] ?? [])).map((m) => Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                leading: const Icon(Icons.inventory_2, color: Colors.brown),
+                                title: Text(m['material_type'] ?? 'Unknown'),
+                                subtitle: Text('${m['total_quantity']} ${m['unit']}'),
+                                trailing: Text(_formatCurrency(m['total_cost']), style: const TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                            )),
+                        const SizedBox(height: 16),
+                      ],
 
-            // Labour Breakdown
-            if (labourBreakdown.isNotEmpty) ...[
-              const Text('Labour Breakdown', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ...labourBreakdown.map((l) => Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: const Icon(Icons.people, color: AppColors.safetyOrange),
-                      title: Text(l['labour_type'] ?? 'Unknown'),
+                      // Labour Breakdown
+                      if ((List<Map<String, dynamic>>.from(_utilization!['labour_breakdown'] ?? [])).isNotEmpty) ...[
+                        const Text('Labour Breakdown', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        ...(List<Map<String, dynamic>>.from(_utilization!['labour_breakdown'] ?? [])).map((l) => Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                leading: const Icon(Icons.people, color: Color(0xFF1A1A2E)),
+                                title: Text(l['labour_type'] ?? 'Unknown'),
                       subtitle: Text('${l['total_count']} workers × ${_formatCurrency(l['avg_rate'])}/day'),
                       trailing: Text(_formatCurrency(l['total_cost']), style: const TextStyle(fontWeight: FontWeight.bold)),
                     ),
@@ -706,7 +793,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A1A2E)),
             child: const Text('Save'),
           ),
         ],

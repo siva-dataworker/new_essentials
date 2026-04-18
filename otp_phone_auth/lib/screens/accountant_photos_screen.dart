@@ -61,7 +61,7 @@ class _AccountantPhotosScreenState extends State<AccountantPhotosScreen> {
         final isLoading = provider.isLoadingAccountantPhotos;
 
         return Scaffold(
-          backgroundColor: AppColors.lightSlate,
+          backgroundColor: const Color(0xFF1A1A2E),
           appBar: AppBar(
             title: const Text(
               'Site Photos',
@@ -71,7 +71,7 @@ class _AccountantPhotosScreenState extends State<AccountantPhotosScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            backgroundColor: AppColors.cleanWhite,
+            backgroundColor: const Color(0xFF1A1A2E),
             elevation: 0,
             iconTheme: const IconThemeData(color: AppColors.deepNavy),
             actions: [
@@ -86,7 +86,7 @@ class _AccountantPhotosScreenState extends State<AccountantPhotosScreen> {
             children: [
               // Filter Section
               Container(
-                color: AppColors.cleanWhite,
+                color: Colors.white,
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,7 +152,7 @@ class _AccountantPhotosScreenState extends State<AccountantPhotosScreen> {
               
               // Results Summary
               Container(
-                color: AppColors.cleanWhite,
+                color: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   children: [
@@ -246,13 +246,13 @@ class _AccountantPhotosScreenState extends State<AccountantPhotosScreen> {
     final isMorning = updateType == 'STARTED';
     final photoTypeLabel = isMorning ? 'Morning' : 'Evening';
     final photoIcon = isMorning ? '🌅' : '🌆';
-    final photoColor = isMorning ? Colors.orange : Colors.purple;
+    final photoColor = const Color(0xFF1A1A2E);
 
     return GestureDetector(
       onTap: () => _showPhotoDetail(photo),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.cleanWhite,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -271,7 +271,7 @@ class _AccountantPhotosScreenState extends State<AccountantPhotosScreen> {
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: AppColors.lightSlate,
+                  color: Colors.white,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 ),
                 child: ClipRRect(
@@ -281,7 +281,7 @@ class _AccountantPhotosScreenState extends State<AccountantPhotosScreen> {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        color: AppColors.lightSlate,
+                        color: Colors.white,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -305,7 +305,7 @@ class _AccountantPhotosScreenState extends State<AccountantPhotosScreen> {
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return Container(
-                        color: AppColors.lightSlate,
+                        color: Colors.white,
                         child: Center(
                           child: CircularProgressIndicator(
                             color: AppColors.deepNavy,
@@ -441,7 +441,7 @@ class _AccountantPhotosScreenState extends State<AccountantPhotosScreen> {
             maxHeight: MediaQuery.of(context).size.height * 0.8,
           ),
           decoration: BoxDecoration(
-            color: AppColors.cleanWhite,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -487,7 +487,7 @@ class _AccountantPhotosScreenState extends State<AccountantPhotosScreen> {
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           height: 200,
-                          color: AppColors.lightSlate,
+                          color: Colors.white,
                           child: const Center(
                             child: Text('Image not available'),
                           ),

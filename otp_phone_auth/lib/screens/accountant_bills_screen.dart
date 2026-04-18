@@ -77,7 +77,7 @@ class _AccountantBillsScreenState extends State<AccountantBillsScreen> with Sing
   }
 
   Future<void> _openDocument(String fileUrl) async {
-    final url = 'https://essentials-construction-project.onrender.com$fileUrl';
+    final url = 'http://localhost:8000$fileUrl';
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else {
@@ -92,7 +92,7 @@ class _AccountantBillsScreenState extends State<AccountantBillsScreen> with Sing
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightSlate,
+      backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         title: Text('Bills & Agreements - ${widget.siteName}'),
         backgroundColor: AppColors.deepNavy,
@@ -238,7 +238,7 @@ class _AccountantBillsScreenState extends State<AccountantBillsScreen> with Sing
             icon: const Icon(Icons.upload_file),
             label: const Text('Upload Now'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.deepNavy,
+              backgroundColor:AppColors.deepNavy,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -259,7 +259,7 @@ class _AccountantBillsScreenState extends State<AccountantBillsScreen> with Sing
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [AppColors.cardShadow],
       ),
@@ -279,10 +279,10 @@ class _AccountantBillsScreenState extends State<AccountantBillsScreen> with Sing
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
+                        color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.receipt_long, color: Colors.blue, size: 30),
+                      child: const Icon(Icons.receipt_long, color: const Color(0xFF1A1A2E), size: 30),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -380,7 +380,7 @@ class _AccountantBillsScreenState extends State<AccountantBillsScreen> with Sing
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [AppColors.cardShadow],
       ),
@@ -400,10 +400,10 @@ class _AccountantBillsScreenState extends State<AccountantBillsScreen> with Sing
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: Colors.purple.shade50,
+                        color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.business_center, color: Colors.purple, size: 30),
+                      child: const Icon(Icons.business_center, color: Color(0xFF1A1A2E), size: 30),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -486,13 +486,13 @@ class _AccountantBillsScreenState extends State<AccountantBillsScreen> with Sing
     final statusColor = status == 'ACTIVE' 
         ? Colors.green 
         : status == 'COMPLETED' 
-            ? Colors.blue 
+            ? const Color(0xFF1A1A2E) 
             : Colors.grey;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [AppColors.cardShadow],
       ),
@@ -605,7 +605,7 @@ class _AccountantBillsScreenState extends State<AccountantBillsScreen> with Sing
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.receipt_long, color: Colors.blue),
+              leading: const Icon(Icons.receipt_long, color: const Color(0xFF1A1A2E)),
               title: const Text('Material Bill'),
               subtitle: const Text('From tiles shop, cement supplier, etc.'),
               onTap: () {
@@ -614,7 +614,7 @@ class _AccountantBillsScreenState extends State<AccountantBillsScreen> with Sing
               },
             ),
             ListTile(
-              leading: const Icon(Icons.business_center, color: Colors.purple),
+              leading: const Icon(Icons.business_center, color: Color(0xFF1A1A2E)),
               title: const Text('Vendor Bill'),
               subtitle: const Text('From contractors, electricians, etc.'),
               onTap: () {

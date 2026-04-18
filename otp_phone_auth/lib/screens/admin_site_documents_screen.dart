@@ -1,50 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import '../utils/app_colors.dart';
-import '../services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/admin_provider.dart';
+import '../utils/smooth_animations.dart';
 
 class AdminSiteDocumentsScreen extends StatefulWidget {
   final String siteId;
   final String siteName;
   
   const AdminSiteDocumentsScreen({
-    Key? key,
+    super.key,
     required this.siteId,
     required this.siteName,
-  }) : super(key: key);
+  });
 
   @override
   State<AdminSiteDocumentsScreen> createState() => _AdminSiteDocumentsScreenState();
 }
 
 class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
-  final _authService = AuthService();
-  
   Map<String, List<Map<String, dynamic>>> _documents = {
     'PLAN': [],
     'ELEVATION': [],
     'STRUCTURE': [],
     'FINAL_OUTPUT': [],
   };
-  bool _isLoading = false;
   String _selectedType = 'PLAN';
 
   final Map<String, Map<String, dynamic>> _documentTypes = {
     'PLAN': {
       'title': 'Plans',
       'icon': Icons.architecture,
-      'color': AppColors.deepNavy,
+      'color': const Color(0xFF1A1A2E),
     },
     'ELEVATION': {
       'title': 'Elevations',
       'icon': Icons.apartment,
-      'color': AppColors.safetyOrange,
+      'color': const Color(0xFF1A1A2E),
     },
     'STRUCTURE': {
       'title': 'Structure',
       'icon': Icons.foundation,
-      'color': AppColors.statusCompleted,
+      'color': const Color(0xFF4CAF50),
     },
     'FINAL_OUTPUT': {
       'title': 'Final Output',
@@ -56,132 +52,125 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadDocuments();
+    // Load documents using provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadDocuments(context.read<AdminProvider>());
+    });
   }
 
-  Future<void> _loadDocuments() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final token = await _authService.getToken();
-      final response = await http.get(
-        Uri.parse('${AuthService.baseUrl}/admin/sites/${widget.siteId}/documents/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${token ?? ''}',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _documents = {
-            'PLAN': List<Map<String, dynamic>>.from(data['documents']['PLAN'] ?? []),
-            'ELEVATION': List<Map<String, dynamic>>.from(data['documents']['ELEVATION'] ?? []),
-            'STRUCTURE': List<Map<String, dynamic>>.from(data['documents']['STRUCTURE'] ?? []),
-            'FINAL_OUTPUT': List<Map<String, dynamic>>.from(data['documents']['FINAL_OUTPUT'] ?? []),
-          };
-        });
-      }
-    } catch (e) {
-      print('Error loading documents: $e');
-    } finally {
-      setState(() => _isLoading = false);
+  Future<void> _loadDocuments(AdminProvider provider) async {
+    final docs = await provider.getDocuments(widget.siteId, forceRefresh: true);
+    if (mounted) {
+      setState(() => _documents = docs);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.lightSlate,
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Site Documents',
-              style: TextStyle(
-                color: AppColors.deepNavy,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+    return Consumer<AdminProvider>(
+      builder: (context, adminProvider, child) {
+        final isLoading = adminProvider.isLoading('docs_${widget.siteId}');
+        
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8F9FA),
+          appBar: AppBar(
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Site Documents',
+                  style: TextStyle(
+                    color: Color(0xFF1A1A2E),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  widget.siteName,
+                  style: const TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              widget.siteName,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
+            backgroundColor: Colors.white,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Color(0xFF1A1A2E)),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () => _loadDocuments(adminProvider),
+                tooltip: 'Refresh',
               ),
-            ),
-          ],
-        ),
-        backgroundColor: AppColors.cleanWhite,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.deepNavy),
-      ),
-      body: Column(
-        children: [
-          // Document type tabs
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: AppColors.cleanWhite,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _documentTypes.entries.map((entry) {
-                  return _buildTypeChip(
-                    entry.key,
-                    entry.value['title'],
-                    entry.value['icon'],
-                    entry.value['color'],
-                  );
-                }).toList(),
-              ),
-            ),
+            ],
           ),
-          
-          // Documents list
-          Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.deepNavy),
-                  )
-                : _documents[_selectedType]!.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              _documentTypes[_selectedType]!['icon'],
-                              size: 80,
-                              color: AppColors.textSecondary.withOpacity(0.5),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No ${_documentTypes[_selectedType]!['title'].toLowerCase()} found',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
+          body: Column(
+            children: [
+              // Document type tabs
+              Container(
+                padding: const EdgeInsets.all(16),
+                color: Colors.white,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _documentTypes.entries.map((entry) {
+                      return _buildTypeChip(
+                        entry.key,
+                        entry.value['title'],
+                        entry.value['icon'],
+                        entry.value['color'],
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              
+              // Documents list
+              Expanded(
+                child: isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(color: Color(0xFF1A1A2E)),
                       )
-                    : RefreshIndicator(
-                        onRefresh: _loadDocuments,
-                        color: _documentTypes[_selectedType]!['color'],
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _documents[_selectedType]!.length,
-                          itemBuilder: (context, index) {
-                            final doc = _documents[_selectedType]![index];
-                            return _buildDocumentCard(doc);
-                          },
-                        ),
-                      ),
+                    : _documents[_selectedType]!.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  _documentTypes[_selectedType]!['icon'],
+                                  size: 80,
+                                  color: const Color(0xFF6B7280).withValues(alpha: 0.5),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No ${_documentTypes[_selectedType]!['title'].toLowerCase()} found',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Color(0xFF6B7280),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: () => _loadDocuments(adminProvider),
+                            color: _documentTypes[_selectedType]!['color'],
+                            child: ListView.builder(
+                              physics: const SmoothScrollPhysics(),
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _documents[_selectedType]!.length,
+                              itemBuilder: (context, index) {
+                                final doc = _documents[_selectedType]![index];
+                                return _buildDocumentCard(doc);
+                              },
+                            ),
+                          ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -197,12 +186,12 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? color : AppColors.lightSlate,
+          color: isSelected ? color : const Color(0xFFF8F9FA),
           borderRadius: BorderRadius.circular(20),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.3),
+                    color: color.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -215,7 +204,7 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
             Icon(
               icon,
               size: 18,
-              color: isSelected ? Colors.white : AppColors.textSecondary,
+              color: isSelected ? Colors.white : const Color(0xFF6B7280),
             ),
             const SizedBox(width: 8),
             Text(
@@ -223,7 +212,7 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected ? Colors.white : const Color(0xFF6B7280),
               ),
             ),
             if (count > 0) ...[
@@ -257,11 +246,11 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -272,7 +261,7 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -291,23 +280,23 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
+                    color: Color(0xFF1A1A2E),
                   ),
                 ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.person,
                       size: 14,
-                      color: AppColors.textSecondary,
+                      color: Color(0xFF6B7280),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       doc['uploaded_by'] ?? 'Unknown',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: Color(0xFF6B7280),
                       ),
                     ),
                   ],
@@ -315,17 +304,17 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.access_time,
                       size: 14,
-                      color: AppColors.textSecondary,
+                      color: Color(0xFF6B7280),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       _formatDate(doc['uploaded_at']),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: Color(0xFF6B7280),
                       ),
                     ),
                   ],

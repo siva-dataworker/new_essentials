@@ -1,192 +1,214 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import '../utils/app_colors.dart';
-import '../services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/admin_provider.dart';
+import '../utils/smooth_animations.dart';
 
 class AdminLabourCountScreen extends StatefulWidget {
-  const AdminLabourCountScreen({Key? key}) : super(key: key);
+  const AdminLabourCountScreen({super.key});
 
   @override
   State<AdminLabourCountScreen> createState() => _AdminLabourCountScreenState();
 }
 
 class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
-  final _authService = AuthService();
-  
-  List<Map<String, dynamic>> _sites = [];
   String? _selectedSiteId;
-  String? _selectedSiteName;
   List<Map<String, dynamic>> _labourData = [];
-  bool _isLoadingSites = false;
-  bool _isLoadingData = false;
 
   @override
   void initState() {
     super.initState();
-    _loadSites();
+    // Load sites using provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AdminProvider>().loadSites();
+    });
   }
 
-  Future<void> _loadSites() async {
-    setState(() => _isLoadingSites = true);
-
-    try {
-      final token = await _authService.getToken();
-      final response = await http.get(
-        Uri.parse('${AuthService.baseUrl}/admin/sites/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${token ?? ''}',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _sites = List<Map<String, dynamic>>.from(data['sites']);
-        });
-      }
-    } catch (e) {
-      print('Error loading sites: $e');
-    } finally {
-      setState(() => _isLoadingSites = false);
-    }
-  }
-
-  Future<void> _loadLabourData(String siteId) async {
-    setState(() => _isLoadingData = true);
-
-    try {
-      final token = await _authService.getToken();
-      final response = await http.get(
-        Uri.parse('${AuthService.baseUrl}/admin/sites/$siteId/labour-count/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${token ?? ''}',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _labourData = List<Map<String, dynamic>>.from(data['labour_data']);
-        });
-      }
-    } catch (e) {
-      print('Error loading labour data: $e');
-    } finally {
-      setState(() => _isLoadingData = false);
+  Future<void> _loadLabourData(AdminProvider provider, String siteId) async {
+    final data = await provider.getLabourData(siteId, forceRefresh: true);
+    if (mounted) {
+      setState(() => _labourData = data);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.lightSlate,
-      appBar: AppBar(
-        title: const Text(
-          'Labour Count View',
-          style: TextStyle(
-            color: AppColors.deepNavy,
-            fontWeight: FontWeight.bold,
+    return Consumer<AdminProvider>(
+      builder: (context, adminProvider, child) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8F9FA),
+          appBar: AppBar(
+            title: const Text(
+              'Labour Count View',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            backgroundColor: const Color(0xFF1A1A2E),
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+            actions: [
+              if (_selectedSiteId != null)
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => _loadLabourData(adminProvider, _selectedSiteId!),
+                  tooltip: 'Refresh',
+                ),
+            ],
           ),
+          body: Column(
+            children: [
+              // Site selector
+              _buildSiteSelector(adminProvider),
+
+              // Labour data list
+              Expanded(
+                child: _buildLabourList(adminProvider),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSiteSelector(AdminProvider adminProvider) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        backgroundColor: AppColors.cleanWhite,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.deepNavy),
       ),
-      body: Column(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Site selector
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: AppColors.cleanWhite,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Select Site',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: _selectedSiteId,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: AppColors.lightSlate,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                  hint: const Text('Choose a site'),
-                  items: _sites.map((site) {
-                    return DropdownMenuItem<String>(
-                      value: site['id'],
-                      child: Text(site['site_name']),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      final site = _sites.firstWhere((s) => s['id'] == value);
-                      setState(() {
-                        _selectedSiteId = value;
-                        _selectedSiteName = site['site_name'];
-                      });
-                      _loadLabourData(value);
-                    }
-                  },
-                ),
-              ],
+          const Text(
+            'Select Site',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.white70,
             ),
           ),
-          
-          // Labour data list
-          Expanded(
-            child: _isLoadingData
-                ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.statusCompleted),
-                  )
-                : _labourData.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.people_outline,
-                              size: 80,
-                              color: AppColors.textSecondary.withOpacity(0.5),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _selectedSiteId == null
-                                  ? 'Select a site to view labour count'
-                                  : 'No labour data available',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _labourData.length,
-                        itemBuilder: (context, index) {
-                          final entry = _labourData[index];
-                          return _buildLabourCard(entry);
-                        },
-                      ),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: DropdownButtonFormField<String>(
+              value: _selectedSiteId,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF1A1A2E), width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              hint: const Text('Choose a site'),
+              items: adminProvider.sites.map((site) {
+                return DropdownMenuItem<String>(
+                  value: site['id'].toString(),
+                  child: Text(site['site_name'] ?? 'Unnamed Site'),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedSiteId = value);
+                  _loadLabourData(adminProvider, value);
+                }
+              },
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLabourList(AdminProvider adminProvider) {
+    final isLoadingLabour = adminProvider.isLoading('labour_${_selectedSiteId ?? ''}');
+    
+    if (adminProvider.isLoadingSites) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF1A1A2E)),
+      );
+    }
+    
+    if (isLoadingLabour) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF1A1A2E)),
+      );
+    }
+    
+    if (_selectedSiteId == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 80,
+              color: Colors.grey.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Select a site to view labour count',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    if (_labourData.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 80,
+              color: Colors.grey.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No labour data available',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return RefreshIndicator(
+      onRefresh: () => _loadLabourData(adminProvider, _selectedSiteId!),
+      color: const Color(0xFF1A1A2E),
+      child: ListView.builder(
+        physics: const SmoothScrollPhysics(),
+                              padding: const EdgeInsets.all(16),
+        itemCount: _labourData.length,
+        itemBuilder: (context, index) {
+          final entry = _labourData[index];
+          return _buildLabourCard(entry);
+        },
       ),
     );
   }
@@ -196,13 +218,13 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -211,12 +233,12 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.statusCompleted.withOpacity(0.1),
+              color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
               Icons.people,
-              color: AppColors.statusCompleted,
+              color: Color(0xFF4CAF50),
               size: 28,
             ),
           ),
@@ -230,15 +252,15 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
+                    color: Color(0xFF1A1A2E),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Entered by: ${entry['entered_by'] ?? 'Unknown'}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: Colors.grey,
                   ),
                 ),
               ],
@@ -247,8 +269,8 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              gradient: AppColors.orangeGradient,
-              borderRadius: BorderRadius.circular(20),
+              color: const Color(0xFF1A1A2E),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Text(
               '${entry['labour_count']} Workers',

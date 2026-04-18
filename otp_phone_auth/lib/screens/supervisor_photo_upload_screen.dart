@@ -632,7 +632,7 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
   Widget _buildUploadedPhotoThumbnail(Map<String, dynamic> photo) {
     final imageUrl = photo['image_url'].toString().startsWith('http')
         ? photo['image_url']
-        : 'https://essentials-construction-project.onrender.com${photo['image_url']}';
+        : 'http://localhost:8000${photo['image_url']}';
     
     final uploadDate = photo['upload_date'] ?? '';
     
