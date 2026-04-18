@@ -1,13 +1,9 @@
 workflows:
-  android-workflow:
-    name: Android Build
+  android-debug-workflow:
+    name: Android Debug Build (No Signing Required)
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
-      android_signing:
-        - keystore_reference
-      groups:
-        - google_play
       vars:
         PACKAGE_NAME: "com.essentialhomes.construction"
       flutter: stable
@@ -21,11 +17,41 @@ workflows:
         script: | 
           cd otp_phone_auth
           flutter packages pub get
-      - name: Flutter analyze
+      - name: Build Debug APK (No signing required)
         script: | 
           cd otp_phone_auth
-          flutter analyze
-      - name: Build APK with Flutter
+          flutter build apk --debug
+    artifacts:
+      - otp_phone_auth/build/**/outputs/**/*.apk
+      - otp_phone_auth/build/**/outputs/**/mapping.txt
+      - otp_phone_auth/flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
+  
+  android-release-workflow:
+    name: Android Release Build (With Debug Signing)
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      vars:
+        PACKAGE_NAME: "com.essentialhomes.construction"
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Set up local.properties
+        script: | 
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/otp_phone_auth/android/local.properties"
+      - name: Get Flutter packages
+        script: | 
+          cd otp_phone_auth
+          flutter packages pub get
+      - name: Build Release APK with debug keys
         script: | 
           cd otp_phone_auth
           flutter build apk --release
