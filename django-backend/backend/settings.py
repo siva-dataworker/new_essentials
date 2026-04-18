@@ -78,7 +78,10 @@ DATABASES = {
         'OPTIONS': {
             'sslmode': 'require',
             'client_encoding': 'UTF8',
+            'connect_timeout': 10,
         },
+        'CONN_MAX_AGE': 600,  # Connection pooling for better performance
+        'ATOMIC_REQUESTS': True,  # Wrap each request in a transaction
     }
 }
 

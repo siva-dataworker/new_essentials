@@ -1016,7 +1016,7 @@ class _RoleChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            color: selected ?AppColors.deepNavy: AppColors.deepNavy,
+            color: selected ? Colors.white : AppColors.deepNavy,
           ),
         ),
       ),
@@ -1180,7 +1180,7 @@ class _EntryTypeChip extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: selected ?AppColors.deepNavy: AppColors.deepNavy,
+              color: selected ? Colors.white : AppColors.deepNavy,
               size: 18,
             ),
             const SizedBox(width: 6),
@@ -1189,7 +1189,7 @@ class _EntryTypeChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: selected ? FontWeight.bold : FontWeight.w600,
-                color: selected ?AppColors.deepNavy: AppColors.deepNavy,
+                color: selected ? Colors.white : AppColors.deepNavy,
               ),
             ),
           ],
