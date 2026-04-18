@@ -1,26 +1,42 @@
 workflows:
   android-workflow:
-    name: Android Workflow
+    name: Android Build
     max_build_duration: 60
+    instance_type: mac_mini_m1
     environment:
+      android_signing:
+        - keystore_reference
+      groups:
+        - google_play
+      vars:
+        PACKAGE_NAME: "com.essentialhomes.construction"
       flutter: stable
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Set up project
-        script: |
-          cd otp_phone_auth
+      - name: Set up local.properties
+        script: | 
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/otp_phone_auth/android/local.properties"
       - name: Get Flutter packages
-        script: |
+        script: | 
           cd otp_phone_auth
           flutter packages pub get
-      - name: Build APK
-        script: |
+      - name: Flutter analyze
+        script: | 
+          cd otp_phone_auth
+          flutter analyze
+      - name: Build APK with Flutter
+        script: | 
           cd otp_phone_auth
           flutter build apk --release
     artifacts:
-      - otp_phone_auth/build/app/outputs/flutter-apk/*.apk
+      - otp_phone_auth/build/**/outputs/**/*.apk
+      - otp_phone_auth/build/**/outputs/**/mapping.txt
+      - otp_phone_auth/flutter_drive.log
     publishing:
       email:
         recipients:
           - your-email@example.com
+        notify:
+          success: true
+          failure: true
