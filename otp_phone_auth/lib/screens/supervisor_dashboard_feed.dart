@@ -156,14 +156,28 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
     
     try {
       final provider = context.read<ConstructionProvider>();
-      final response = await provider.getStreets(area);
-      if (response['success']) {
-        setState(() {
-          _streets = List<String>.from(response['streets']);
-        });
-      }
+      
+      // Use provider's cached method
+      await provider.loadStreetsForArea(area);
+      final streets = provider.getStreetsForArea(area);
+      
+      setState(() {
+        _streets = streets;
+      });
     } catch (e) {
       print('Error loading streets: $e');
+      // Fallback to direct API call
+      try {
+        final provider = context.read<ConstructionProvider>();
+        final response = await provider.getStreets(area);
+        if (response['success']) {
+          setState(() {
+            _streets = List<String>.from(response['streets']);
+          });
+        }
+      } catch (e2) {
+        print('Fallback also failed: $e2');
+      }
     } finally {
       setState(() => _isLoadingStreets = false);
     }

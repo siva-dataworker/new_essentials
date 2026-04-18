@@ -319,7 +319,7 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
     final description = doc['description'] as String? ?? '';
     final uploadDate = doc['upload_date'] as String? ?? '';
     final architectName = doc['architect_name'] as String? ?? 'Unknown';
-    final fileUrl = doc['file_url'] as String? ?? '';
+    final fileUrl = ConstructionService.getFullImageUrl(doc['file_url'] as String? ?? '');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
