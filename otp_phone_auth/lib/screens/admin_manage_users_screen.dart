@@ -96,7 +96,7 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
     try {
       final token = await _authService.getToken();
       final response = await http.get(
-        Uri.parse('http://localhost:8000/api/admin/pending-users/'),
+        Uri.parse('https://new-essentials.onrender.com/api/admin/pending-users/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',
@@ -148,7 +148,7 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
     try {
       final token = await _authService.getToken();
       final response = await http.get(
-        Uri.parse('http://localhost:8000/api/admin/all-users/'),
+        Uri.parse('https://new-essentials.onrender.com/api/admin/all-users/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',
@@ -183,7 +183,7 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
     try {
       final token = await _authService.getToken();
       final response = await http.post(
-        Uri.parse('http://localhost:8000/api/admin/approve-user/$userId/'),
+        Uri.parse('https://new-essentials.onrender.com/api/admin/approve-user/$userId/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',
@@ -218,7 +218,7 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
     try {
       final token = await _authService.getToken();
       final response = await http.post(
-        Uri.parse('http://localhost:8000/api/admin/reject-user/$userId/'),
+        Uri.parse('https://new-essentials.onrender.com/api/admin/reject-user/$userId/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',

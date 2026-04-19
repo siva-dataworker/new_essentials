@@ -60,7 +60,7 @@ class _SiteEngineerDocumentScreenState extends State<SiteEngineerDocumentScreen>
   }
 
   Future<void> _openDocument(String fileUrl) async {
-    final url = 'http://localhost:8000$fileUrl';
+    final url = 'https://new-essentials.onrender.com$fileUrl';
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else {

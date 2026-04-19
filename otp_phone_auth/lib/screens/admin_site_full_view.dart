@@ -26,7 +26,7 @@ class AdminSiteFullView extends StatefulWidget {
 class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTickerProviderStateMixin {
   final _authService = AuthService();
   final _exportService = ExportService();
-  static const String baseUrl = 'http://localhost:8000/api';
+  static const String baseUrl = 'https://new-essentials.onrender.com/api';
   
   late TabController _tabController;
   
