@@ -1158,11 +1158,14 @@ class ConstructionService {
       request.fields['site_id'] = siteId;
       request.fields['time_of_day'] = timeOfDay;
       
-      // Add photos
+      // Add photos - Web and Mobile compatible
       for (var photo in photos) {
-        final file = await http.MultipartFile.fromPath(
+        // Read photo as bytes (works on both web and mobile)
+        final bytes = await photo.readAsBytes();
+        final file = http.MultipartFile.fromBytes(
           'photos',
-          photo.path,
+          bytes,
+          filename: photo.name,
         );
         request.files.add(file);
       }
