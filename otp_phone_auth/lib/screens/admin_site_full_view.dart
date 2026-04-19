@@ -1655,7 +1655,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
   }
 
   Widget _buildPhotoCard(Map<String, dynamic> photo) {
-    final imageUrl = 'http://192.168.1.11:8000${photo['image_url']}';
+    final imageUrl = 'https://new-essentials.onrender.com${photo['image_url']}';
     final uploadDate = photo['upload_date'] ?? photo['update_date'] ?? photo['created_at'];
     String timeDisplay = '';
     
@@ -2070,7 +2070,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
       // Construct full URL
       final fullUrl = fileUrl.startsWith('http') 
           ? fileUrl 
-          : 'http://192.168.1.11:8000$fileUrl';
+          : 'https://new-essentials.onrender.com$fileUrl';
       
       // Show loading dialog
       showDialog(
