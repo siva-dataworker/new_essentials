@@ -3721,7 +3721,11 @@ class _AccountantDocumentsViewState extends State<_AccountantDocumentsView> with
   }
 
   Future<void> _openDocument(String fileUrl) async {
-    final url = 'https://new-essentials.onrender.com$fileUrl';
+    // Handle both absolute URLs (Supabase Storage) and relative URLs (old system)
+    final url = fileUrl.startsWith('http') 
+        ? fileUrl 
+        : 'https://new-essentials.onrender.com$fileUrl';
+    
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else {
