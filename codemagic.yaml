@@ -34,7 +34,7 @@ workflows:
           failure: true
   
   android-release-workflow:
-    name: Android Release Build (With Debug Signing)
+    name: Android Release Build (Production)
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
@@ -51,7 +51,7 @@ workflows:
         script: | 
           cd otp_phone_auth
           flutter packages pub get
-      - name: Build Release APK with debug keys
+      - name: Build Release APK (connects to Render production)
         script: | 
           cd otp_phone_auth
           flutter build apk --release
