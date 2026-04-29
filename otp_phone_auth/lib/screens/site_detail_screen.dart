@@ -1196,7 +1196,7 @@ class _QuickActionsSheet extends StatelessWidget {
             icon: Icons.add_shopping_cart_outlined,
             title: 'Material Requirement',
             subtitle: 'Request materials needed',
-            color: Color(0xFFEC4899),
+            color: Color(0xFF1E3A8A),
             onTap: onMaterialRequirementTap,
           ),
           const SizedBox(height: 16),
