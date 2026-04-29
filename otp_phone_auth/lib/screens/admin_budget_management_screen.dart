@@ -359,22 +359,21 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
                       ),
                     ),
                   ),
-                  if (_clientRequirements.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A2E),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${_clientRequirements.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A2E),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      '4',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                  ),
                   const SizedBox(width: 8),
                   Icon(
                     _requirementsExpanded ? Icons.expand_less : Icons.expand_more,
@@ -385,109 +384,107 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
             ),
           ),
           if (_requirementsExpanded) ...[
-            if (_isLoadingRequirements)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(),
-              )
-            else if (_clientRequirements.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    Icon(Icons.inbox_outlined, size: 48, color: Colors.grey),
-                    SizedBox(height: 8),
-                    Text(
-                      'No client requirements yet',
-                      style: TextStyle(color: Colors.grey, fontSize: 14),
-                    ),
-                  ],
-                ),
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _clientRequirements.length,
-                separatorBuilder: (context, index) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final req = _clientRequirements[index];
-                  final date = req['added_date'] as String?;
-                  final formattedDate = date != null && date.length >= 10
-                      ? date.substring(0, 10)
-                      : 'N/A';
-                  final amount = req['amount'];
-                  final formattedAmount = amount != null
-                      ? '₹${(amount is String ? double.tryParse(amount) ?? 0 : amount).toStringAsFixed(0)}'
-                      : '₹0';
-                  final siteName = req['full_site_name'] ?? req['site_name'] ?? 'Unknown Site';
-
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: CircleAvatar(
-                      backgroundColor: const Color(0xFF1A1A2E).withValues(alpha: 0.2),
-                      child: const Icon(Icons.person, color: const Color(0xFF1A1A2E), size: 20),
-                    ),
-                    title: Text(
-                      req['description'] ?? 'No description',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1A1A2E),
+            // Photo Tabs
+            DefaultTabController(
+              length: 2,
+              child: Column(
+                children: [
+                  TabBar(
+                    labelColor: const Color(0xFF1A1A2E),
+                    unselectedLabelColor: Colors.grey,
+                    indicatorColor: const Color(0xFF1A1A2E),
+                    tabs: const [
+                      Tab(
+                        icon: Icon(Icons.photo_camera, size: 20),
+                        text: 'Supervisor Photos',
                       ),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      Tab(
+                        icon: Icon(Icons.engineering, size: 20),
+                        text: 'Site Engineer Photos',
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 400,
+                    child: TabBarView(
                       children: [
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on, size: 14, color: const Color(0xFF1A1A2E)),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                siteName,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: const Color(0xFF1A1A2E),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Added by: ${req['added_by_name'] ?? 'Unknown'}',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                        Text(
-                          'Date: $formattedDate',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
+                        _buildSupervisorPhotosTab(),
+                        _buildSiteEngineerPhotosTab(),
                       ],
                     ),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        formattedAmount,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF4CAF50),
-                        ),
-                      ),
-                    ),
-                  );
-                },
+                  ),
+                ],
               ),
+            ),
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildSupervisorPhotosTab() {
+    // TODO: Load supervisor photos for this site
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 3, // Placeholder
+      itemBuilder: (context, index) {
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            leading: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.image, color: Colors.grey),
+            ),
+            title: Text('Morning Photo ${index + 1}'),
+            subtitle: const Text('Uploaded by Supervisor\n2026-04-29 09:30 AM'),
+            isThreeLine: true,
+            trailing: IconButton(
+              icon: const Icon(Icons.open_in_new),
+              onPressed: () {
+                // Open photo
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSiteEngineerPhotosTab() {
+    // TODO: Load site engineer photos for this site
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 2, // Placeholder
+      itemBuilder: (context, index) {
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            leading: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.image, color: Colors.grey),
+            ),
+            title: Text('Progress Photo ${index + 1}'),
+            subtitle: const Text('Uploaded by Site Engineer\n2026-04-29 02:15 PM'),
+            isThreeLine: true,
+            trailing: IconButton(
+              icon: const Icon(Icons.open_in_new),
+              onPressed: () {
+                // Open photo
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
