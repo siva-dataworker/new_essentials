@@ -788,12 +788,54 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
           fontWeight: FontWeight.w600,
         ),
       ),
-      subtitle: Text(
-        '${site['area'] ?? 'N/A'} • ${site['street'] ?? 'N/A'}',
-        style: TextStyle(
-          fontSize: 12,
-          color: BWColors.secondaryText,
-        ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 4),
+          // Area Badge
+          if (site['area'] != null && site['area'].toString().isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: BWColors.primary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: BWColors.primary.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.location_city, size: 10, color: BWColors.primary),
+                  const SizedBox(width: 3),
+                  Text(
+                    site['area'],
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: BWColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 4),
+          // Street
+          Row(
+            children: [
+              const Icon(Icons.route, size: 12, color: BWColors.muted),
+              const SizedBox(width: 4),
+              Text(
+                site['street'] ?? 'N/A',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: BWColors.secondaryText,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       trailing: Icon(Icons.arrow_forward_ios, size: 16, color: BWColors.muted),
       onTap: () {
@@ -827,14 +869,51 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '${site['area'] ?? 'N/A'} • ${site['street'] ?? 'N/A'}',
-            style: TextStyle(
-              fontSize: 12,
-              color: BWColors.secondaryText,
-            ),
-          ),
           const SizedBox(height: 4),
+          // Area Badge
+          if (site['area'] != null && site['area'].toString().isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: BWColors.primary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: BWColors.primary.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.location_city, size: 10, color: BWColors.primary),
+                  const SizedBox(width: 3),
+                  Text(
+                    site['area'],
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: BWColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 4),
+          // Street
+          Row(
+            children: [
+              const Icon(Icons.route, size: 12, color: BWColors.muted),
+              const SizedBox(width: 4),
+              Text(
+                site['street'] ?? 'N/A',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: BWColors.secondaryText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
           Wrap(
             spacing: 8,
             children: [
@@ -1942,15 +2021,45 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
+                        // Area Badge
+                        if (site['area'] != null && site['area'].toString().isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: BWColors.primary.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: BWColors.primary.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.location_city, size: 12, color: BWColors.primary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  site['area'],
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: BWColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 6),
+                        // Street
                         Row(
                           children: [
-                            const Icon(Icons.location_on, size: 14, color: BWColors.muted),
+                            const Icon(Icons.route, size: 14, color: BWColors.muted),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                '${site['area'] ?? ''} - ${site['street'] ?? ''}',
-                                style: TextStyle(fontSize: 12, color: BWColors.secondaryText),
+                                site['street'] ?? 'No street',
+                                style: TextStyle(fontSize: 13, color: BWColors.secondaryText),
                               ),
                             ),
                           ],
