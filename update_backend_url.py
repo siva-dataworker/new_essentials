@@ -7,15 +7,15 @@ import re
 
 # Old URLs to replace
 OLD_URLS = [
+    'https://new-essentials.onrender.com',
+    'https://essentials-construction-project.onrender.com',
     'http://192.168.1.11:8000',
     'http://192.168.1.10:8000',
     'http://192.168.1.9:8000',
-    'http://localhost:8000',
-    'https://essentials-construction-project.onrender.com',
 ]
 
-# New URL
-NEW_URL = 'https://new-essentials.onrender.com'
+# New URL - localhost for development
+NEW_URL = 'http://localhost:8000'
 
 def update_file(filepath):
     """Update URLs in a single file"""
@@ -44,46 +44,62 @@ def update_file(filepath):
         print(f"  ✗ Error: {e}")
         return False
 
+def update_directory(directory):
+    """Recursively update all .dart files in directory"""
+    updated_files = []
+    
+    for root, dirs, files in os.walk(directory):
+        for filename in files:
+            if filename.endswith('.dart'):
+                filepath = os.path.join(root, filename)
+                relative_path = os.path.relpath(filepath, directory)
+                print(f"📝 {relative_path}")
+                
+                if update_file(filepath):
+                    updated_files.append(relative_path)
+                    print(f"  ✅ Updated")
+                else:
+                    print(f"  ⏭️  No changes needed")
+                print()
+    
+    return updated_files
+
 def main():
     """Main function to update all service files"""
     print("🔄 Updating backend URLs to:", NEW_URL)
     print()
     
-    # Service files directory
-    services_dir = 'otp_phone_auth/lib/services'
+    # Directories to update
+    directories = [
+        'otp_phone_auth/lib/services',
+        'otp_phone_auth/lib/screens',
+        'otp_phone_auth/lib/config',
+    ]
     
-    if not os.path.exists(services_dir):
-        print(f"❌ Directory not found: {services_dir}")
-        return
+    all_updated_files = []
     
-    updated_files = []
-    
-    # Update all .dart files in services directory
-    for filename in os.listdir(services_dir):
-        if filename.endswith('.dart'):
-            filepath = os.path.join(services_dir, filename)
-            print(f"📝 {filename}")
-            
-            if update_file(filepath):
-                updated_files.append(filename)
-                print(f"  ✅ Updated")
-            else:
-                print(f"  ⏭️  No changes needed")
-            print()
+    for directory in directories:
+        if os.path.exists(directory):
+            print(f"\n📁 Updating {directory}...")
+            print("=" * 50)
+            updated = update_directory(directory)
+            all_updated_files.extend(updated)
+        else:
+            print(f"⚠️  Directory not found: {directory}")
     
     # Summary
-    print("=" * 50)
-    print(f"✅ Updated {len(updated_files)} files:")
-    for filename in updated_files:
+    print("\n" + "=" * 50)
+    print(f"✅ Updated {len(all_updated_files)} files:")
+    for filename in all_updated_files:
         print(f"  - {filename}")
     
     print()
-    print("🎉 All backend URLs updated successfully!")
+    print("🎉 All backend URLs updated to localhost!")
     print()
-    print("Next steps:")
-    print("1. Test the app: flutter run")
-    print("2. Commit changes: git add . && git commit -m 'Update backend URL to Render'")
-    print("3. Push to GitHub: git push origin main")
+    print("⚠️  IMPORTANT:")
+    print("1. Start Django backend: cd django-backend && python manage.py runserver")
+    print("2. Test the app: flutter run")
+    print("3. For physical device, use your computer's IP instead of localhost")
 
 if __name__ == '__main__':
     main()
