@@ -1847,6 +1847,15 @@ class ConstructionService {
         }),
       );
       
+      // Check if response is JSON
+      if (response.headers['content-type']?.contains('application/json') != true) {
+        print('Error: Server returned non-JSON response (status ${response.statusCode})');
+        return {
+          'success': false,
+          'error': 'Backend endpoint not ready. Please wait for deployment to complete.',
+        };
+      }
+      
       final data = json.decode(response.body);
       
       if (response.statusCode == 201) {
@@ -1865,7 +1874,7 @@ class ConstructionService {
       print('Error submitting material requirement: $e');
       return {
         'success': false,
-        'error': 'Network error: $e',
+        'error': 'Backend not ready yet. Please try again after deployment completes.',
       };
     }
   }

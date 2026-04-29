@@ -280,10 +280,13 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: const Text('Material Requirement'),
+          contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
           content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 TextField(
                   controller: materialNameController,
                   decoration: const InputDecoration(
@@ -348,6 +351,7 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
               ],
             ),
           ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -385,8 +389,9 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(result['error'] ?? 'Failed to submit'),
+                        content: Text(result['error'] ?? 'Failed to submit. Backend not ready yet.'),
                         backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 4),
                       ),
                     );
                   }
