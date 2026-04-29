@@ -1814,8 +1814,6 @@ class ConstructionService {
       };
     }
   }
-}
-
 
   // ============================================
   // MATERIAL REQUIREMENTS SYSTEM
@@ -1983,3 +1981,4 @@ class ConstructionService {
       };
     }
   }
+}
