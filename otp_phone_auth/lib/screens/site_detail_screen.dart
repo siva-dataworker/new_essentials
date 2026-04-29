@@ -142,6 +142,10 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
           Navigator.pop(context);
           _openHistory();
         },
+        onMaterialRequirementTap: () {
+          Navigator.pop(context);
+          _showMaterialRequirementDialog();
+        },
       ),
     );
   }
@@ -259,6 +263,138 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
           siteId: widget.site['id'],
           siteName: widget.site['display_name'] ?? widget.site['site_name'] ?? 'Site',
           showRequestButton: true, // Enable request button in site-specific history
+        ),
+      ),
+    );
+  }
+
+  void _showMaterialRequirementDialog() {
+    final materialNameController = TextEditingController();
+    final quantityController = TextEditingController();
+    final unitController = TextEditingController();
+    final notesController = TextEditingController();
+    String selectedPriority = 'normal';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Material Requirement'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: materialNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Material Name *',
+                    hintText: 'e.g., Cement, Steel, Bricks',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: quantityController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Quantity *',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: unitController,
+                        decoration: const InputDecoration(
+                          labelText: 'Unit *',
+                          hintText: 'bags, tons',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedPriority,
+                  decoration: const InputDecoration(
+                    labelText: 'Priority',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'urgent', child: Text('🔴 Urgent')),
+                    DropdownMenuItem(value: 'normal', child: Text('🟡 Normal')),
+                    DropdownMenuItem(value: 'low', child: Text('🟢 Low')),
+                  ],
+                  onChanged: (value) {
+                    setState(() => selectedPriority = value ?? 'normal');
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: notesController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (Optional)',
+                    hintText: 'Additional details...',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (materialNameController.text.isEmpty ||
+                    quantityController.text.isEmpty ||
+                    unitController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please fill all required fields')),
+                  );
+                  return;
+                }
+
+                final result = await _constructionService.submitMaterialRequirement(
+                  siteId: widget.site['id'],
+                  materialName: materialNameController.text,
+                  quantity: double.parse(quantityController.text),
+                  unit: unitController.text,
+                  priority: selectedPriority,
+                  notes: notesController.text,
+                );
+
+                if (mounted) {
+                  Navigator.pop(context);
+                  if (result['success']) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(result['message'] ?? 'Material requirement submitted'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(result['error'] ?? 'Failed to submit'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Submit'),
+            ),
+          ],
         ),
       ),
     );
@@ -997,12 +1133,14 @@ class _QuickActionsSheet extends StatelessWidget {
   final VoidCallback onMaterialTap;
   final VoidCallback onPhotoTap;
   final VoidCallback onHistoryTap;
+  final VoidCallback onMaterialRequirementTap;
 
   const _QuickActionsSheet({
     required this.onLabourTap,
     required this.onMaterialTap,
     required this.onPhotoTap,
     required this.onHistoryTap,
+    required this.onMaterialRequirementTap,
   });
 
   @override
@@ -1052,6 +1190,14 @@ class _QuickActionsSheet extends StatelessWidget {
             subtitle: 'Upload site progress pictures',
             color: AppColors.safetyOrange,
             onTap: onPhotoTap,
+          ),
+          const SizedBox(height: 16),
+          _buildActionCard(
+            icon: Icons.add_shopping_cart_outlined,
+            title: 'Material Requirement',
+            subtitle: 'Request materials needed',
+            color: Color(0xFFEC4899),
+            onTap: onMaterialRequirementTap,
           ),
           const SizedBox(height: 16),
           _buildActionCard(

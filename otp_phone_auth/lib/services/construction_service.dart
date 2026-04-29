@@ -1815,3 +1815,171 @@ class ConstructionService {
     }
   }
 }
+
+
+  // ============================================
+  // MATERIAL REQUIREMENTS SYSTEM
+  // ============================================
+
+  /// Submit material requirement (Supervisor)
+  Future<Map<String, dynamic>> submitMaterialRequirement({
+    required String siteId,
+    required String materialName,
+    required double quantity,
+    required String unit,
+    String priority = 'normal',
+    String notes = '',
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/construction/material-requirements/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token ?? ''}',
+        },
+        body: json.encode({
+          'site_id': siteId,
+          'material_name': materialName,
+          'quantity': quantity,
+          'unit': unit,
+          'priority': priority,
+          'notes': notes,
+        }),
+      );
+      
+      final data = json.decode(response.body);
+      
+      if (response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Material requirement submitted',
+          'requirement_id': data['requirement_id'],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': data['error'] ?? 'Failed to submit material requirement',
+        };
+      }
+    } catch (e) {
+      print('Error submitting material requirement: $e');
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }
+
+  /// Get material requirements (Admin/Accountant/Supervisor)
+  Future<Map<String, dynamic>> getMaterialRequirements() async {
+    try {
+      final token = await _authService.getToken();
+      
+      final response = await http.get(
+        Uri.parse('$baseUrl/construction/material-requirements/list/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token ?? ''}',
+        },
+      );
+      
+      final data = json.decode(response.body);
+      
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'requirements': data['requirements'] ?? [],
+          'count': data['count'] ?? 0,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': data['error'] ?? 'Failed to load material requirements',
+        };
+      }
+    } catch (e) {
+      print('Error loading material requirements: $e');
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }
+
+  /// Update material requirement status (Admin/Accountant)
+  Future<Map<String, dynamic>> updateMaterialRequirementStatus({
+    required String requirementId,
+    required String status,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      
+      final response = await http.put(
+        Uri.parse('$baseUrl/construction/material-requirements/$requirementId/status/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token ?? ''}',
+        },
+        body: json.encode({
+          'status': status,
+        }),
+      );
+      
+      final data = json.decode(response.body);
+      
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Status updated',
+        };
+      } else {
+        return {
+          'success': false,
+          'error': data['error'] ?? 'Failed to update status',
+        };
+      }
+    } catch (e) {
+      print('Error updating material requirement status: $e');
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }
+
+  /// Delete material requirement
+  Future<Map<String, dynamic>> deleteMaterialRequirement(String requirementId) async {
+    try {
+      final token = await _authService.getToken();
+      
+      final response = await http.delete(
+        Uri.parse('$baseUrl/construction/material-requirements/$requirementId/delete/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token ?? ''}',
+        },
+      );
+      
+      final data = json.decode(response.body);
+      
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Requirement deleted',
+        };
+      } else {
+        return {
+          'success': false,
+          'error': data['error'] ?? 'Failed to delete requirement',
+        };
+      }
+    } catch (e) {
+      print('Error deleting material requirement: $e');
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }

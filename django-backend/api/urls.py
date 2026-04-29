@@ -230,6 +230,12 @@ urlpatterns = [
     path('construction/raise-complaint/', views_construction.raise_complaint, name='raise-complaint'),
     path('construction/complaints/', views_construction.get_complaints, name='get-complaints'),
     
+    # Material Requirements System
+    path('construction/material-requirements/', views_construction.submit_material_requirement, name='submit-material-requirement'),
+    path('construction/material-requirements/list/', views_construction.get_material_requirements, name='get-material-requirements'),
+    path('construction/material-requirements/<uuid:requirement_id>/status/', views_construction.update_material_requirement_status, name='update-material-requirement-status'),
+    path('construction/material-requirements/<uuid:requirement_id>/delete/', views_construction.delete_material_requirement, name='delete-material-requirement'),
+    
     # Site Engineer Document APIs
     path('construction/upload-site-engineer-document/', views_construction.upload_site_engineer_document, name='upload-site-engineer-document'),
     path('construction/site-engineer-documents/', views_construction.get_site_engineer_documents, name='get-site-engineer-documents'),

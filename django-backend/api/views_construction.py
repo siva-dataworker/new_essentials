@@ -4733,3 +4733,281 @@ def send_complaint_message_architect(request, complaint_id):
         return Response({
             'error': f'Failed to send message: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ============================================
+# MATERIAL REQUIREMENTS SYSTEM
+# ============================================
+
+@api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def submit_material_requirement(request):
+    """
+    Supervisor: Submit material requirement for a site
+    POST /api/construction/material-requirements/
+    """
+    try:
+        user_id = request.user['user_id']
+        user_role = request.user.get('role', '')
+        
+        # Only supervisors can submit material requirements
+        if user_role != 'Supervisor':
+            return Response({
+                'error': 'Only supervisors can submit material requirements'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        site_id = request.data.get('site_id')
+        material_name = request.data.get('material_name')
+        quantity = request.data.get('quantity')
+        unit = request.data.get('unit')
+        priority = request.data.get('priority', 'normal')
+        notes = request.data.get('notes', '')
+        
+        if not all([site_id, material_name, quantity, unit]):
+            return Response({
+                'error': 'site_id, material_name, quantity, and unit are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate priority
+        if priority not in ['urgent', 'normal', 'low']:
+            priority = 'normal'
+        
+        # Insert material requirement
+        requirement_id = str(uuid.uuid4())
+        execute_query("""
+            INSERT INTO material_requirements 
+            (id, site_id, supervisor_id, material_name, quantity, unit, priority, notes, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pending')
+        """, (requirement_id, site_id, user_id, material_name, quantity, unit, priority, notes))
+        
+        return Response({
+            'success': True,
+            'message': 'Material requirement submitted successfully',
+            'requirement_id': requirement_id
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        print(f"Error submitting material requirement: {e}")
+        return Response({
+            'error': f'Error submitting material requirement: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_material_requirements(request):
+    """
+    Admin/Accountant: Get all material requirements
+    Supervisor: Get their own material requirements
+    GET /api/construction/material-requirements/
+    """
+    try:
+        user_id = request.user['user_id']
+        user_role = request.user.get('role', '')
+        
+        # Build query based on role
+        if user_role in ['Admin', 'Accountant']:
+            # Admin/Accountant can see all requirements
+            requirements = fetch_all("""
+                SELECT 
+                    mr.id,
+                    mr.site_id,
+                    mr.material_name,
+                    mr.quantity,
+                    mr.unit,
+                    mr.priority,
+                    mr.notes,
+                    mr.status,
+                    mr.created_at,
+                    s.site_name,
+                    s.customer_name,
+                    s.area,
+                    s.street,
+                    u.full_name as supervisor_name,
+                    u.phone as supervisor_phone
+                FROM material_requirements mr
+                JOIN sites s ON mr.site_id = s.id
+                JOIN users u ON mr.supervisor_id = u.id
+                ORDER BY 
+                    CASE mr.priority 
+                        WHEN 'urgent' THEN 1
+                        WHEN 'normal' THEN 2
+                        WHEN 'low' THEN 3
+                    END,
+                    mr.created_at DESC
+            """)
+        elif user_role == 'Supervisor':
+            # Supervisor can only see their own requirements
+            requirements = fetch_all("""
+                SELECT 
+                    mr.id,
+                    mr.site_id,
+                    mr.material_name,
+                    mr.quantity,
+                    mr.unit,
+                    mr.priority,
+                    mr.notes,
+                    mr.status,
+                    mr.created_at,
+                    s.site_name,
+                    s.customer_name,
+                    s.area,
+                    s.street
+                FROM material_requirements mr
+                JOIN sites s ON mr.site_id = s.id
+                WHERE mr.supervisor_id = %s
+                ORDER BY mr.created_at DESC
+            """, (user_id,))
+        else:
+            return Response({
+                'error': 'Unauthorized'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Format requirements
+        formatted_requirements = []
+        for req in requirements:
+            formatted_req = {
+                'id': req['id'],
+                'site_id': req['site_id'],
+                'site_name': req['site_name'],
+                'customer_name': req['customer_name'],
+                'area': req['area'],
+                'street': req['street'],
+                'material_name': req['material_name'],
+                'quantity': float(req['quantity']),
+                'unit': req['unit'],
+                'priority': req['priority'],
+                'notes': req['notes'],
+                'status': req['status'],
+                'created_at': req['created_at'].strftime('%Y-%m-%d %H:%M:%S') if req['created_at'] else None,
+            }
+            
+            # Add supervisor info for admin/accountant
+            if user_role in ['Admin', 'Accountant']:
+                formatted_req['supervisor_name'] = req.get('supervisor_name')
+                formatted_req['supervisor_phone'] = req.get('supervisor_phone')
+            
+            formatted_requirements.append(formatted_req)
+        
+        return Response({
+            'success': True,
+            'requirements': formatted_requirements,
+            'count': len(formatted_requirements)
+        })
+        
+    except Exception as e:
+        print(f"Error fetching material requirements: {e}")
+        return Response({
+            'error': f'Error fetching material requirements: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['PUT'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def update_material_requirement_status(request, requirement_id):
+    """
+    Admin/Accountant: Update material requirement status
+    PUT /api/construction/material-requirements/<requirement_id>/status/
+    """
+    try:
+        user_role = request.user.get('role', '')
+        
+        # Only Admin/Accountant can update status
+        if user_role not in ['Admin', 'Accountant']:
+            return Response({
+                'error': 'Only Admin/Accountant can update requirement status'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        new_status = request.data.get('status')
+        
+        if not new_status:
+            return Response({
+                'error': 'status is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate status
+        if new_status not in ['pending', 'approved', 'ordered', 'delivered']:
+            return Response({
+                'error': 'Invalid status. Must be: pending, approved, ordered, or delivered'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update status
+        execute_query("""
+            UPDATE material_requirements 
+            SET status = %s, updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+        """, (new_status, requirement_id))
+        
+        return Response({
+            'success': True,
+            'message': f'Status updated to {new_status}'
+        })
+        
+    except Exception as e:
+        print(f"Error updating material requirement status: {e}")
+        return Response({
+            'error': f'Error updating status: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['DELETE'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_material_requirement(request, requirement_id):
+    """
+    Supervisor: Delete their own material requirement (if pending)
+    Admin/Accountant: Delete any material requirement
+    DELETE /api/construction/material-requirements/<requirement_id>/
+    """
+    try:
+        user_id = request.user['user_id']
+        user_role = request.user.get('role', '')
+        
+        # Check if requirement exists
+        requirement = fetch_one("""
+            SELECT supervisor_id, status 
+            FROM material_requirements 
+            WHERE id = %s
+        """, (requirement_id,))
+        
+        if not requirement:
+            return Response({
+                'error': 'Material requirement not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Supervisors can only delete their own pending requirements
+        if user_role == 'Supervisor':
+            if requirement['supervisor_id'] != user_id:
+                return Response({
+                    'error': 'You can only delete your own requirements'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            if requirement['status'] != 'pending':
+                return Response({
+                    'error': 'You can only delete pending requirements'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Admin/Accountant can delete any requirement
+        elif user_role not in ['Admin', 'Accountant']:
+            return Response({
+                'error': 'Unauthorized'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Delete requirement
+        execute_query("""
+            DELETE FROM material_requirements WHERE id = %s
+        """, (requirement_id,))
+        
+        return Response({
+            'success': True,
+            'message': 'Material requirement deleted successfully'
+        })
+        
+    except Exception as e:
+        print(f"Error deleting material requirement: {e}")
+        return Response({
+            'error': f'Error deleting requirement: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
