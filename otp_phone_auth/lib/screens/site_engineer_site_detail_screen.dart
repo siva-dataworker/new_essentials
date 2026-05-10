@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../utils/app_colors.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../services/construction_service.dart';
 import 'site_engineer_photo_upload_screen.dart';
 import 'site_photo_gallery_screen.dart';
 import 'site_engineer_labour_screen.dart';
@@ -26,6 +27,7 @@ class SiteEngineerSiteDetailScreen extends StatefulWidget {
 class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScreen> {
   int _currentIndex = 0;
   final _authService = AuthService();
+  final _constructionService = ConstructionService();
   List<Map<String, dynamic>> _extraCosts = [];
   bool _isLoadingExtraCosts = false;
   List<Map<String, dynamic>> _historyEntries = [];
@@ -269,9 +271,162 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                     );
                   },
                 ),
+                _buildQuickActionButton(
+                  icon: Icons.inventory_2,
+                  label: 'Material\nRequest',
+                  color: Colors.teal,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showMaterialRequirementDialog();
+                  },
+                ),
               ],
             ),
             const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMaterialRequirementDialog() {
+    final _constructionService = ConstructionService();
+    final materialNameController = TextEditingController();
+    final quantityController = TextEditingController();
+    final unitController = TextEditingController();
+    final notesController = TextEditingController();
+    String selectedPriority = 'normal';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Material Requirement'),
+          contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+          content: SingleChildScrollView(
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: materialNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Material Name *',
+                      hintText: 'e.g., Cement, Steel, Bricks',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          controller: quantityController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Quantity *',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: unitController,
+                          decoration: const InputDecoration(
+                            labelText: 'Unit *',
+                            hintText: 'bags, tons',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedPriority,
+                    decoration: const InputDecoration(
+                      labelText: 'Priority',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'urgent', child: Text('🔴 Urgent')),
+                      DropdownMenuItem(value: 'normal', child: Text('🟡 Normal')),
+                      DropdownMenuItem(value: 'low', child: Text('🟢 Low')),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() => selectedPriority = value ?? 'normal');
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: notesController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes (Optional)',
+                      hintText: 'Additional details...',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (materialNameController.text.isEmpty ||
+                    quantityController.text.isEmpty ||
+                    unitController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please fill all required fields')),
+                  );
+                  return;
+                }
+
+                final qty = double.tryParse(quantityController.text);
+                if (qty == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a valid quantity')),
+                  );
+                  return;
+                }
+
+                final result = await _constructionService.submitMaterialRequirement(
+                  siteId: widget.site['id'].toString(),
+                  materialName: materialNameController.text.trim(),
+                  quantity: qty,
+                  unit: unitController.text.trim(),
+                  priority: selectedPriority,
+                  notes: notesController.text.trim(),
+                );
+
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result['success'] == true
+                          ? result['message'] ?? 'Material requirement submitted'
+                          : result['error'] ?? 'Failed to submit'),
+                      backgroundColor:
+                          result['success'] == true ? Colors.green : Colors.red,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.deepNavy,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Submit'),
+            ),
           ],
         ),
       ),
