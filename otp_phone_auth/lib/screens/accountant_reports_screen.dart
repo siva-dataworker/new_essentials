@@ -13,7 +13,7 @@ class AccountantReportsScreen extends StatefulWidget {
 }
 
 class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
-  DateTime _selectedDate = DateTime.now();
+  DateTime? _selectedDate; // null = All dates (no filter)
   String? _selectedRole; // null = All
   String? _selectedSiteId; // null = All sites
   String? _selectedEntryType; // null = All, 'labour', 'material'
@@ -21,12 +21,15 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
   static const _roles = ['Supervisor', 'Site Engineer'];
 
   String get _selectedDateStr =>
-      DateFormat('yyyy-MM-dd').format(_selectedDate);
+      _selectedDate != null ? DateFormat('yyyy-MM-dd').format(_selectedDate!) : '';
 
   List<Map<String, dynamic>> _filterEntries(List<Map<String, dynamic>> entries) {
     return entries.where((e) {
-      final d = e['entry_date'] as String? ?? '';
-      if (!d.startsWith(_selectedDateStr)) return false;
+      // Date filter — only apply if a date is selected
+      if (_selectedDate != null) {
+        final d = e['entry_date'] as String? ?? '';
+        if (!d.startsWith(_selectedDateStr)) return false;
+      }
       if (_selectedRole != null) {
         final role = (e['user_role'] as String? ?? '').toLowerCase().replaceAll('_', ' ');
         if (role != _selectedRole!.toLowerCase()) return false;
@@ -42,7 +45,7 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(2024),
       lastDate: DateTime.now(),
       builder: (context, child) => Theme(
@@ -319,11 +322,12 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        // Prev day
+                        // Prev day (only when a date is selected)
                         _ArrowBtn(
                           icon: Icons.chevron_left,
+                          disabled: _selectedDate == null,
                           onTap: () => setState(() => _selectedDate =
-                              _selectedDate.subtract(const Duration(days: 1))),
+                              _selectedDate!.subtract(const Duration(days: 1))),
                         ),
                         const SizedBox(width: 8),
                         // Date display — tap to open picker
@@ -342,28 +346,38 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
                                   const Icon(Icons.calendar_today, color: Colors.white, size: 18),
                                   const SizedBox(width: 10),
                                   Text(
-                                    _friendlyDate(_selectedDate),
+                                    _selectedDate != null
+                                        ? _friendlyDate(_selectedDate!)
+                                        : 'All Dates',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
+                                  if (_selectedDate != null) ...[
+                                    const SizedBox(width: 8),
+                                    GestureDetector(
+                                      onTap: () => setState(() => _selectedDate = null),
+                                      child: const Icon(Icons.close, color: Colors.white70, size: 16),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
-                        // Next day (disabled if today)
+                        // Next day (disabled if today or no date selected)
                         _ArrowBtn(
                           icon: Icons.chevron_right,
-                          disabled: DateTime(_selectedDate.year, _selectedDate.month,
-                                  _selectedDate.day) ==
-                              DateTime(DateTime.now().year, DateTime.now().month,
-                                  DateTime.now().day),
+                          disabled: _selectedDate == null ||
+                              DateTime(_selectedDate!.year, _selectedDate!.month,
+                                      _selectedDate!.day) ==
+                                  DateTime(DateTime.now().year, DateTime.now().month,
+                                      DateTime.now().day),
                           onTap: () => setState(() =>
-                              _selectedDate = _selectedDate.add(const Duration(days: 1))),
+                              _selectedDate = _selectedDate!.add(const Duration(days: 1))),
                         ),
                       ],
                     ),
@@ -650,7 +664,9 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
                 color: AppColors.textSecondary.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
             Text(
-              'No entries on ${_friendlyDate(_selectedDate)}',
+              _selectedDate != null
+                  ? 'No entries on ${_friendlyDate(_selectedDate!)}'
+                  : 'No entries found',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -660,7 +676,7 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
             const SizedBox(height: 8),
             Text(
               _selectedRole != null
-                  ? 'No $_selectedRole entries on this date'
+                  ? 'No $_selectedRole entries for the selected filters'
                   : 'Try a different date or role filter',
               style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
