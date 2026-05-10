@@ -2410,14 +2410,25 @@ class _AdminDocumentTabState extends State<_AdminDocumentTab> {
     try {
       final authService = AuthService();
       final token = await authService.getToken();
+      // Use the all-documents endpoint which combines architect + site engineer docs
       final response = await http.get(
-        Uri.parse('${AuthService.baseUrl}/admin/sites/${widget.siteId}/documents/'),
+        Uri.parse('${AuthService.baseUrl}/construction/all-documents/?site_id=${widget.siteId}&role=all'),
         headers: {'Authorization': 'Bearer ${token ?? ''}'},
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        // Combine architect and site engineer documents
+        final archDocs = List<Map<String, dynamic>>.from(data['architect_documents'] ?? []);
+        final engDocs = List<Map<String, dynamic>>.from(data['site_engineer_documents'] ?? []);
+        final all = [...archDocs, ...engDocs];
+        // Sort by upload date descending
+        all.sort((a, b) {
+          final da = a['upload_date'] as String? ?? '';
+          final db = b['upload_date'] as String? ?? '';
+          return db.compareTo(da);
+        });
         setState(() {
-          _documents = List<Map<String, dynamic>>.from(data['documents'] ?? []);
+          _documents = all;
           _isLoading = false;
         });
       } else {
@@ -2497,7 +2508,8 @@ class _AdminDocumentTabState extends State<_AdminDocumentTab> {
           final doc = _documents[index];
           final title = doc['title'] as String? ?? doc['document_type'] as String? ?? 'Document';
           final docType = doc['document_type'] as String? ?? '';
-          final uploadedBy = doc['uploaded_by'] as String? ?? doc['engineer_name'] as String? ?? 'Unknown';
+          final uploadedBy = doc['uploaded_by'] as String? ?? doc['engineer_name'] as String? ?? doc['architect_name'] as String? ?? 'Unknown';
+          final role = doc['role'] as String? ?? '';
           final uploadDate = (doc['upload_date'] as String? ?? doc['uploaded_at'] as String? ?? '');
           final dateStr = uploadDate.length >= 10 ? uploadDate.substring(0, 10) : uploadDate;
           final fileUrl = doc['file_url'] as String? ?? '';

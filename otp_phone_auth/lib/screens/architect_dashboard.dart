@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import 'dart:convert';
 import '../models/user_model.dart';
 import '../providers/construction_provider.dart';
 import '../services/construction_service.dart';
@@ -482,20 +485,6 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                     icon: Icons.report_problem,
                     color: Colors.orange.shade600,
                     onTap: () => _showComplaintForm(),
-                  ),
-                  _buildActionCard(
-                    title: 'Client Complaints',
-                    subtitle: 'View & respond to client issues',
-                    icon: Icons.chat_bubble_outline,
-                    color: Colors.red.shade600,
-                    onTap: () => _showClientComplaints(),
-                  ),
-                  _buildActionCard(
-                    title: 'Site Estimation',
-                    subtitle: 'Upload cost estimates',
-                    icon: Icons.calculate,
-                    color: Colors.green.shade600,
-                    onTap: () => _showEstimationForm(),
                   ),
                   _buildActionCard(
                     title: 'View History',
@@ -1497,30 +1486,222 @@ class _ComplaintFormDialogState extends State<_ComplaintFormDialog> {
   }
 }
 
-// Architect History Screen (placeholder for now)
-class ArchitectHistoryScreen extends StatelessWidget {
+// Architect History Screen — shows all documents uploaded by this architect for the site
+class ArchitectHistoryScreen extends StatefulWidget {
   final String siteId;
 
   const ArchitectHistoryScreen({super.key, required this.siteId});
 
   @override
+  State<ArchitectHistoryScreen> createState() => _ArchitectHistoryScreenState();
+}
+
+class _ArchitectHistoryScreenState extends State<ArchitectHistoryScreen> {
+  final _authService = AuthService();
+  List<Map<String, dynamic>> _documents = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      final token = await _authService.getToken();
+      final response = await http.get(
+        Uri.parse('${AuthService.baseUrl}/construction/architect-documents/?site_id=${widget.siteId}'),
+        headers: {'Authorization': 'Bearer ${token ?? ''}'},
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _documents = List<Map<String, dynamic>>.from(data['documents'] ?? []);
+          _isLoading = false;
+        });
+      } else {
+        setState(() { _error = 'Failed to load history'; _isLoading = false; });
+      }
+    } catch (e) {
+      setState(() { _error = e.toString(); _isLoading = false; });
+    }
+  }
+
+  Future<void> _openDocument(String fileUrl) async {
+    final url = fileUrl.startsWith('http') ? fileUrl : 'http://187.127.164.22$fileUrl';
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open document')),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.lightSlate,
       appBar: AppBar(
-        title: const Text('Architect History'),
+        title: const Text('Upload History'),
         backgroundColor: AppColors.cleanWhite,
         foregroundColor: AppColors.deepNavy,
-      ),
-      body: const Center(
-        child: Text(
-          'Architect History with dropdown date filtering\nwill be implemented here',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            color: AppColors.textSecondary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadHistory,
           ),
-        ),
+        ],
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.purple))
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 56, color: Colors.red),
+                      const SizedBox(height: 12),
+                      Text(_error!, style: const TextStyle(color: AppColors.textSecondary)),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: _loadHistory,
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.purple, foregroundColor: Colors.white),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : _documents.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.history, size: 72, color: Colors.grey.shade300),
+                          const SizedBox(height: 16),
+                          const Text('No documents uploaded yet',
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.deepNavy)),
+                          const SizedBox(height: 8),
+                          const Text('Documents you upload will appear here.',
+                              style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadHistory,
+                      color: Colors.purple,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _documents.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final doc = _documents[index];
+                          final docType = doc['document_type'] as String? ?? '';
+                          final title = doc['title'] as String? ?? docType;
+                          final description = doc['description'] as String? ?? '';
+                          final uploadDate = (doc['upload_date'] as String? ?? '');
+                          final dateStr = uploadDate.length >= 10 ? uploadDate.substring(0, 10) : uploadDate;
+                          final fileUrl = doc['file_url'] as String? ?? '';
+
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.purple.withValues(alpha: 0.08),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.purple.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(Icons.insert_drive_file,
+                                        color: Colors.purple, size: 24),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(title,
+                                            style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.deepNavy)),
+                                        if (docType.isNotEmpty) ...[
+                                          const SizedBox(height: 2),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.purple.withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text(docType,
+                                                style: const TextStyle(
+                                                    fontSize: 11,
+                                                    color: Colors.purple,
+                                                    fontWeight: FontWeight.w600)),
+                                          ),
+                                        ],
+                                        if (description.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text(description,
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey.shade600),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis),
+                                        ],
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.calendar_today_outlined,
+                                                size: 12, color: Colors.grey.shade500),
+                                            const SizedBox(width: 4),
+                                            Text(dateStr,
+                                                style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey.shade600)),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (fileUrl.isNotEmpty)
+                                    IconButton(
+                                      icon: const Icon(Icons.open_in_new,
+                                          color: Colors.purple, size: 22),
+                                      onPressed: () => _openDocument(fileUrl),
+                                      tooltip: 'Open document',
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
     );
   }
 }
