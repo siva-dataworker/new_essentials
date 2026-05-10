@@ -8,7 +8,7 @@ class AuthService {
   AuthService._internal();
 
   // Django backend URL
-  static const String baseUrl = 'http://localhost:8000/api';
+  static const String baseUrl = 'http://187.127.164.22/api';
   static const Duration requestTimeout = Duration(seconds: 10);
   
   String? _token;
