@@ -8,8 +8,8 @@ class ConstructionService {
   ConstructionService._internal();
 
   final _authService = AuthService();
-  static const String baseUrl = 'http://localhost:8000/api';
-  static const String mediaBaseUrl = 'http://localhost:8000'; // For media files
+  static const String baseUrl = 'http://187.127.164.22/api';
+  static const String mediaBaseUrl = 'http://187.127.164.22'; // For media files
 
   // Helper method to convert relative image URLs to full URLs
   static String getFullImageUrl(String? relativeUrl) {

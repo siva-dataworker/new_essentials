@@ -10,7 +10,7 @@ class ExportService {
   ExportService._internal();
 
   final _authService = AuthService();
-  static const String baseUrl = 'http://localhost:8000/api';
+  static const String baseUrl = 'http://187.127.164.22/api';
 
   Future<Map<String, String>> _getHeaders() async {
     final token = await _authService.getToken();

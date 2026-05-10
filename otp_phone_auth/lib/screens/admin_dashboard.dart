@@ -39,7 +39,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   String _profilePhone = '';
 
   // Sites tab state
-  static const String _sitesBaseUrl = 'http://localhost:8000/api';
+  static const String _sitesBaseUrl = 'http://187.127.164.22/api';
   List<String> _areas = [];
   List<String> _streets = [];
   List<Map<String, dynamic>> _sites = [];
