@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../utils/app_colors.dart';
+import 'package:provider/provider.dart';
+import '../providers/construction_provider.dart';
 import '../services/construction_service.dart';
+import '../utils/app_colors.dart';
 
 class SupervisorReportsScreen extends StatefulWidget {
   const SupervisorReportsScreen({super.key});
@@ -12,65 +13,180 @@ class SupervisorReportsScreen extends StatefulWidget {
 
 class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
   final _constructionService = ConstructionService();
-  
   List<Map<String, dynamic>> _sites = [];
-  String? _selectedSiteId;
-  
-  List<Map<String, dynamic>> _documents = [];
-  List<Map<String, dynamic>> _complaints = [];
-  
-  bool _isLoadingDocuments = false;
-  bool _isLoadingComplaints = false;
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadSites();
+    _loadWorkingSites();
   }
 
-  Future<void> _loadSites() async {
-    try {
-      final sites = await _constructionService.getSites();
-      setState(() {
-        _sites = sites;
-      });
-    } catch (e) {
-      print('Error loading sites: $e');
-    }
-  }
-
-  Future<void> _loadArchitectData() async {
-    if (_selectedSiteId == null) return;
-    
+  Future<void> _loadWorkingSites() async {
     setState(() {
-      _isLoadingDocuments = true;
-      _isLoadingComplaints = true;
+      _isLoading = true;
+      _error = null;
     });
-
     try {
-      // Load documents
-      final docsResponse = await _constructionService.getArchitectDocuments(
-        siteId: _selectedSiteId,
-      );
-      
-      // Load complaints
-      final complaintsResponse = await _constructionService.getArchitectComplaints(
-        siteId: _selectedSiteId,
-      );
-
-      setState(() {
-        _documents = List<Map<String, dynamic>>.from(docsResponse['documents'] ?? []);
-        _complaints = List<Map<String, dynamic>>.from(complaintsResponse['complaints'] ?? []);
-        _isLoadingDocuments = false;
-        _isLoadingComplaints = false;
-      });
+      final result = await _constructionService.getWorkingSites();
+      if (result['success'] == true) {
+        final raw = result['sites'] as List<dynamic>? ?? [];
+        setState(() {
+          _sites = raw.map((s) => Map<String, dynamic>.from(s as Map)).toList();
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error = result['error'] ?? 'Failed to load sites';
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      print('Error loading architect data: $e');
       setState(() {
-        _isLoadingDocuments = false;
-        _isLoadingComplaints = false;
+        _error = e.toString();
+        _isLoading = false;
       });
     }
+  }
+
+  void _showClientRequirementDialog(Map<String, dynamic> site) {
+    final provider = Provider.of<ConstructionProvider>(context, listen: false);
+    final siteId = site['id'] as String? ?? site['site_id'] as String? ?? '';
+    final siteName =
+        '${site['customer_name'] ?? ''} ${site['site_name'] ?? ''}'.trim();
+
+    final descriptionController = TextEditingController();
+    final amountController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Client Extra Requirement',
+          style: TextStyle(
+            color: AppColors.deepNavy,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Site name display (read-only)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.deepNavy.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: AppColors.deepNavy.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_on,
+                        color: AppColors.deepNavy, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        siteName,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.deepNavy,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Description
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description *',
+                  hintText: 'Enter requirement description',
+                  border: OutlineInputBorder(),
+                  prefixIcon:
+                      Icon(Icons.description, color: AppColors.deepNavy),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+
+              // Amount
+              TextField(
+                controller: amountController,
+                decoration: const InputDecoration(
+                  labelText: 'Amount *',
+                  hintText: 'Enter amount',
+                  border: OutlineInputBorder(),
+                  prefixIcon:
+                      Icon(Icons.currency_rupee, color: AppColors.deepNavy),
+                  prefixText: '₹ ',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final description = descriptionController.text.trim();
+              final amountText = amountController.text.trim();
+
+              if (description.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter description')),
+                );
+                return;
+              }
+
+              final amount = double.tryParse(amountText);
+              if (amount == null || amount <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('Please enter a valid amount')),
+                );
+                return;
+              }
+
+              final success = await provider.addClientRequirement(
+                  siteId, description, amount);
+
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(success
+                        ? 'Client requirement added successfully'
+                        : 'Failed to add requirement'),
+                    backgroundColor:
+                        success ? AppColors.statusCompleted : Colors.red,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.deepNavy,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Submit'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -89,561 +205,204 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
         backgroundColor: AppColors.cleanWhite,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.deepNavy),
-      ),
-      body: Column(
-        children: [
-          // Site Selector
-          Container(
-            color: AppColors.cleanWhite,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Select Site',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _selectedSiteId,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.location_on, color: AppColors.deepNavy, size: 20),
-                    filled: true,
-                    fillColor: AppColors.lightSlate,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: AppColors.deepNavy.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.deepNavy,
-                        width: 2,
-                      ),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  isExpanded: true,
-                  hint: const Text(
-                    'Select a site',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  items: _sites.map((site) {
-                    return DropdownMenuItem<String>(
-                      value: site['id'] as String,
-                      child: Text(
-                        site['display_name'] as String? ?? site['site_name'] as String,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.deepNavy,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() => _selectedSiteId = value);
-                    _loadArchitectData();
-                  },
-                  icon: const Icon(Icons.arrow_drop_down, color: AppColors.deepNavy),
-                  dropdownColor: AppColors.cleanWhite,
-                ),
-              ],
-            ),
-          ),
-
-          // Content
-          Expanded(
-            child: _selectedSiteId == null
-                ? _buildEmptyState()
-                : _buildContent(),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.deepNavy),
+            onPressed: _loadWorkingSites,
           ),
         ],
       ),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.deepNavy))
+          : _error != null
+              ? _buildError()
+              : _sites.isEmpty
+                  ? _buildEmpty()
+                  : _buildSiteList(),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildError() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.folder_open,
-            size: 80,
-            color: AppColors.textSecondary.withValues(alpha: 0.3),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Select a site to view reports',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContent() {
-    return RefreshIndicator(
-      onRefresh: _loadArchitectData,
-      color: AppColors.deepNavy,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Documents Section
-            _buildSectionHeader('Documents', Icons.description, _documents.length),
-            const SizedBox(height: 12),
-            _isLoadingDocuments
-                ? _buildLoadingCard()
-                : _documents.isEmpty
-                    ? _buildEmptyCard('No documents uploaded yet')
-                    : Column(
-                        children: _documents.map((doc) => _buildDocumentCard(doc)).toList(),
-                      ),
-            
-            const SizedBox(height: 24),
-            
-            // Complaints Section
-            _buildSectionHeader('Complaints', Icons.report_problem, _complaints.length),
-            const SizedBox(height: 12),
-            _isLoadingComplaints
-                ? _buildLoadingCard()
-                : _complaints.isEmpty
-                    ? _buildEmptyCard('No complaints reported yet')
-                    : Column(
-                        children: _complaints.map((complaint) => _buildComplaintCard(complaint)).toList(),
-                      ),
+            const Icon(Icons.error_outline, size: 56, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(_error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.textSecondary)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadWorkingSites,
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.deepNavy,
+                  foregroundColor: Colors.white),
+              child: const Text('Retry'),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon, int count) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.deepNavy.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.location_off,
+              size: 72,
+              color: AppColors.textSecondary.withValues(alpha: 0.3)),
+          const SizedBox(height: 16),
+          const Text(
+            'No sites assigned',
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.deepNavy),
           ),
-          child: Icon(icon, color: AppColors.deepNavy, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.deepNavy,
+          const SizedBox(height: 8),
+          const Text(
+            'Contact your accountant to assign sites.',
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
-        ),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.deepNavy,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            count.toString(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSiteList() {
+    return RefreshIndicator(
+      onRefresh: _loadWorkingSites,
+      color: AppColors.deepNavy,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              '${_sites.length} site${_sites.length == 1 ? '' : 's'} assigned',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildLoadingCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Center(
-        child: CircularProgressIndicator(color: AppColors.deepNavy),
+          // Site cards
+          ..._sites.map((site) => _buildSiteCard(site)),
+        ],
       ),
     );
   }
 
-  Widget _buildEmptyCard(String message) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.deepNavy.withValues(alpha: 0.1),
-        ),
-      ),
-      child: Center(
-        child: Text(
-          message,
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDocumentCard(Map<String, dynamic> doc) {
-    final documentType = doc['document_type'] as String? ?? 'Unknown';
-    final title = doc['title'] as String? ?? 'Untitled';
-    final description = doc['description'] as String? ?? '';
-    final uploadDate = doc['upload_date'] as String? ?? '';
-    final architectName = doc['architect_name'] as String? ?? 'Unknown';
-    final fileUrl = ConstructionService.getFullImageUrl(doc['file_url'] as String? ?? '');
+  Widget _buildSiteCard(Map<String, dynamic> site) {
+    final customerName = site['customer_name'] as String? ?? '';
+    final siteName = site['site_name'] as String? ?? 'Unknown Site';
+    final area = site['area'] as String? ?? '';
+    final street = site['street'] as String? ?? '';
+    final location = [area, street].where((s) => s.isNotEmpty).join(', ');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: AppColors.deepNavy.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: AppColors.deepNavy.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.deepNavy.withValues(alpha: 0.05),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            // Site icon
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.deepNavy.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.location_city,
+                  color: AppColors.deepNavy, size: 22),
             ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.deepNavy,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    documentType,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.insert_drive_file,
-                  color: AppColors.deepNavy.withValues(alpha: 0.5),
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-          
-          // Content
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
-                  ),
-                ),
-                if (description.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+            const SizedBox(width: 14),
+
+            // Site info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    description,
+                    customerName.isNotEmpty
+                        ? '$customerName - $siteName'
+                        : siteName,
                     style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.deepNavy,
                     ),
                   ),
-                ],
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.person,
-                      size: 16,
-                      color: AppColors.textSecondary.withValues(alpha: 0.7),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      architectName,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary.withValues(alpha: 0.9),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: AppColors.textSecondary.withValues(alpha: 0.7),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      uploadDate,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary.withValues(alpha: 0.9),
-                      ),
-                    ),
-                  ],
-                ),
-                if (fileUrl.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final url = Uri.parse(fileUrl);
-                          if (await canLaunchUrl(url)) {
-                            await launchUrl(
-                              url,
-                              mode: LaunchMode.externalApplication,
-                            );
-                          } else {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Could not open document'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error opening document: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.download, size: 18),
-                      label: const Text('View Document'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.deepNavy,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                  if (location.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.place,
+                            size: 13,
+                            color: AppColors.textSecondary
+                                .withValues(alpha: 0.7)),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            location,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary
+                                  .withValues(alpha: 0.8),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildComplaintCard(Map<String, dynamic> complaint) {
-    final title = complaint['title'] as String? ?? 'Untitled';
-    final description = complaint['description'] as String? ?? '';
-    final priority = complaint['priority'] as String? ?? 'Medium';
-    final status = complaint['status'] as String? ?? 'Open';
-    final uploadDate = complaint['upload_date'] as String? ?? '';
-    final architectName = complaint['architect_name'] as String? ?? 'Unknown';
-
-    Color priorityColor;
-    switch (priority.toLowerCase()) {
-      case 'high':
-        priorityColor = Colors.red;
-        break;
-      case 'medium':
-        priorityColor = Colors.orange;
-        break;
-      default:
-        priorityColor = Colors.green;
-    }
-
-    Color statusColor;
-    switch (status.toLowerCase()) {
-      case 'resolved':
-        statusColor = AppColors.statusCompleted;
-        break;
-      case 'in_progress':
-        statusColor = Colors.orange;
-        break;
-      default:
-        statusColor = Colors.red;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: priorityColor.withValues(alpha: 0.3),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.deepNavy.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: priorityColor.withValues(alpha: 0.05),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: priorityColor,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    priority.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    status.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.report_problem,
-                  color: priorityColor,
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-          
-          // Content
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
-                  ),
-                ),
-                if (description.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    description,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.person,
-                      size: 16,
-                      color: AppColors.textSecondary.withValues(alpha: 0.7),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      architectName,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary.withValues(alpha: 0.9),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: AppColors.textSecondary.withValues(alpha: 0.7),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      uploadDate,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary.withValues(alpha: 0.9),
-                      ),
+                      ],
                     ),
                   ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 10),
+
+            // Client Requirement button
+            ElevatedButton(
+              onPressed: () => _showClientRequirementDialog(site),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.deepNavy,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                'Add\nRequirement',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
