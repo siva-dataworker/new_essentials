@@ -50,6 +50,20 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Allow opening HTTP/HTTPS URLs in browser -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="http"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <!-- Allow opening PDF files -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:mimeType="application/pdf"/>
+        </intent>
         <!-- Allow opening Excel/Sheets files -->
         <intent>
             <action android:name="android.intent.action.VIEW"/>
