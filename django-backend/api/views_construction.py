@@ -4599,9 +4599,9 @@ def add_client_requirement(request):
         user_role = request.user.get('role', '')
         user_id = request.user.get('user_id')
         
-        # Only Accountant can add client requirements
-        if user_role != 'Accountant':
-            return Response({'error': 'Only Accountant can add client requirements'}, 
+        # Allow Accountant, Supervisor, and Site Engineer to add client requirements
+        if user_role not in ['Accountant', 'Supervisor', 'Site Engineer']:
+            return Response({'error': 'Only Accountant, Supervisor, or Site Engineer can add client requirements'}, 
                           status=status.HTTP_403_FORBIDDEN)
         
         site_id = request.data.get('site_id')
@@ -4645,10 +4645,10 @@ def get_client_requirements(request):
         
         print(f"🔍 get_client_requirements called by user role: {user_role}")
         
-        # Only Admin can view client requirements
-        if user_role != 'Admin':
+        # Allow Admin and Accountant to view client requirements
+        if user_role not in ['Admin', 'Accountant']:
             print(f"❌ Access denied for role: {user_role}")
-            return Response({'error': 'Only Admin can view client requirements'}, 
+            return Response({'error': 'Only Admin or Accountant can view client requirements'}, 
                           status=status.HTTP_403_FORBIDDEN)
         
         site_id = request.GET.get('site_id')

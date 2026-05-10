@@ -61,7 +61,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     // Add listener to load utilization only on first access
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
@@ -267,11 +267,15 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          padding: EdgeInsets.zero,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 14),
           tabs: const [
             Tab(text: 'Allocation'),
             Tab(text: 'Utilization'),
             Tab(text: 'Updates'),
             Tab(text: 'Inventory'),
+            Tab(text: 'Requirement'),
           ],
         ),
       ),
@@ -282,6 +286,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
           _buildUtilizationTab(),
           PhotoTabsSection(siteId: widget.siteId),
           _buildInventoryTab(),
+          _buildRequirementTab(),
         ],
       ),
       floatingActionButton: _tabController.index == 1
@@ -1156,6 +1161,165 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
     return SiteEngineerMaterialScreen(
       siteId: widget.siteId,
       siteName: widget.siteName,
+    );
+  }
+
+  Widget _buildRequirementTab() {
+    return RefreshIndicator(
+      onRefresh: () => _loadClientRequirements(forceRefresh: true),
+      color: const Color(0xFF1A1A2E),
+      child: _isLoadingRequirements
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF1A1A2E)))
+          : _clientRequirements.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.assignment_outlined,
+                          size: 72,
+                          color: Colors.grey.shade300),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No requirements yet',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1A1A2E),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Supervisor or Site Engineer can add\nclient requirements from their Reports tab.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _clientRequirements.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final req = _clientRequirements[index];
+                    final description = req['description'] as String? ?? '';
+                    final amount = req['amount'];
+                    final status = req['status'] as String? ?? 'Pending';
+                    final addedBy = req['added_by_name'] as String? ?? 'Unknown';
+                    final addedDate = req['added_date'] as String? ?? '';
+                    final formattedDate = addedDate.length >= 10
+                        ? addedDate.substring(0, 10)
+                        : addedDate;
+
+                    final amountDouble = amount is num
+                        ? amount.toDouble()
+                        : double.tryParse(amount?.toString() ?? '0') ?? 0.0;
+
+                    Color statusColor;
+                    switch (status.toLowerCase()) {
+                      case 'approved':
+                        statusColor = Colors.green;
+                        break;
+                      case 'rejected':
+                        statusColor = Colors.red;
+                        break;
+                      default:
+                        statusColor = Colors.orange;
+                    }
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1A1A2E).withValues(alpha: 0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: statusColor.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: statusColor.withValues(alpha: 0.4)),
+                                  ),
+                                  child: Text(
+                                    status,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: statusColor,
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1A1A2E),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '₹${amountDouble >= 100000 ? '${(amountDouble / 100000).toStringAsFixed(2)} L' : amountDouble >= 1000 ? '${(amountDouble / 1000).toStringAsFixed(1)} K' : amountDouble.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              description,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF1A1A2E),
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Icon(Icons.person_outline,
+                                    size: 14, color: Colors.grey.shade500),
+                                const SizedBox(width: 4),
+                                Text(
+                                  addedBy,
+                                  style: TextStyle(
+                                      fontSize: 12, color: Colors.grey.shade600),
+                                ),
+                                const SizedBox(width: 16),
+                                Icon(Icons.calendar_today_outlined,
+                                    size: 14, color: Colors.grey.shade500),
+                                const SizedBox(width: 4),
+                                Text(
+                                  formattedDate,
+                                  style: TextStyle(
+                                      fontSize: 12, color: Colors.grey.shade600),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
   
