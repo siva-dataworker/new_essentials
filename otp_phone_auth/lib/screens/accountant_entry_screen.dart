@@ -1179,9 +1179,23 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
             const Divider(height: 1),
             Expanded(
               child: _selectedSupervisorTab == 'Labour'
-                  ? _buildHistoryList(provider.labourEntries, _getPendingRequestIds(changeProvider), true)
+                  ? _buildHistoryList(
+                      provider.labourEntries.where((e) {
+                        final role = (e['submitted_by_role'] as String? ?? e['user_role'] as String? ?? '').toLowerCase();
+                        return role == 'supervisor';
+                      }).toList(),
+                      _getPendingRequestIds(changeProvider),
+                      true,
+                    )
                   : _selectedSupervisorTab == 'Materials'
-                      ? _buildHistoryList(provider.materialEntries, _getPendingRequestIds(changeProvider), false)
+                      ? _buildHistoryList(
+                          provider.materialEntries.where((e) {
+                            final role = (e['submitted_by_role'] as String? ?? e['user_role'] as String? ?? '').toLowerCase();
+                            return role == 'supervisor';
+                          }).toList(),
+                          _getPendingRequestIds(changeProvider),
+                          false,
+                        )
                       : _selectedSupervisorTab == 'Requests'
                           ? _buildRequestsList(changeProvider)
                           : _buildSupervisorPhotosTab(provider),
