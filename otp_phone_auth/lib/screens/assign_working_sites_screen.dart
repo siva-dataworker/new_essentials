@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/construction_service.dart';
-import '../utils/app_colors.dart';
 
 class AssignWorkingSitesScreen extends StatefulWidget {
   const AssignWorkingSitesScreen({super.key});
@@ -13,50 +12,19 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
   final _constructionService = ConstructionService();
   
   List<Map<String, dynamic>> _allSites = [];
-  List<Map<String, dynamic>> _filteredSites = [];
   final Set<String> _selectedSiteIds = {};
-  final Map<String, TextEditingController> _descriptionControllers = {};
-  final TextEditingController _searchController = TextEditingController();
   
-  bool _isLoadingSites = false;
+  bool _isLoading = false;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
     _loadAllSites();
-    _searchController.addListener(_filterSites);
-  }
-
-  @override
-  void dispose() {
-    for (var controller in _descriptionControllers.values) {
-      controller.dispose();
-    }
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _filterSites() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      if (query.isEmpty) {
-        _filteredSites = _allSites;
-      } else {
-        _filteredSites = _allSites.where((site) {
-          final displayName = (site['display_name'] ?? '').toString().toLowerCase();
-          final siteName = (site['site_name'] ?? '').toString().toLowerCase();
-          final customerName = (site['customer_name'] ?? '').toString().toLowerCase();
-          return displayName.contains(query) || 
-                 siteName.contains(query) || 
-                 customerName.contains(query);
-        }).toList();
-      }
-    });
   }
 
   Future<void> _loadAllSites() async {
-    setState(() => _isLoadingSites = true);
+    setState(() => _isLoading = true);
     
     try {
       final result = await _constructionService.getAllSites();
@@ -64,12 +32,9 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
       if (result['success'] && mounted) {
         setState(() {
           _allSites = result['sites'] as List<Map<String, dynamic>>;
-          _filteredSites = _allSites;
-          _isLoadingSites = false;
         });
       } else {
         if (mounted) {
-          setState(() => _isLoadingSites = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error: ${result['error'] ?? 'Failed to load sites'}'),
@@ -80,13 +45,16 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoadingSites = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading sites: $e'),
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -108,7 +76,7 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
     final sites = _selectedSiteIds.map((siteId) {
       return {
         'site_id': siteId,
-        'description': _descriptionControllers[siteId]?.text.trim() ?? '',
+        'description': '',
       };
     }).toList();
 
@@ -124,7 +92,7 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
           content: Text(result['success'] 
               ? '✅ ${result['message']}' 
               : '❌ ${result['error']}'),
-          backgroundColor: result['success'] ? AppColors.statusCompleted : Colors.red,
+          backgroundColor: result['success'] ? Colors.green : Colors.red,
         ),
       );
 
@@ -137,12 +105,14 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightSlate,
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Assign Working Sites'),
-        backgroundColor: AppColors.deepNavy,
-        foregroundColor: Colors.white,
-        elevation: 0,
+        title: const Text(
+          'Assign Working Sites',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: const Color(0xFF1A1A2E),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
         children: [
@@ -151,8 +121,18 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: AppColors.navyGradient,
-              boxShadow: [AppColors.cardShadow],
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,35 +153,21 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
                     color: Colors.white70,
                   ),
                 ),
-                if (_isLoadingSites) ...[
+                if (_selectedSiteIds.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${_selectedSiteIds.length} site${_selectedSiteIds.length != 1 ? 's' : ''} selected',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Loading sites...',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else if (_allSites.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    '${_allSites.length} sites available',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.white70,
                     ),
                   ),
                 ],
@@ -209,91 +175,54 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
             ),
           ),
 
-          // Search Bar
-          if (!_isLoadingSites && _allSites.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.white,
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search sites...',
-                  prefixIcon: const Icon(Icons.search, color: AppColors.deepNavy),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, color: AppColors.deepNavy),
-                          onPressed: () {
-                            _searchController.clear();
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: AppColors.lightSlate,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-              ),
-            ),
-
           // Sites List
           Expanded(
-            child: _isLoadingSites
+            child: _isLoading
                 ? const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(color: AppColors.deepNavy),
+                        CircularProgressIndicator(color: Color(0xFF1A1A2E)),
                         SizedBox(height: 16),
                         Text(
                           'Loading sites...',
                           style: TextStyle(
                             fontSize: 16,
-                            color: AppColors.deepNavy,
+                            color: Color(0xFF1A1A2E),
                           ),
                         ),
                       ],
                     ),
                   )
-                : _filteredSites.isEmpty
+                : _allSites.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              _searchController.text.isNotEmpty 
-                                  ? Icons.search_off 
-                                  : Icons.construction,
+                              Icons.construction,
                               size: 64,
-                              color: AppColors.textSecondary,
+                              color: const Color(0xFF6B7280).withValues(alpha: 0.4),
                             ),
                             const SizedBox(height: 16),
-                            Text(
-                              _searchController.text.isNotEmpty
-                                  ? 'No sites found'
-                                  : 'No sites available',
-                              style: const TextStyle(
+                            const Text(
+                              'No sites available',
+                              style: TextStyle(
                                 fontSize: 16,
-                                color: AppColors.deepNavy,
+                                color: Color(0xFF1A1A2E),
                               ),
                             ),
                           ],
                         ),
                       )
-                    : ListView.builder(
+                    : ListView.separated(
                         padding: const EdgeInsets.all(16),
-                        itemCount: _filteredSites.length,
+                        itemCount: _allSites.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
-                          final site = _filteredSites[index];
+                          final site = _allSites[index];
                           final siteId = site['id'].toString();
                           final isSelected = _selectedSiteIds.contains(siteId);
-
-                          // Create controller if not exists
-                          if (!_descriptionControllers.containsKey(siteId)) {
-                            _descriptionControllers[siteId] = TextEditingController();
-                          }
 
                           return _buildSiteCard(site, siteId, isSelected);
                         },
@@ -317,12 +246,13 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitAssignment,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.statusCompleted,
+                  backgroundColor: const Color(0xFF059669),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  disabledBackgroundColor: const Color(0xFF6B7280),
                 ),
                 child: _isSubmitting
                     ? const SizedBox(
@@ -334,7 +264,9 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
                         ),
                       )
                     : Text(
-                        'Assign ${_selectedSiteIds.length} Site${_selectedSiteIds.length != 1 ? 's' : ''} to All Supervisors',
+                        _selectedSiteIds.isEmpty
+                            ? 'Select Sites to Assign'
+                            : 'Assign ${_selectedSiteIds.length} Site${_selectedSiteIds.length != 1 ? 's' : ''} to All Supervisors',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -349,62 +281,131 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
   }
 
   Widget _buildSiteCard(Map<String, dynamic> site, String siteId, bool isSelected) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isSelected ? AppColors.statusCompleted : Colors.transparent,
+    final siteName = site['site_name'] ?? 'Unknown Site';
+    final customerName = site['customer_name'] ?? '';
+    final area = site['area'] ?? '';
+    final street = site['street'] ?? '';
+    final displayName = site['display_name'] ?? (customerName.isNotEmpty ? '$customerName $siteName' : siteName);
+
+    return Card(
+      elevation: isSelected ? 4 : 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isSelected ? const Color(0xFF059669) : Colors.transparent,
           width: 2,
         ),
-        boxShadow: [AppColors.cardShadow],
       ),
-      child: Column(
-        children: [
-          CheckboxListTile(
-            value: isSelected,
-            onChanged: (value) {
-              setState(() {
-                if (value == true) {
-                  _selectedSiteIds.add(siteId);
-                } else {
-                  _selectedSiteIds.remove(siteId);
-                }
-              });
-            },
-            title: Text(
-              site['display_name'] ?? site['site_name'] ?? 'Site',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.deepNavy,
-              ),
-            ),
-            activeColor: AppColors.statusCompleted,
-            controlAffinity: ListTileControlAffinity.leading,
-          ),
-          
-          // Description field (shown when selected)
-          if (isSelected)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: TextField(
-                controller: _descriptionControllers[siteId],
-                maxLines: 2,
-                decoration: InputDecoration(
-                  hintText: 'Add description (optional)',
-                  filled: true,
-                  fillColor: AppColors.lightSlate,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            if (isSelected) {
+              _selectedSiteIds.remove(siteId);
+            } else {
+              _selectedSiteIds.add(siteId);
+            }
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Checkbox
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF059669) : Colors.transparent,
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFF059669) : const Color(0xFF6B7280),
+                    width: 2,
                   ),
-                  contentPadding: const EdgeInsets.all(12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: isSelected
+                    ? const Icon(
+                        Icons.check,
+                        size: 16,
+                        color: Colors.white,
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 16),
+              
+              // Site Icon
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.construction, color: Color(0xFF1A1A2E), size: 24),
+              ),
+              const SizedBox(width: 12),
+              
+              // Site Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Area Badge
+                    if (area.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A1A2E).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFF1A1A2E).withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.location_city, size: 12, color: Color(0xFF1A1A2E)),
+                            const SizedBox(width: 4),
+                            Text(
+                              area,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1A1A2E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 6),
+                    // Street
+                    Row(
+                      children: [
+                        const Icon(Icons.route, size: 14, color: Color(0xFF6B7280)),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            street.isNotEmpty ? street : 'No street',
+                            style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

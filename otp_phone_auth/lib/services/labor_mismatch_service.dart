@@ -23,6 +23,7 @@ class LaborMismatchService {
     String? siteId,
     int days = 7,
   }) async {
+    print('🔍 [MISMATCH SERVICE] detectLaborMismatches called with siteId: $siteId, days: $days');
     try {
       String url = '$baseUrl/construction/labor-mismatches/';
       List<String> params = [];
@@ -36,13 +37,19 @@ class LaborMismatchService {
         url += '?${params.join('&')}';
       }
 
+      print('🔍 [MISMATCH SERVICE] Calling API: $url');
+      
       final response = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(),
       );
 
+      print('🔍 [MISMATCH SERVICE] Response status: ${response.statusCode}');
+      print('🔍 [MISMATCH SERVICE] Response body: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('✅ [MISMATCH SERVICE] Success! Total mismatches: ${data['total_mismatches']}');
         return {
           'success': true,
           'mismatches': List<Map<String, dynamic>>.from(data['mismatches'] ?? []),
@@ -52,6 +59,7 @@ class LaborMismatchService {
           'message': data['message'],
         };
       } else {
+        print('⚠️ [MISMATCH SERVICE] API returned ${response.statusCode}');
         return {
           'success': false,
           'error': 'Failed to detect labor mismatches',
@@ -61,6 +69,7 @@ class LaborMismatchService {
         };
       }
     } catch (e) {
+      print('❌ [MISMATCH SERVICE] Error: $e');
       return {
         'success': false,
         'error': 'Network error: $e',

@@ -25,38 +25,12 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
   
   late TabController _tabController;
   
-  // Labour counts for morning and evening
-  final Map<String, int> _morningLabourCounts = {
-    'General': 0,
-    'Mason': 0,
-    'Carpenter': 0,
-    'Electrician': 0,
-    'Plumber': 0,
-    'Painter': 0,
-    'Helper': 0,
-    'Tile Layer': 0,
-    'Tile Layerhelper': 0,
-    'Kambi Fitter': 0,
-    'Concrete Kot': 0,
-    'Pile Labour': 0,
-  };
-  
-  final Map<String, int> _eveningLabourCounts = {
-    'General': 0,
-    'Mason': 0,
-    'Carpenter': 0,
-    'Electrician': 0,
-    'Plumber': 0,
-    'Painter': 0,
-    'Helper': 0,
-    'Tile Layer': 0,
-    'Tile Layerhelper': 0,
-    'Kambi Fitter': 0,
-    'Concrete Kot': 0,
-    'Pile Labour': 0,
-  };
+  // Dynamic labour counts for morning and evening
+  Map<String, int> _morningLabourCounts = {};
+  Map<String, int> _eveningLabourCounts = {};
   
   Map<String, double> _rates = {};
+  bool _isLoadingRates = true;
   
   // Extra cost controllers
   final _morningExtraCostController = TextEditingController();
@@ -92,15 +66,35 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
   }
 
   Future<void> _fetchRates() async {
+    setState(() => _isLoadingRates = true);
+    
     final rates = await _budgetService.getLabourRates('global');
     if (rates.isNotEmpty && mounted) {
       final Map<String, double> loaded = {};
+      final Map<String, int> morningCounts = {};
+      final Map<String, int> eveningCounts = {};
+      
       for (final r in rates) {
         final type = r['labour_type'] as String?;
         final rate = (r['daily_rate'] as num?)?.toDouble();
-        if (type != null && rate != null) loaded[type] = rate;
+        if (type != null && rate != null) {
+          loaded[type] = rate;
+          // Initialize counts to 0 for each labour type
+          morningCounts[type] = 0;
+          eveningCounts[type] = 0;
+        }
       }
-      setState(() => _rates = loaded);
+      
+      setState(() {
+        _rates = loaded;
+        _morningLabourCounts = morningCounts;
+        _eveningLabourCounts = eveningCounts;
+        _isLoadingRates = false;
+      });
+      
+      print('✅ [Site Engineer] Loaded ${loaded.length} labour types from admin');
+    } else {
+      setState(() => _isLoadingRates = false);
     }
   }
 
@@ -277,6 +271,59 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
   }
 
   Widget _buildMorningTab() {
+    // Show loading indicator while rates are being fetched
+    if (_isLoadingRates) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              'Loading labour types...',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Show message if no labour types are available
+    if (_morningLabourCounts.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No Labour Types Available',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.deepNavy,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Admin needs to add labour types first',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(

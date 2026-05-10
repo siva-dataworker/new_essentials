@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/material_service.dart';
+import '../services/construction_service.dart';
 import '../utils/app_colors.dart';
 import 'package:intl/intl.dart';
 
@@ -441,20 +442,9 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
   final _notesController = TextEditingController();
   final _materialService = MaterialService();
   bool _isSubmitting = false;
-
-  // Common material types
-  final List<String> _commonMaterials = [
-    'Cement',
-    'Sand',
-    'Bricks',
-    'Steel',
-    'Gravel',
-    'Concrete',
-    'Wood',
-    'Paint',
-    'Tiles',
-    'Other',
-  ];
+  bool _isLoadingMaterials = true;
+  List<Map<String, dynamic>> _materials = [];
+  String? _selectedMaterial;
 
   // Common units
   final List<String> _commonUnits = [
@@ -467,6 +457,34 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
     'Sq Meters',
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadMaterials();
+  }
+
+  Future<void> _loadMaterials() async {
+    setState(() => _isLoadingMaterials = true);
+    
+    try {
+      // Import construction service to get materials from admin
+      final constructionService = ConstructionService();
+      final materials = await constructionService.getMaterials();
+      
+      setState(() {
+        _materials = materials;
+        _isLoadingMaterials = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingMaterials = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading materials: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
   @override
   void dispose() {
     _materialTypeController.dispose();
@@ -530,47 +548,55 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Material Type Dropdown
-              DropdownButtonFormField<String>(
-                decoration: InputDecoration(
-                  labelText: 'Material Type',
-                  border: OutlineInputBorder(),
-                ),
-                items: _commonMaterials.map((material) {
-                  return DropdownMenuItem(value: material, child: Text(material));
-                }).toList(),
-                onChanged: (value) {
-                  if (value == 'Other') {
-                    _materialTypeController.clear();
-                  } else {
-                    _materialTypeController.text = value ?? '';
-                  }
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select material type';
-                  }
-                  return null;
-                },
-              ),
-              
-              // Custom material type (if Other selected)
-              if (_materialTypeController.text.isEmpty) ...[
-                SizedBox(height: 16),
-                TextFormField(
-                  controller: _materialTypeController,
+              // Loading indicator or Material Type Dropdown
+              if (_isLoadingMaterials)
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                )
+              else if (_materials.isEmpty)
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Icon(Icons.warning, color: AppColors.textSecondary, size: 48),
+                      SizedBox(height: 8),
+                      Text(
+                        'No materials available',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Admin needs to add materials first',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                DropdownButtonFormField<String>(
                   decoration: InputDecoration(
-                    labelText: 'Custom Material Type',
+                    labelText: 'Material Type',
                     border: OutlineInputBorder(),
                   ),
+                  value: _selectedMaterial,
+                  items: _materials.map<DropdownMenuItem<String>>((material) {
+                    final name = material['name']?.toString() ?? '';
+                    return DropdownMenuItem<String>(value: name, child: Text(name));
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedMaterial = value;
+                      _materialTypeController.text = value ?? '';
+                    });
+                  },
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter material type';
+                    if (value == null || value.isEmpty) {
+                      return 'Please select material type';
                     }
                     return null;
                   },
                 ),
-              ],
               
               SizedBox(height: 16),
               

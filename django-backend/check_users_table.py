@@ -1,34 +1,30 @@
 #!/usr/bin/env python3
-
-import os
-import sys
-import django
-
-# Add the project directory to Python path
+import os, sys, django
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-# Setup Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
-from api.database import fetch_all, fetch_one
+from django.db import connection
 
-print("=== CHECKING USERS TABLE ===")
-
-# Check table structure
-columns = fetch_all("""
-    SELECT column_name, data_type 
-    FROM information_schema.columns 
-    WHERE table_name = 'users'
-    ORDER BY ordinal_position
-""")
-
-print("Users table columns:")
-for col in columns:
-    print(f"  - {col['column_name']}: {col['data_type']}")
-
-print("\n=== SAMPLE USERS ===")
-users = fetch_all("SELECT * FROM users LIMIT 3")
-for user in users:
-    print(f"User: {user}")
-    break
+with connection.cursor() as cursor:
+    cursor.execute("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' 
+        ORDER BY ordinal_position;
+    """)
+    print("Columns in users table:")
+    for row in cursor.fetchall():
+        print(f"  • {row[0]}")
+    
+    print()
+    
+    cursor.execute("SELECT COUNT(*) FROM users;")
+    count = cursor.fetchone()[0]
+    print(f"Total users: {count}")
+    
+    if count > 0:
+        cursor.execute("SELECT * FROM users LIMIT 3;")
+        print("\nSample users:")
+        for row in cursor.fetchall():
+            print(f"  {row}")

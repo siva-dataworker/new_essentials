@@ -14,6 +14,7 @@ from . import views_budget_management
 from . import views_export
 from . import views_client
 from . import views_notifications
+from . import views_cash_and_salary
 
 # Import old working ViewSets
 from .views_working_old import (
@@ -192,6 +193,16 @@ urlpatterns = [
     path('construction/pending-change-requests/', views_construction.get_pending_change_requests, name='pending-change-requests'),
     path('construction/handle-change-request/<uuid:request_id>/', views_construction.handle_change_request, name='handle-change-request'),
     path('construction/modified-entries/', views_construction.get_modified_entries, name='modified-entries'),
+    path('construction/entries-by-date-role/', views_construction.get_entries_by_date_and_role, name='entries-by-date-role'),
+    
+    # Cash Entries (Accountant)
+    path('construction/confirm-cash-entry/', views_construction.confirm_cash_entry, name='confirm-cash-entry'),
+    path('construction/create-custom-cash-entry/', views_construction.create_custom_cash_entry, name='create-custom-cash-entry'),
+    path('construction/check-cash-entry/', views_construction.check_cash_entry_exists, name='check-cash-entry'),
+    
+    # Cash Entries Management
+    path('construction/cash-entries/', views_cash_and_salary.get_cash_entries, name='get-cash-entries'),
+    path('construction/cash-entries/summary/', views_cash_and_salary.get_cash_entries_summary, name='get-cash-entries-summary'),
     
     # Site Engineer Photo Upload
     path('construction/upload-site-photo/', views_construction.upload_site_photo, name='upload-site-photo'),
@@ -207,6 +218,8 @@ urlpatterns = [
     path('construction/assign-working-sites/', views_construction.assign_working_sites, name='assign-working-sites'),
     path('construction/working-sites/', views_construction.get_working_sites, name='get-working-sites'),
     path('construction/clear-working-sites/', views_construction.clear_working_sites, name='clear-working-sites'),
+    path('construction/accountant-working-sites-count/', views_construction.get_accountant_working_sites_count, name='accountant-working-sites-count'),
+    path('construction/admin/all-working-sites/', views_construction.get_all_working_sites, name='get-all-working-sites'),
     path('construction/today-sites-with-data/', views_construction.get_today_sites_with_data, name='get-today-sites-with-data'),
     path('construction/total-counts/', views_construction.get_total_counts, name='get-total-counts'),
     path('construction/supervisors-list/', views_construction.get_supervisors_list, name='get-supervisors-list'),
@@ -280,15 +293,30 @@ urlpatterns = [
     # ============================================
     # Budget Allocation
     path('budget/allocate/', views_budget_management.allocate_budget, name='allocate-budget'),
+    path('budget/update/', views_budget_management.update_budget, name='update-budget'),
+    path('budget/allocate-or-update/', views_budget_management.allocate_or_update_budget, name='allocate-or-update-budget'),
     path('budget/allocation/<str:site_id>/', views_budget_management.get_budget_allocation, name='get-budget-allocation'),
     
     # Labour Salary Rates
     path('budget/labour-rate/', views_budget_management.set_labour_rate, name='set-labour-rate'),
     path('budget/labour-rates/<str:site_id>/', views_budget_management.get_labour_rates, name='get-labour-rates'),
+    path('budget/delete-labour-type/', views_budget_management.delete_labour_type, name='delete-labour-type'),
+    
+    # Local Labour Rates (Area-specific)
+    path('budget/local-labour-rates/<str:area>/', views_budget_management.get_local_labour_rates, name='get-local-labour-rates'),
+    path('budget/local-labour-rate/', views_budget_management.set_local_labour_rate, name='set-local-labour-rate'),
     
     # Budget Utilization
     path('budget/utilization/<str:site_id>/', views_budget_management.get_budget_utilization, name='get-budget-utilization'),
     path('budget/labour-costs/<str:site_id>/', views_budget_management.get_labour_cost_details, name='get-labour-cost-details'),
+    
+    # Material & Other Cost Entry
+    path('budget/add-material-cost/', views_budget_management.add_material_cost, name='add-material-cost'),
+    path('budget/add-other-cost/', views_budget_management.add_other_cost, name='add-other-cost'),
+    
+    # Phase Payment Management
+    path('budget/record-phase-payment/', views_budget_management.record_phase_payment, name='record-phase-payment'),
+    path('budget/phase-payments/<str:site_id>/', views_budget_management.get_phase_payments, name='get-phase-payments'),
     
     # ============================================
     # EXCEL EXPORT ENDPOINTS

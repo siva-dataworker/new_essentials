@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
 import '../providers/construction_provider.dart';
 import '../services/auth_service.dart';
 import '../services/construction_service.dart';
 import '../services/cache_service.dart';
+import '../services/labor_mismatch_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/common_widgets.dart';
 import 'accountant_reports_screen.dart';
 import 'accountant_entry_screen.dart';
+import 'accountant_compare_screen.dart';
 import 'login_screen.dart';
 
 class AccountantDashboard extends StatefulWidget {
@@ -40,10 +44,27 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
   Map<String, dynamic>? _dashboardData;
   bool _isLoading = true;
   String? _error;
+  int _workingSitesCount = 0; // Count of sites assigned by this accountant
+
+  // Cash entries summary (source of truth for confirmed/approved salary)
+  double _cashOverallTotal = 0.0;
+  List<Map<String, dynamic>> _cashBySite = []; // [{site_id, site_name, customer_name, total_cost, ...}]
+  
+  // Mismatch detection
+  final _mismatchService = LaborMismatchService();
+  Map<String, dynamic> _mismatchData = {};
+  int _totalMismatches = 0;
   
   // Role filter state
   String? _selectedLabourRole; // null = All
   static const _labourRoles = ['Supervisor', 'Site Engineer'];
+  
+  // Date filter state
+  DateTime? _selectedDate; // null = All dates
+  
+  // Site filter state
+  String? _selectedSiteId; // null = All sites
+  List<Map<String, dynamic>> _sites = []; // Initialize as empty list
 
   // Dropdown state
   final Set<String> _expandedDates = {};
@@ -53,6 +74,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     super.initState();
     _profileName = widget.user.name ?? 'Accountant';
     _profilePhone = widget.user.phoneNumber;
+    _loadSites();
     _loadAccountantDataWithCache();
     _startBackgroundRefresh();
   }
@@ -73,19 +95,30 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     final cachedMaterial = await CacheService.loadAccountantMaterial();
     final cachedDashboard = await CacheService.loadAccountantDashboard();
     
+    // ALWAYS show UI immediately, even with empty cache
+    setState(() {
+      if (cachedLabour != null) _labourEntries = cachedLabour;
+      if (cachedMaterial != null) _materialEntries = cachedMaterial;
+      if (cachedDashboard != null) {
+        _dashboardData = cachedDashboard;
+        _workingSitesCount = cachedDashboard['working_sites_count'] ?? 0;
+      }
+      _isLoading = false;  // Show UI immediately
+      _error = null;
+    });
+    
     if (cachedLabour != null || cachedMaterial != null) {
       print('🎯 [ACCOUNTANT] Using persistent cached data - instant load');
-      setState(() {
-        if (cachedLabour != null) _labourEntries = cachedLabour;
-        if (cachedMaterial != null) _materialEntries = cachedMaterial;
-        if (cachedDashboard != null) _dashboardData = cachedDashboard;
-        _isLoading = false;
-        _error = null;
-      });
+    } else {
+      print('📭 [ACCOUNTANT] No cache found - showing empty state');
     }
     
-    // Refresh from API in background (silent)
-    _refreshAllDataInBackground();
+    // Refresh from API in background (truly non-blocking)
+    _refreshAllDataInBackground().then((_) {
+      print('✅ [ACCOUNTANT] Background refresh completed');
+    }).catchError((e) {
+      print('⚠️ [ACCOUNTANT] Background refresh failed: $e');
+    });
   }
   
   void _startBackgroundRefresh() {
@@ -109,75 +142,191 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
   }
   
   Future<void> _refreshAllDataInBackground() async {
-    await Future.wait([
-      _refreshLabourInBackground(),
-      _refreshMaterialInBackground(),
-      _refreshDashboardInBackground(),
-    ]);
-  }
-  
-  Future<void> _refreshLabourInBackground() async {
     try {
       final provider = context.read<ConstructionProvider>();
+      
+      // Call API only ONCE
       await provider.loadAccountantData(forceRefresh: true);
       
-      final newData = List<Map<String, dynamic>>.from(provider.accountantLabourEntries);
-      await CacheService.saveAccountantLabour(newData);
+      // Get all data from provider
+      final labourData = List<Map<String, dynamic>>.from(provider.accountantLabourEntries);
+      final materialData = List<Map<String, dynamic>>.from(provider.accountantMaterialEntries);
       
-      if (mounted) {
-        setState(() {
-          _labourEntries = newData;
-        });
-      }
-      print('✅ [ACCOUNTANT] Labour data refreshed in background');
-    } catch (e) {
-      print('⚠️ [ACCOUNTANT] Background refresh failed for labour: $e');
-      // Silent failure - keep showing cached data
-    }
-  }
-  
-  Future<void> _refreshMaterialInBackground() async {
-    try {
-      final provider = context.read<ConstructionProvider>();
-      await provider.loadAccountantData(forceRefresh: true);
+      // Fetch working sites count
+      await _fetchWorkingSitesCount();
       
-      final newData = List<Map<String, dynamic>>.from(provider.accountantMaterialEntries);
-      await CacheService.saveAccountantMaterial(newData);
+      // Fetch confirmed cash salary summary
+      await _fetchCashEntriesSummary();
       
-      if (mounted) {
-        setState(() {
-          _materialEntries = newData;
-        });
-      }
-      print('✅ [ACCOUNTANT] Material data refreshed in background');
-    } catch (e) {
-      print('⚠️ [ACCOUNTANT] Background refresh failed for material: $e');
-      // Silent failure - keep showing cached data
-    }
-  }
-  
-  Future<void> _refreshDashboardInBackground() async {
-    try {
-      // Create dashboard summary data
+      // Load mismatch data (non-blocking)
+      _loadMismatchData().catchError((e) {
+        print('⚠️ [ACCOUNTANT] Mismatch loading failed: $e');
+      });
+      
+      // Save to cache
+      await Future.wait([
+        CacheService.saveAccountantLabour(labourData),
+        CacheService.saveAccountantMaterial(materialData),
+      ]);
+      
+      // Create and save dashboard data
       final dashboardData = {
-        'total_labour_entries': _labourEntries.length,
-        'total_material_entries': _materialEntries.length,
-        'total_workers': _labourEntries.fold<int>(0, (sum, entry) => sum + (entry['labour_count'] as int? ?? 0)),
+        'total_labour_entries': labourData.length,
+        'total_material_entries': materialData.length,
+        'total_workers': labourData.fold<int>(0, (sum, entry) => sum + (entry['labour_count'] as int? ?? 0)),
+        'working_sites_count': _workingSitesCount,
         'last_updated': DateTime.now().toIso8601String(),
       };
-      
       await CacheService.saveAccountantDashboard(dashboardData);
       
+      // Update UI
       if (mounted) {
         setState(() {
+          _labourEntries = labourData;
+          _materialEntries = materialData;
           _dashboardData = dashboardData;
         });
       }
-      print('✅ [ACCOUNTANT] Dashboard data refreshed in background');
+      
+      print('✅ [ACCOUNTANT] All data refreshed in background');
     } catch (e) {
-      print('⚠️ [ACCOUNTANT] Background refresh failed for dashboard: $e');
-      // Silent failure - keep showing cached data
+      print('⚠️ [ACCOUNTANT] Background refresh failed: $e');
     }
+  }
+  
+  Future<void> _refreshLabourInBackground() async {
+    // Deprecated - use _refreshAllDataInBackground instead
+    await _refreshAllDataInBackground();
+  }
+  
+  Future<void> _refreshMaterialInBackground() async {
+    // Deprecated - use _refreshAllDataInBackground instead
+    await _refreshAllDataInBackground();
+  }
+  
+  Future<void> _refreshDashboardInBackground() async {
+    // Deprecated - use _refreshAllDataInBackground instead
+    await _refreshAllDataInBackground();
+  }
+
+  Future<void> _fetchWorkingSitesCount() async {
+    try {
+      final authService = AuthService();
+      final token = await authService.getToken();
+      
+      final response = await http.get(
+        Uri.parse('${AuthService.baseUrl}/construction/accountant-working-sites-count/'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (mounted) {
+          setState(() {
+            _workingSitesCount = data['working_sites_count'] ?? 0;
+          });
+        }
+        print('📊 [WORKING SITES] Count fetched: $_workingSitesCount');
+      } else {
+        print('⚠️ [WORKING SITES] Failed to fetch count: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('⚠️ [WORKING SITES] Error fetching count: $e');
+      // Keep existing count on error
+    }
+  }
+
+  Future<void> _fetchCashEntriesSummary() async {
+    try {
+      final authService = AuthService();
+      final token = await authService.getToken();
+
+      // Build query params — no role filter here; cash_entries already stores
+      // only the accountant-confirmed (selected) entry per day per site.
+      final queryParams = StringBuffer();
+      if (_selectedDate != null) {
+        final dateStr =
+            '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+        queryParams.write('?start_date=$dateStr&end_date=$dateStr');
+      }
+
+      print('🔍 [CASH SUMMARY] Fetching confirmed salary summary...');
+
+      final response = await http.get(
+        Uri.parse('${AuthService.baseUrl}/construction/cash-entries/summary/$queryParams'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (mounted) {
+          setState(() {
+            _cashOverallTotal = (data['overall_total'] as num?)?.toDouble() ?? 0.0;
+            _cashBySite = List<Map<String, dynamic>>.from(data['by_site'] ?? []);
+          });
+        }
+        print('✅ [CASH SUMMARY] Overall: ₹$_cashOverallTotal across ${_cashBySite.length} sites');
+      } else {
+        print('⚠️ [CASH SUMMARY] Failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('⚠️ [CASH SUMMARY] Error: $e');
+    }
+  }
+
+  Future<void> _loadSites() async {
+    try {
+      final authService = AuthService();
+      final token = await authService.getToken();
+      
+      final response = await http.get(
+        Uri.parse('${AuthService.baseUrl}/construction/all-sites/'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (mounted) {
+          setState(() {
+            _sites = List<Map<String, dynamic>>.from(data['sites'] ?? []);
+          });
+        }
+        print('✅ [SITES] Loaded ${_sites.length} sites');
+      }
+    } catch (e) {
+      print('⚠️ [SITES] Error loading: $e');
+    }
+  }
+
+  List<Map<String, dynamic>> get _filteredLabourEntries {
+    var filtered = _labourEntries;
+    
+    // Filter by role
+    if (_selectedLabourRole != null) {
+      filtered = filtered.where((entry) {
+        final role = entry['submitted_by_role']?.toString() ?? '';
+        return role == _selectedLabourRole;
+      }).toList();
+    }
+    
+    // Filter by date
+    if (_selectedDate != null) {
+      final dateStr = '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+      filtered = filtered.where((entry) {
+        final entryDate = entry['entry_date']?.toString() ?? '';
+        return entryDate == dateStr;
+      }).toList();
+    }
+    
+    // Filter by site
+    if (_selectedSiteId != null) {
+      filtered = filtered.where((entry) {
+        final siteId = entry['site_id']?.toString() ?? '';
+        return siteId == _selectedSiteId;
+      }).toList();
+    }
+    
+    return filtered;
   }
 
   Future<void> _loadAccountantData() async {
@@ -197,6 +346,15 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       _labourEntries = List<Map<String, dynamic>>.from(provider.accountantLabourEntries);
       _materialEntries = List<Map<String, dynamic>>.from(provider.accountantMaterialEntries);
       
+      // Fetch working sites count
+      await _fetchWorkingSitesCount();
+      
+      // Fetch confirmed cash salary summary
+      await _fetchCashEntriesSummary();
+      
+      // Load mismatch data
+      await _loadMismatchData();
+      
       // Save to persistent cache
       await CacheService.saveAccountantLabour(_labourEntries);
       await CacheService.saveAccountantMaterial(_materialEntries);
@@ -206,6 +364,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         'total_labour_entries': _labourEntries.length,
         'total_material_entries': _materialEntries.length,
         'total_workers': _labourEntries.fold<int>(0, (sum, entry) => sum + (entry['labour_count'] as int? ?? 0)),
+        'working_sites_count': _workingSitesCount,
         'last_updated': DateTime.now().toIso8601String(),
       };
       await CacheService.saveAccountantDashboard(dashboardData);
@@ -230,6 +389,158 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     _loadAccountantData();
   }
 
+  String _formatCurrency(double amount) {
+    if (amount >= 10000000) {
+      // Crores (1 Cr = 10,000,000)
+      return '${(amount / 10000000).toStringAsFixed(2)} Cr';
+    } else if (amount >= 100000) {
+      // Lakhs (1 L = 100,000)
+      return '${(amount / 100000).toStringAsFixed(2)} L';
+    } else if (amount >= 1000) {
+      // Thousands
+      return '${(amount / 1000).toStringAsFixed(2)} K';
+    } else {
+      return amount.toStringAsFixed(2);
+    }
+  }
+
+  Future<void> _loadMismatchData() async {
+    print('🔍 [DASHBOARD MISMATCH] Loading mismatch data for all sites');
+    try {
+      // Load mismatches for all sites (no site_id filter)
+      final result = await _mismatchService.detectLaborMismatches(
+        days: 7,
+      );
+      
+      print('🔍 [DASHBOARD MISMATCH] API response: ${result['success']}, total: ${result['total_mismatches']}');
+      
+      if (result['success'] == true) {
+        setState(() {
+          _mismatchData = result;
+          _totalMismatches = result['total_mismatches'] ?? 0;
+        });
+        print('✅ [DASHBOARD MISMATCH] Loaded $_totalMismatches mismatches across all sites');
+      } else {
+        print('⚠️ [DASHBOARD MISMATCH] API returned success=false: ${result['error']}');
+      }
+    } catch (e) {
+      print('❌ [DASHBOARD MISMATCH] Error loading mismatch data: $e');
+    }
+  }
+
+  void _showMismatchDialog() {
+    print('🔍 [DASHBOARD MISMATCH DIALOG] _showMismatchDialog called');
+    print('🔍 [DASHBOARD MISMATCH DIALOG] _totalMismatches: $_totalMismatches');
+    
+    final mismatches = _mismatchData['mismatches'] as List<Map<String, dynamic>>? ?? [];
+    final summary = _mismatchData['summary'] as List<Map<String, dynamic>>? ?? [];
+    print('🔍 [DASHBOARD MISMATCH DIALOG] mismatches count: ${mismatches.length}');
+    print('🔍 [DASHBOARD MISMATCH DIALOG] summary count: ${summary.length}');
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          constraints: const BoxConstraints(maxHeight: 600, maxWidth: 500),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 32),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Labor Entry Mismatches',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.deepNavy,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Found $_totalMismatches mismatches between Supervisor and Site Engineer entries across all sites',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 24),
+              if (summary.isNotEmpty) ...[
+                const Text(
+                  'Summary by Site:',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: summary.length,
+                    itemBuilder: (context, index) {
+                      final site = summary[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          leading: const Icon(Icons.location_on, color: Colors.orange),
+                          title: Text(
+                            site['site_name'] ?? 'Unknown Site',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            '${site['total_mismatches']} mismatches on ${(site['dates_with_mismatches'] as List).length} days',
+                          ),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${site['total_mismatches']}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ] else ...[
+                const Center(
+                  child: Text('No mismatches found'),
+                ),
+              ],
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.deepNavy,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Close', style: TextStyle(fontSize: 16)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget currentScreen;
@@ -240,10 +551,13 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       case 1: // Dashboard (Center - Default)
         currentScreen = _buildDashboardScreen();
         break;
-      case 2: // Reports
+      case 2: // Compare
+        currentScreen = const AccountantCompareScreen();
+        break;
+      case 3: // Reports
         currentScreen = const AccountantReportsScreen();
         break;
-      case 3: // Profile
+      case 4: // Profile
         currentScreen = _buildProfileScreen();
         break;
       default:
@@ -263,6 +577,50 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         context,
         title: 'Dashboard - $_profileName',
         actions: [
+          // Mismatch Warning Icon
+          if (_totalMismatches > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                    tooltip: 'Labor Entry Mismatches',
+                    onPressed: () {
+                      print('🔍 [DASHBOARD BUTTON] Warning icon clicked!');
+                      _showMismatchDialog();
+                    },
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: IgnorePointer(
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Text(
+                          '$_totalMismatches',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.refresh, color: const Color(0xFF1A1A2E)),
             onPressed: _forceRefresh,
@@ -296,26 +654,160 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
   }
 
   Widget _buildDashboardContent() {
-    // Calculate totals
-    final totalLabourEntries = _labourEntries.length;
-    final totalMaterialEntries = _materialEntries.length;
-    final totalWorkers = _labourEntries.fold<int>(0, (sum, entry) => sum + (entry['labour_count'] as int? ?? 0));
+    // Use filtered labour entries (includes role, date, and site filters)
+    final filteredLabourEntries = _filteredLabourEntries;
     
-    // Get unique sites
-    final uniqueSites = <String>{};
-    for (var entry in _labourEntries + _materialEntries) {
-      final customer = entry['customer_name']?.toString() ?? '';
-      final site = entry['site_name']?.toString() ?? '';
-      if (customer.isNotEmpty && site.isNotEmpty) {
-        uniqueSites.add('$customer $site');
-      }
+    // Calculate totals from FILTERED data (for labour entries display)
+    final totalLabourEntries = filteredLabourEntries.length;
+    final totalMaterialEntries = _materialEntries.length;
+    final totalWorkers = filteredLabourEntries.fold<int>(0, (sum, entry) => sum + (entry['labour_count'] as int? ?? 0));
+    
+    // ── Confirmed salary from cash_entries (accountant-selected entries) ──
+    // If a specific site is selected, show only that site's confirmed total.
+    // Otherwise show the overall confirmed total.
+    final double confirmedTotalSalary;
+    if (_selectedSiteId != null) {
+      final siteRow = _cashBySite.firstWhere(
+        (s) => s['site_id'] == _selectedSiteId,
+        orElse: () => {},
+      );
+      confirmedTotalSalary = (siteRow['total_cost'] as num?)?.toDouble() ?? 0.0;
+    } else {
+      confirmedTotalSalary = _cashOverallTotal;
     }
+
+    // Working sites count comes from API (_workingSitesCount)
+    final workingSitesCount = _workingSitesCount;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Role Filter Chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildRoleChip('All', _selectedLabourRole == null,
+                    () => setState(() => _selectedLabourRole = null)),
+                const SizedBox(width: 8),
+                ..._labourRoles.map((role) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _buildRoleChip(
+                        role,
+                        _selectedLabourRole == role,
+                        () => setState(() => _selectedLabourRole =
+                            _selectedLabourRole == role ? null : role),
+                      ),
+                    )),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          // Date and Site Filters
+          Row(
+            children: [
+              // Date Filter Button
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedDate ?? DateTime.now(),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) {
+                      setState(() => _selectedDate = picked);
+                      _fetchCashEntriesSummary(); // refresh confirmed salary for new date
+                    }
+                  },
+                  icon: Icon(
+                    Icons.calendar_today,
+                    size: 18,
+                    color: _selectedDate != null ? AppColors.safetyOrange : AppColors.textSecondary,
+                  ),
+                  label: Text(
+                    _selectedDate != null
+                        ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                        : 'All Dates',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _selectedDate != null ? AppColors.safetyOrange : AppColors.textSecondary,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: _selectedDate != null ? AppColors.safetyOrange : AppColors.lightSlate,
+                    ),
+                    backgroundColor: _selectedDate != null ? AppColors.safetyOrange.withValues(alpha: 0.1) : null,
+                  ),
+                ),
+              ),
+              if (_selectedDate != null) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () {
+                    setState(() => _selectedDate = null);
+                    _fetchCashEntriesSummary(); // refresh confirmed salary (all dates)
+                  },
+                  icon: const Icon(Icons.clear, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+              const SizedBox(width: 12),
+              
+              // Site Filter Dropdown
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _selectedSiteId,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: _selectedSiteId != null ? AppColors.safetyOrange : AppColors.lightSlate,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: _selectedSiteId != null ? AppColors.safetyOrange : AppColors.lightSlate,
+                      ),
+                    ),
+                    filled: _selectedSiteId != null,
+                    fillColor: _selectedSiteId != null ? AppColors.safetyOrange.withValues(alpha: 0.1) : null,
+                  ),
+                  hint: const Text('All Sites', style: TextStyle(fontSize: 13)),
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('All Sites', style: TextStyle(fontSize: 13)),
+                    ),
+                    ..._sites.map((site) => DropdownMenuItem<String>(
+                      value: site['id'].toString(),
+                      child: Text(
+                        '${site['customer_name']} - ${site['site_name']}',
+                        style: const TextStyle(fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    )).toList(),
+                  ],
+                  onChanged: (value) => setState(() => _selectedSiteId = value),
+                  isExpanded: true,
+                  icon: Icon(
+                    Icons.arrow_drop_down,
+                    color: _selectedSiteId != null ? AppColors.safetyOrange : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
           // Summary Cards
           const Text(
             'Overview',
@@ -364,98 +856,42 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               const SizedBox(width: 12),
               Expanded(
                 child: SummaryCard(
-                  title: 'Active Sites',
-                  value: uniqueSites.length.toString(),
+                  title: 'Working Sites',
+                  value: workingSitesCount.toString(),
                   icon: Icons.location_city,
                   color: const Color(0xFF1A1A2E),
                 ),
               ),
             ],
           ),
-
-          const SizedBox(height: 24),
-
-          // Labour Entries with Role Filter
-          const Text(
-            'Labour Entries',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1A1A2E),
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Role filter chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildRoleChip('All', _selectedLabourRole == null,
-                    () => setState(() => _selectedLabourRole = null)),
-                const SizedBox(width: 8),
-                ..._labourRoles.map((role) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _buildRoleChip(
-                        role,
-                        _selectedLabourRole == role,
-                        () => setState(() => _selectedLabourRole =
-                            _selectedLabourRole == role ? null : role),
-                      ),
-                    )),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          if (_labourEntries.isEmpty)
-            CommonWidgets.buildEmptyState(
-              context,
-              message: 'No labour entries found',
-              icon: Icons.people_outline,
-            )
-          else
-            _buildFilteredLabourEntries(),
-
-          const SizedBox(height: 24),
-
-          // Recent Material Entries with Dropdown
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Recent Material Entries',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1A1A2E),
-                  ),
-                ),
-              ),
-              if (_materialEntries.isNotEmpty)
-                TextButton.icon(
-                  onPressed: _expandedDates.contains('material') ? _collapseMaterial : _expandMaterial,
-                  icon: Icon(
-                    _expandedDates.contains('material') ? Icons.expand_less : Icons.expand_more,
-                    color: const Color(0xFF1A1A2E),
-                  ),
-                  label: Text(
-                    _expandedDates.contains('material') ? 'Collapse' : 'View All',
-                    style: const TextStyle(color: const Color(0xFF1A1A2E)),
-                  ),
-                ),
-            ],
-          ),
+          
           const SizedBox(height: 12),
           
-          if (_materialEntries.isEmpty)
-            CommonWidgets.buildEmptyState(
-              context,
-              message: 'No material entries found',
-              icon: Icons.inventory_2_outlined,
-            )
-          else
-            _buildMaterialEntriesWithDropdown(),
+          // Confirmed Total Salary Card (Full Width)
+          // Shows only accountant-confirmed (cash entry) amounts
+          SummaryCard(
+            title: _selectedSiteId != null
+                ? 'Confirmed Salary (This Site)'
+                : 'Total Confirmed Salary',
+            value: '₹${_formatCurrency(confirmedTotalSalary)}',
+            icon: Icons.currency_rupee,
+            color: const Color(0xFFFF9800),
+          ),
+
+          // Per-site salary breakdown (only when no specific site is selected)
+          if (_selectedSiteId == null && _cashBySite.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            const Text(
+              'Confirmed Salary by Site',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A2E),
+              ),
+            ),
+            const SizedBox(height: 10),
+            ..._cashBySite.map((site) => _buildSiteSalaryRow(site)),
+          ],
 
           const SizedBox(height: 80), // Space for FAB
         ],
@@ -463,9 +899,62 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     );
   }
 
+  Widget _buildSiteSalaryRow(Map<String, dynamic> site) {
+    final siteName = '${site['customer_name']} - ${site['site_name']}';
+    final total = (site['total_cost'] as num?)?.toDouble() ?? 0.0;
+    final days = site['days_count'] as int? ?? 0;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.location_on_outlined, size: 18, color: Color(0xFFFF9800)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  siteName,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1A2E),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  '$days day${days == 1 ? '' : 's'} confirmed',
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '₹${_formatCurrency(total)}',
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFFF9800),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRoleChip(String label, bool selected, VoidCallback onTap) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        onTap();
+        // Refresh cash summary when role changes (role filter affects labour entries display only)
+        _fetchCashEntriesSummary();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -1298,6 +1787,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
           icon: Icon(Icons.dashboard_outlined),
           activeIcon: Icon(Icons.dashboard),
           label: 'Dashboard',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.compare_arrows_outlined),
+          activeIcon: Icon(Icons.compare_arrows),
+          label: 'Compare',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.assessment_outlined),

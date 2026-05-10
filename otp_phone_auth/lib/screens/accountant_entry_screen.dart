@@ -224,6 +224,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
   }
 
   void _onSiteChanged(String? siteId) {
+    print('🔍 [SITE_CHANGED] Site changed to: $siteId');
     setState(() => _selectedSite = siteId);
     
     if (siteId != null) {
@@ -442,24 +443,32 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
   }
 
   Future<void> _loadMismatchData() async {
-    if (_selectedSite == null) return;
+    print('🔍 [MISMATCH] _loadMismatchData called, _selectedSite: $_selectedSite');
+    if (_selectedSite == null) {
+      print('⚠️ [MISMATCH] No site selected, skipping mismatch detection');
+      return;
+    }
     
-    
+    print('🔍 [MISMATCH] Fetching mismatches for site: $_selectedSite');
     try {
       final result = await _mismatchService.detectLaborMismatches(
         siteId: _selectedSite,
         days: 7,
       );
       
+      print('🔍 [MISMATCH] API response: ${result['success']}, total: ${result['total_mismatches']}');
+      
       if (result['success'] == true) {
         setState(() {
           _mismatchData = result;
           _totalMismatches = result['total_mismatches'] ?? 0;
         });
+        print('✅ [MISMATCH] Loaded $_totalMismatches mismatches');
+      } else {
+        print('⚠️ [MISMATCH] API returned success=false: ${result['error']}');
       }
     } catch (e) {
-      print('Error loading mismatch data: $e');
-    } finally {
+      print('❌ [MISMATCH] Error loading mismatch data: $e');
     }
   }
 
@@ -1007,38 +1016,47 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
         actions: [
           // Mismatch Warning Icon
           if (_totalMismatches > 0)
-            Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                  tooltip: 'Labor Entry Mismatches',
-                  onPressed: () => _showMismatchDialog(),
-                ),
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      '$_totalMismatches',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                    tooltip: 'Labor Entry Mismatches',
+                    onPressed: () {
+                      print('🔍 [BUTTON] Warning icon clicked!');
+                      _showMismatchDialog();
+                    },
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: IgnorePointer(
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Text(
+                          '$_totalMismatches',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           IconButton(
             icon: const Icon(Icons.receipt_long),
@@ -3393,7 +3411,12 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
   }
 
   void _showMismatchDialog() {
+    print('🔍 [MISMATCH DIALOG] _showMismatchDialog called');
+    print('🔍 [MISMATCH DIALOG] _totalMismatches: $_totalMismatches');
+    print('🔍 [MISMATCH DIALOG] _mismatchData keys: ${_mismatchData.keys}');
+    
     final mismatches = _mismatchData['mismatches'] as List<Map<String, dynamic>>? ?? [];
+    print('🔍 [MISMATCH DIALOG] mismatches count: ${mismatches.length}');
     
     showDialog(
       context: context,

@@ -366,6 +366,14 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                     _openDocuments,
                   ),
                 ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildQuickActionButton(
+                    'Budget',
+                    Icons.account_balance_wallet,
+                    _openBudget,
+                  ),
+                ),
               ],
             ),
           ],
@@ -925,6 +933,209 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
         );
       },
     );
+  }
+
+  void _openBudget() {
+    final sites = context.read<ConstructionProvider>().sites;
+    
+    if (sites.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No sites available. Please add sites first.'),
+          backgroundColor: AppColors.statusOverdue,
+        ),
+      );
+      return;
+    }
+
+    // Show site selection dialog for budget view
+    _showSiteSelectionDialog(
+      title: 'Select Site to View Budget',
+      onSiteSelected: (site) {
+        _showBudgetDetails(site);
+      },
+    );
+  }
+
+  Future<void> _showBudgetDetails(Map<String, dynamic> site) async {
+    final siteId = site['id'].toString();
+    final siteName = site['display_name'] ?? site['site_name'] ?? 'Unknown Site';
+    
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.deepNavy),
+      ),
+    );
+    
+    // Fetch budget data
+    final budgetService = BudgetManagementService();
+    final budget = await budgetService.getBudgetAllocation(siteId);
+    
+    // Close loading dialog
+    if (mounted) Navigator.pop(context);
+    
+    if (budget == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No budget allocated for this site yet'),
+            backgroundColor: AppColors.statusOverdue,
+          ),
+        );
+      }
+      return;
+    }
+    
+    // Show budget details dialog
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppColors.cleanWhite,
+          title: Row(
+            children: [
+              const Icon(Icons.account_balance_wallet, color: AppColors.deepNavy),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  siteName,
+                  style: const TextStyle(
+                    color: AppColors.deepNavy,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Total Budget Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.navyGradient,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Total Project Budget',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _formatCurrency(budget['total_budget']),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Budget Details
+                const Text(
+                  'Budget Details',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.deepNavy,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                _buildBudgetDetailRow('Allocated By', budget['allocated_by'] ?? 'N/A'),
+                _buildBudgetDetailRow('Date', budget['allocated_date']?.substring(0, 10) ?? 'N/A'),
+                _buildBudgetDetailRow('Status', budget['status'] ?? 'N/A'),
+                
+                if (budget['notes'] != null && budget['notes'].toString().isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Notes',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.deepNavy,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    budget['notes'],
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Close',
+                style: TextStyle(color: AppColors.deepNavy, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Widget _buildBudgetDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.deepNavy,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatCurrency(dynamic amount) {
+    if (amount == null) return '₹0';
+    double value = amount is String ? double.tryParse(amount) ?? 0 : amount.toDouble();
+
+    if (value >= 10000000) {
+      return '₹${(value / 10000000).toStringAsFixed(2)} Cr';
+    } else if (value >= 100000) {
+      return '₹${(value / 100000).toStringAsFixed(2)} L';
+    } else if (value >= 1000) {
+      return '₹${(value / 1000).toStringAsFixed(2)} K';
+    }
+    return '₹${value.toStringAsFixed(0)}';
   }
 
   void _showSiteSelectionDialog({

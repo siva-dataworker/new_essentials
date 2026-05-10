@@ -14,6 +14,8 @@ import 'admin_material_requirements_screen.dart';
 import 'admin_budget_management_screen.dart';
 import 'admin_client_complaints_screen.dart';
 import 'admin_manage_users_screen.dart';
+import 'admin_all_working_sites_screen.dart';
+import 'admin_manage_materials_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -634,6 +636,114 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                 ),
               ),
+              // All Working Sites card
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const AdminAllWorkingSitesScreen()),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF059669),
+                        const Color(0xFF059669).withValues(alpha: 0.8),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.construction,
+                            color: Colors.white, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('All Working Sites',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold)),
+                            Text('View sites updated by accountants',
+                                style: TextStyle(
+                                    color: Colors.white70, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right,
+                          color: Colors.white, size: 22),
+                    ],
+                  ),
+                ),
+              ),
+              // Manage Materials card
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const AdminManageMaterialsScreen()),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFD97706),
+                        const Color(0xFFD97706).withValues(alpha: 0.8),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.category,
+                            color: Colors.white, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Manage Materials',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold)),
+                            Text('Add materials for supervisors & engineers',
+                                style: TextStyle(
+                                    color: Colors.white70, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right,
+                          color: Colors.white, size: 22),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -873,153 +983,207 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildNotificationsTab() {
-    return RefreshIndicator(
-      onRefresh: () => _loadNotifications(forceRefresh: true),
-      color: const Color(0xFF1A1A2E),
-      child: _notificationsLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF1A1A2E)),
-            )
-          : _notifications.isEmpty
-              ? SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height - 200,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.notifications_outlined,
-                              size: 50,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          const Text(
-                            'Work Notifications',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A1A2E),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Notifications for work not done\nwill appear here',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Color(0xFF6B7280),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton.icon(
-                            onPressed: () => _loadNotifications(forceRefresh: true),
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Refresh Notifications'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1A1A2E),
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ],
+    // Split notifications: Labour vs Photos+Material
+    final labourNotifications = _notifications.where((n) => 
+      n['entry_type'] == 'labour'
+    ).toList();
+    
+    final photosAndMaterialNotifications = _notifications.where((n) => 
+      n['entry_type'] == 'morning_photo' || 
+      n['entry_type'] == 'evening_photo' ||
+      n['entry_type'] == 'material'
+    ).toList();
+    
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          // Header with actions
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                const Text(
+                  'Notifications',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A2E),
+                  ),
+                ),
+                if (_unreadCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '$_unreadCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                )
-              : Column(
-                  children: [
-                    // Header with actions
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          const Text(
-                            'Notifications',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A1A2E),
-                            ),
-                          ),
-                          if (_unreadCount > 0) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '$_unreadCount',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                ],
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => _loadNotifications(forceRefresh: true),
+                  tooltip: 'Refresh',
+                ),
+                if (_unreadCount > 0)
+                  TextButton.icon(
+                    onPressed: _markAllNotificationsAsRead,
+                    icon: const Icon(Icons.done_all, size: 18),
+                    label: const Text('Mark all read'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF1A1A2E),
                     ),
+                  ),
+              ],
+            ),
+          ),
+          
+          // Tab Bar
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              labelColor: const Color(0xFF1A1A2E),
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: const Color(0xFF1A1A2E),
+              indicatorWeight: 3,
+              tabs: [
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.people, size: 20),
+                      const SizedBox(width: 8),
+                      Text('Labour (${labourNotifications.length})'),
+                    ],
+                  ),
+                ),
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.photo_camera, size: 20),
+                      const SizedBox(width: 8),
+                      Text('Photos & Material (${photosAndMaterialNotifications.length})'),
+                    ],
                   ),
                 ),
               ],
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () => _loadNotifications(forceRefresh: true),
-                tooltip: 'Refresh',
-              ),
-              if (_unreadCount > 0)
-                TextButton.icon(
-                  onPressed: _markAllNotificationsAsRead,
-                  icon: const Icon(Icons.done_all, size: 18),
-                  label: const Text('Mark all read'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF1A1A2E),
+            ),
+          ),
+          
+          // Tab Views
+          Expanded(
+            child: _notificationsLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF1A1A2E)),
+                  )
+                : TabBarView(
+                    children: [
+                      _buildNotificationsList(labourNotifications, 'labour'),
+                      _buildNotificationsList(photosAndMaterialNotifications, 'photos_material'),
+                    ],
                   ),
-                ),
-            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationsList(List<Map<String, dynamic>> notifications, String type) {
+    if (notifications.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: () => _loadNotifications(forceRefresh: true),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height - 300,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          type == 'labour' ? Colors.blue : Colors.orange,
+                          type == 'labour' ? Colors.blue.shade700 : Colors.orange.shade700,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      type == 'labour' ? Icons.people : Icons.photo_camera,
+                      size: 50,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    type == 'labour' ? 'No Labour Notifications' : 'No Photo or Material Notifications',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A2E),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    type == 'labour' 
+                        ? 'Labour entry notifications\nwill appear here'
+                        : 'Photo and material balance\nnotifications will appear here',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-                    // Notifications list
-                    Expanded(
-                      child: ListView.builder(
-                        physics: const SmoothScrollPhysics(),
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _notifications.length,
-                        itemBuilder: (context, index) {
-                          final notification = _notifications[index];
-                          return AnimatedListItem(
-                            index: index,
-                            child: _buildNotificationCard(notification),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => _loadNotifications(forceRefresh: true),
+      color: const Color(0xFF1A1A2E),
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: notifications.length,
+        itemBuilder: (context, index) {
+          final notification = notifications[index];
+          return AnimatedListItem(
+            index: index,
+            child: _buildNotificationCard(notification),
+          );
+        },
+      ),
     );
   }
 
@@ -1646,11 +1810,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
   // ── Create Site ───────────────────────────────────────────
 
   Future<void> _showCreateSiteDialog() async {
-    final areaCtrl = TextEditingController();
-    final streetCtrl = TextEditingController();
+    final customerNameCtrl = TextEditingController();
     final siteNameCtrl = TextEditingController();
+    final newAreaCtrl = TextEditingController();
+    final newStreetCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
     bool isSaving = false;
+    
+    String? selectedArea;
+    String? selectedStreet;
+    bool isCreatingNewArea = false;
+    bool isCreatingNewStreet = false;
+    List<String> availableStreets = [];
+
+    // Load existing areas
+    await _loadAreas();
 
     await showDialog(
       context: context,
@@ -1667,21 +1841,160 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 key: formKey,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _dialogField(areaCtrl, 'Area', Icons.location_city,
+                    // Customer Name
+                    _dialogField(customerNameCtrl, 'Customer Name', Icons.person,
                         validator: (v) => (v == null || v.trim().isEmpty)
                             ? 'Required'
                             : null),
                     const SizedBox(height: 12),
-                    _dialogField(streetCtrl, 'Street', Icons.streetview,
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Required'
-                            : null),
-                    const SizedBox(height: 12),
+                    
+                    // Site Name
                     _dialogField(siteNameCtrl, 'Site Name', Icons.apartment,
                         validator: (v) => (v == null || v.trim().isEmpty)
                             ? 'Required'
                             : null),
+                    const SizedBox(height: 12),
+                    
+                    // Area Dropdown or Text Field
+                    const Text('Area', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    if (!isCreatingNewArea)
+                      DropdownButtonFormField<String>(
+                        value: selectedArea,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.location_city),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        items: [
+                          ..._areas.map((area) => DropdownMenuItem(
+                                value: area,
+                                child: Text(area),
+                              )),
+                          const DropdownMenuItem(
+                            value: '__CREATE_NEW__',
+                            child: Row(
+                              children: [
+                                Icon(Icons.add_circle, color: Color(0xFF4CAF50), size: 20),
+                                SizedBox(width: 8),
+                                Text('Create New Area', style: TextStyle(color: Color(0xFF4CAF50))),
+                              ],
+                            ),
+                          ),
+                        ],
+                        onChanged: (value) async {
+                          if (value == '__CREATE_NEW__') {
+                            setDS(() {
+                              isCreatingNewArea = true;
+                              selectedArea = null;
+                            });
+                          } else {
+                            setDS(() {
+                              selectedArea = value;
+                              selectedStreet = null;
+                              isCreatingNewStreet = false;
+                            });
+                            // Load streets for selected area
+                            if (value != null) {
+                              final token = await _authService.getToken();
+                              final res = await http.get(
+                                Uri.parse('$_sitesBaseUrl/construction/streets/${Uri.encodeComponent(value)}/'),
+                                headers: {'Authorization': 'Bearer ${token ?? ''}'},
+                              );
+                              if (res.statusCode == 200) {
+                                final data = json.decode(res.body);
+                                setDS(() {
+                                  availableStreets = List<String>.from(data['streets'] ?? []);
+                                });
+                              }
+                            }
+                          }
+                        },
+                        validator: (v) => v == null ? 'Please select an area' : null,
+                      )
+                    else
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _dialogField(newAreaCtrl, 'New Area Name', Icons.location_city,
+                                validator: (v) => (v == null || v.trim().isEmpty)
+                                    ? 'Required'
+                                    : null),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.red),
+                            onPressed: () {
+                              setDS(() {
+                                isCreatingNewArea = false;
+                                newAreaCtrl.clear();
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    const SizedBox(height: 12),
+                    
+                    // Street Dropdown or Text Field
+                    const Text('Street', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    if (!isCreatingNewStreet)
+                      DropdownButtonFormField<String>(
+                        value: selectedStreet,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.streetview),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        items: [
+                          ...availableStreets.map((street) => DropdownMenuItem(
+                                value: street,
+                                child: Text(street),
+                              )),
+                          const DropdownMenuItem(
+                            value: '__CREATE_NEW__',
+                            child: Row(
+                              children: [
+                                Icon(Icons.add_circle, color: Color(0xFF4CAF50), size: 20),
+                                SizedBox(width: 8),
+                                Text('Create New Street', style: TextStyle(color: Color(0xFF4CAF50))),
+                              ],
+                            ),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value == '__CREATE_NEW__') {
+                            setDS(() {
+                              isCreatingNewStreet = true;
+                              selectedStreet = null;
+                            });
+                          } else {
+                            setDS(() => selectedStreet = value);
+                          }
+                        },
+                        validator: (v) => v == null ? 'Please select a street' : null,
+                      )
+                    else
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _dialogField(newStreetCtrl, 'New Street Name', Icons.streetview,
+                                validator: (v) => (v == null || v.trim().isEmpty)
+                                    ? 'Required'
+                                    : null),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.red),
+                            onPressed: () {
+                              setDS(() {
+                                isCreatingNewStreet = false;
+                                newStreetCtrl.clear();
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -1690,8 +2003,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
           actions: [
             TextButton(
               onPressed: isSaving ? null : () => Navigator.pop(ctx),
-              child: Text('Cancel',
-                  style: TextStyle(color: const Color(0xFF6B7280))),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Color(0xFF6B7280))),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -1704,20 +2017,40 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ? null
                   : () async {
                       if (!formKey.currentState!.validate()) return;
+                      
+                      // Determine final area and street values
+                      final finalArea = isCreatingNewArea ? newAreaCtrl.text.trim() : selectedArea;
+                      final finalStreet = isCreatingNewStreet ? newStreetCtrl.text.trim() : selectedStreet;
+                      
+                      if (finalArea == null || finalArea.isEmpty) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(content: Text('Please select or create an area')),
+                        );
+                        return;
+                      }
+                      
+                      if (finalStreet == null || finalStreet.isEmpty) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(content: Text('Please select or create a street')),
+                        );
+                        return;
+                      }
+                      
                       setDS(() => isSaving = true);
                       
                       try {
                         final token = await _authService.getToken();
                         final response = await http.post(
-                          Uri.parse('$_sitesBaseUrl/construction/sites/create/'),
+                          Uri.parse('$_sitesBaseUrl/construction/create-site/'),
                           headers: {
                             'Content-Type': 'application/json',
                             'Authorization': 'Bearer ${token ?? ''}',
                           },
                           body: json.encode({
-                            'area': areaCtrl.text.trim(),
-                            'street': streetCtrl.text.trim(),
+                            'customer_name': customerNameCtrl.text.trim(),
                             'site_name': siteNameCtrl.text.trim(),
+                            'area': finalArea,
+                            'street': finalStreet,
                           }),
                         );
 
@@ -1725,14 +2058,40 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         Navigator.pop(ctx);
 
                         if (response.statusCode == 201) {
-                          // Clear sites cache to force refresh
+                          final responseData = json.decode(response.body);
+                          
+                          // Clear all caches
                           await CacheService.clearSites();
-                          _loadAreas(); // Refresh areas
+                          _streetsCache.clear();
+                          _sitesCache.clear();
+                          
+                          // Reload areas first
+                          await _loadAreas();
+                          
+                          // Auto-select the area and load streets
+                          setState(() {
+                            _selectedArea = finalArea;
+                            _selectedStreet = null;
+                            _streets = [];
+                            _sites = [];
+                          });
+                          
+                          // Load streets for the area
+                          await _loadStreets(finalArea);
+                          
+                          // Auto-select the street and load sites
+                          setState(() {
+                            _selectedStreet = finalStreet;
+                          });
+                          
+                          // Load sites for the area/street
+                          await _loadSites(finalArea, finalStreet);
                           
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Site created successfully!'),
-                              backgroundColor: Color(0xFF4CAF50),
+                            SnackBar(
+                              content: Text('Site created successfully! ${responseData['site']['display_name']}'),
+                              backgroundColor: const Color(0xFF4CAF50),
+                              duration: const Duration(seconds: 3),
                             ),
                           );
                         } else {
@@ -1748,6 +2107,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             ),
                           );
                         }
+                      } finally {
+                        if (ctx.mounted) {
+                          setDS(() => isSaving = false);
+                        }
                       }
                     },
               child: isSaving
@@ -1762,9 +2125,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
       ),
     );
-    areaCtrl.dispose();
-    streetCtrl.dispose();
+    customerNameCtrl.dispose();
     siteNameCtrl.dispose();
+    newAreaCtrl.dispose();
+    newStreetCtrl.dispose();
   }
 
   // ── Create User ───────────────────────────────────────────

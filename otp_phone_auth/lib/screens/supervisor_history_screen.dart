@@ -644,7 +644,7 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
       _buildDetailRow(Icons.access_time, 'Time', _formatTime(entry['entry_time'])),
       _buildDetailRow(Icons.location_on, 'Site', '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim()),
       _buildDetailRow(Icons.place, 'Location', '${entry['area'] ?? ''}, ${entry['street'] ?? ''}'.trim()),
-      _buildDetailRow(Icons.person, 'Supervisor', entry['supervisor_name'] ?? 'Unknown'),
+      _buildDetailRow(Icons.person, entry['submitted_by_role'] ?? 'Supervisor', entry['supervisor_name'] ?? 'Unknown'),
       if (entry['notes'] != null && entry['notes'].toString().isNotEmpty)
         _buildDetailRow(Icons.note, 'Notes', entry['notes']),
       // Admin-set daily rate
@@ -698,7 +698,7 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
       _buildDetailRow(Icons.access_time, 'Time', _formatTime(entry['timestamp'])),
       _buildDetailRow(Icons.location_on, 'Site', '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim()),
       _buildDetailRow(Icons.place, 'Location', '${entry['area'] ?? ''}, ${entry['street'] ?? ''}'.trim()),
-      _buildDetailRow(Icons.person, 'Supervisor', entry['supervisor_name'] ?? 'Unknown'),
+      _buildDetailRow(Icons.person, entry['submitted_by_role'] ?? 'Supervisor', entry['supervisor_name'] ?? 'Unknown'),
       if (entry['notes'] != null && entry['notes'].toString().isNotEmpty)
         _buildDetailRow(Icons.note, 'Notes', entry['notes']),
     ];

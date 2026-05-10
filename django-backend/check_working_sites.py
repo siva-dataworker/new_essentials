@@ -1,61 +1,71 @@
-#!/usr/bin/env python
-"""
-Check working sites data
-"""
-
+import psycopg2
+from dotenv import load_dotenv
 import os
-import sys
-import django
 
-# Setup Django
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
-django.setup()
+load_dotenv()
 
-from django.db import connection
+# Database connection
+conn = psycopg2.connect(
+    host=os.getenv('DB_HOST'),
+    port=os.getenv('DB_PORT'),
+    database=os.getenv('DB_NAME'),
+    user=os.getenv('DB_USER'),
+    password=os.getenv('DB_PASSWORD')
+)
 
-def check_working_sites():
-    """Check working sites data"""
-    
-    print("=" * 60)
-    print("CHECKING WORKING SITES DATA")
-    print("=" * 60)
-    print()
-    
-    with connection.cursor() as cursor:
-        # Get all working sites
-        cursor.execute("SELECT * FROM working_sites")
-        rows = cursor.fetchall()
-        
-        print(f"Total working sites: {len(rows)}")
-        print()
-        
-        if rows:
-            print("Working sites data:")
-            print("-" * 60)
-            cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'working_sites' ORDER BY ordinal_position")
-            columns = [row[0] for row in cursor.fetchall()]
-            print(f"Columns: {', '.join(columns)}")
-            print("-" * 60)
-            
-            for row in rows:
-                print(row)
-            print("-" * 60)
-        else:
-            print("✅ No working sites data found")
-        
-        # Check if there are active working sites
-        cursor.execute("SELECT COUNT(*) FROM working_sites WHERE is_active = TRUE")
-        active_count = cursor.fetchone()[0]
-        print(f"\nActive working sites: {active_count}")
-        
-        # Check last reset date
-        cursor.execute("SELECT DISTINCT last_reset_date FROM working_sites")
-        reset_dates = cursor.fetchall()
-        if reset_dates:
-            print(f"Last reset dates: {reset_dates}")
-    
-    print("=" * 60)
+cursor = conn.cursor()
 
-if __name__ == '__main__':
-    check_working_sites()
+# Check working_sites table
+print("=" * 80)
+print("WORKING SITES (assigned by accountants)")
+print("=" * 80)
+cursor.execute("""
+    SELECT 
+        ws.id,
+        s.site_name,
+        s.customer_name,
+        s.area,
+        s.street,
+        ws.assigned_date,
+        ws.is_active,
+        u.full_name as supervisor_name
+    FROM working_sites ws
+    JOIN sites s ON ws.site_id = s.id
+    LEFT JOIN users u ON ws.supervisor_id = u.id
+    WHERE ws.is_active = TRUE
+    ORDER BY ws.assigned_date DESC
+""")
+
+working_sites = cursor.fetchall()
+print(f"\nTotal active working sites: {len(working_sites)}")
+print("\nDetails:")
+for ws in working_sites:
+    print(f"  - {ws[2]} {ws[1]} ({ws[3]}, {ws[4]}) - Assigned to: {ws[7]} on {ws[5]}")
+
+# Check unique sites (GROUP BY)
+print("\n" + "=" * 80)
+print("UNIQUE SITES (after GROUP BY)")
+print("=" * 80)
+cursor.execute("""
+    SELECT 
+        s.id,
+        s.site_name,
+        s.customer_name,
+        s.area,
+        s.street,
+        COUNT(ws.id) as assignment_count
+    FROM working_sites ws
+    JOIN sites s ON ws.site_id = s.id
+    WHERE ws.is_active = TRUE
+    GROUP BY s.id, s.site_name, s.customer_name, s.area, s.street
+    ORDER BY s.customer_name, s.site_name
+""")
+
+unique_sites = cursor.fetchall()
+print(f"\nTotal unique sites: {len(unique_sites)}")
+print("\nDetails:")
+for site in unique_sites:
+    print(f"  - {site[2]} {site[1]} ({site[3]}, {site[4]}) - Assigned {site[5]} times")
+
+cursor.close()
+conn.close()

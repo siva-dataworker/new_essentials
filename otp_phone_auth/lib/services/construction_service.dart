@@ -1359,30 +1359,53 @@ class ConstructionService {
   Future<Map<String, dynamic>> getWorkingSites() async {
     try {
       final token = await _authService.getToken();
+      final user = await _authService.getCurrentUser();
+      final userRole = user?['role'] ?? '';
+      
+      print('🔍 [SERVICE] getWorkingSites called');
+      print('🔍 [SERVICE] User role: $userRole');
+      
+      // Use different endpoint based on role
+      String endpoint;
+      if (userRole == 'Admin') {
+        endpoint = '$baseUrl/construction/admin/all-working-sites/';
+        print('✅ [SERVICE] Using ADMIN endpoint: $endpoint');
+      } else {
+        endpoint = '$baseUrl/construction/working-sites/';
+        print('✅ [SERVICE] Using SUPERVISOR endpoint: $endpoint');
+      }
+      
+      print('🔍 [SERVICE] Making request to: $endpoint');
       
       final response = await http.get(
-        Uri.parse('$baseUrl/construction/working-sites/'),
+        Uri.parse(endpoint),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',
         },
       );
       
+      print('📊 [SERVICE] Response status: ${response.statusCode}');
+      print('📊 [SERVICE] Response body: ${response.body}');
+      
       final data = json.decode(response.body);
       
       if (response.statusCode == 200) {
+        final sites = List<Map<String, dynamic>>.from(data['sites'] ?? []);
+        print('✅ [SERVICE] Success! Returning ${sites.length} sites');
         return {
           'success': true,
-          'sites': List<Map<String, dynamic>>.from(data['sites'] ?? []),
+          'sites': sites,
         };
       } else {
+        print('❌ [SERVICE] Error response: ${data['error']}');
         return {
           'success': false,
           'error': data['error'] ?? 'Failed to load working sites',
         };
       }
     } catch (e) {
-      print('Error loading working sites: $e');
+      print('❌ [SERVICE] Exception: $e');
       return {
         'success': false,
         'error': 'Network error: $e',
@@ -1988,6 +2011,176 @@ class ConstructionService {
         'success': false,
         'error': 'Network error: $e',
       };
+    }
+  }
+
+  // ============================================
+  // ACCOUNTANT COMPARISON ENDPOINTS
+  // ============================================
+
+  /// Get entries by date and role for comparison
+  Future<List<Map<String, dynamic>>> getEntriesByDateAndRole(String date, String role) async {
+    print('🔍 [SERVICE] getEntriesByDateAndRole called - date: $date, role: $role');
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        print('❌ [SERVICE] No token available');
+        return [];
+      }
+
+      final url = '$baseUrl/construction/entries-by-date-role/?date=$date&role=$role';
+      print('🔍 [SERVICE] URL: $url');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('📊 [SERVICE] Response status: ${response.statusCode}');
+      print('📊 [SERVICE] Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        print('✅ [SERVICE] Parsed ${data.length} items');
+        return data.map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+      print('❌ [SERVICE] Non-200 status code');
+      return [];
+    } catch (e) {
+      print('❌ [SERVICE] Error fetching entries by date: $e');
+      return [];
+    }
+  }
+
+  /// Confirm a cash entry from supervisor/engineer entry
+  Future<Map<String, dynamic>> confirmCashEntry({
+    required String siteId,
+    required String entryDate,
+    required String sourceType,
+    String? sourceEntryId,
+    required List<Map<String, dynamic>> labourEntries,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) return {'success': false, 'error': 'No token'};
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/construction/confirm-cash-entry/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'site_id': siteId,
+          'entry_date': entryDate,
+          'source_type': sourceType,
+          'source_entry_id': sourceEntryId,
+          'labour_entries': labourEntries,
+        }),
+      );
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 201) {
+        return {'success': true, 'message': data['message']};
+      } else {
+        return {'success': false, 'error': data['error'] ?? 'Failed to confirm'};
+      }
+    } catch (e) {
+      print('Error confirming cash entry: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Create a custom cash entry
+  Future<Map<String, dynamic>> createCustomCashEntry({
+    required String siteId,
+    required String entryDate,
+    required List<Map<String, dynamic>> labourEntries,
+    String? notes,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) return {'success': false, 'error': 'No token'};
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/construction/create-custom-cash-entry/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'site_id': siteId,
+          'entry_date': entryDate,
+          'labour_entries': labourEntries,
+          'notes': notes,
+        }),
+      );
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 201) {
+        return {'success': true, 'message': data['message']};
+      } else {
+        return {'success': false, 'error': data['error'] ?? 'Failed to create'};
+      }
+    } catch (e) {
+      print('Error creating custom cash entry: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Check if cash entry exists for a site and date
+  Future<Map<String, dynamic>> checkCashEntryExists({
+    required String siteId,
+    required String date,
+  }) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) return {'exists': false};
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/construction/check-cash-entry/?site_id=$siteId&date=$date'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return {'exists': false};
+    } catch (e) {
+      print('Error checking cash entry: $e');
+      return {'exists': false};
+    }
+  }
+
+  /// Get labour rates (global or site-specific)
+  Future<Map<String, dynamic>> getLabourRates(String siteId) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) return {'rates': []};
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/budget/labour-rates/$siteId/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return {'rates': []};
+    } catch (e) {
+      print('Error getting labour rates: $e');
+      return {'rates': []};
     }
   }
 }

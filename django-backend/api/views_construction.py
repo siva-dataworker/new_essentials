@@ -38,8 +38,6 @@ def create_site(request):
         customer_name = request.data.get('customer_name')
         area = request.data.get('area')
         street = request.data.get('street')
-        address = request.data.get('address', '')
-        description = request.data.get('description', '')
         
         if not all([site_name, customer_name, area, street]):
             return Response({'error': 'site_name, customer_name, area, and street are required'}, 
@@ -51,9 +49,9 @@ def create_site(request):
         
         execute_query("""
             INSERT INTO sites 
-            (id, site_name, customer_name, area, street, address, description, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-        """, (site_id, site_name, customer_name, area, street, address, description))
+            (id, site_name, customer_name, area, street, created_at)
+            VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+        """, (site_id, site_name, customer_name, area, street))
         
         return Response({
             'message': 'Site created successfully',
@@ -64,9 +62,7 @@ def create_site(request):
                 'customer_name': customer_name,
                 'display_name': display_name,
                 'area': area,
-                'street': street,
-                'address': address,
-                'description': description
+                'street': street
             }
         }, status=status.HTTP_201_CREATED)
         
@@ -154,24 +150,35 @@ def get_materials(request):
     GET /api/construction/materials/
     """
     try:
+        print("🔍 [MATERIALS API] Fetching materials...")
         materials = fetch_all("""
-            SELECT material_id, material_name, created_at
+            SELECT id, material_name, created_at
             FROM material_master
             ORDER BY material_name ASC
         """)
         
-        return Response({
+        print(f"🔍 [MATERIALS API] Found {len(materials)} materials in database")
+        for m in materials:
+            print(f"  - {m['material_name']} (ID: {m['id']})")
+        
+        response_data = {
             'materials': [
                 {
-                    'id': str(m['material_id']),
+                    'id': str(m['id']),
                     'name': m['material_name'],
                     'created_at': m['created_at'].isoformat() if m.get('created_at') else None
                 }
                 for m in materials
             ]
-        }, status=status.HTTP_200_OK)
+        }
+        
+        print(f"✅ [MATERIALS API] Returning {len(response_data['materials'])} materials")
+        return Response(response_data, status=status.HTTP_200_OK)
     except Exception as e:
         print(f"❌ Error fetching materials: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return Response({'error': str(e), 'materials': []}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -181,7 +188,7 @@ def get_materials(request):
 def add_material(request):
     """
     Add a new material to material_master table
-    POST /api/construction/materials/
+    POST /api/construction/materials/add/
     """
     try:
         user_id = request.user['user_id']
@@ -193,14 +200,14 @@ def add_material(request):
         
         # Check if material already exists
         existing = fetch_one("""
-            SELECT material_id FROM material_master
+            SELECT id FROM material_master
             WHERE LOWER(material_name) = LOWER(%s)
         """, (material_name,))
         
         if existing:
             return Response({
                 'error': 'Material already exists',
-                'material_id': str(existing['material_id'])
+                'material_id': str(existing['id'])
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Insert new material
@@ -1218,10 +1225,16 @@ def get_supervisor_history(request):
                           status=status.HTTP_403_FORBIDDEN)
         
         site_id = request.GET.get('site_id')  # Optional site filter
+        user_id = request.user.get('user_id')
         
-        # Base query conditions - REMOVED supervisor_id filter to show ALL entries
+        # Base query conditions
         base_conditions = "WHERE (l.is_modified = FALSE OR l.is_modified IS NULL)"
         params = []
+        
+        # Filter by user for Supervisor/Site Engineer (but not for Accountant)
+        if user_role in ['Supervisor', 'Site Engineer']:
+            base_conditions += " AND l.supervisor_id = %s"
+            params.append(user_id)
         
         # Add site filter if provided
         if site_id:
@@ -1241,6 +1254,7 @@ def get_supervisor_history(request):
                 l.notes,
                 l.extra_cost,
                 l.extra_cost_notes,
+                l.submitted_by_role,
                 s.site_name,
                 s.customer_name,
                 s.area,
@@ -1295,9 +1309,14 @@ def get_supervisor_history(request):
         """
         labour_entries = fetch_all(labour_query, params)
         
-        # Get material entries (only unmodified) with timestamps and extra costs - FROM ALL SUPERVISORS
-        material_base_conditions = "WHERE 1=1"  # Show all material entries
+        # Get material entries (only unmodified) with timestamps and extra costs
+        material_base_conditions = "WHERE 1=1"
         material_params = []
+        
+        # Filter by user for Supervisor/Site Engineer (but not for Accountant)
+        if user_role in ['Supervisor', 'Site Engineer']:
+            material_base_conditions += " AND m.supervisor_id = %s"
+            material_params.append(user_id)
         
         if site_id:
             material_base_conditions += " AND m.site_id = %s"
@@ -1345,6 +1364,7 @@ def get_supervisor_history(request):
                     'street': e['street'],
                     'supervisor_name': e['supervisor_name'],
                     'user_role': e.get('user_role', ''),
+                    'submitted_by_role': e.get('submitted_by_role', e.get('user_role', 'Supervisor')),
                     'daily_rate': float(e['daily_rate']) if e.get('daily_rate') else None,
                     'total_cost': float(e['total_cost']) if e.get('total_cost') else None,
                     'notes': e.get('notes', ''),
@@ -1397,8 +1417,9 @@ def get_all_entries_for_accountant(request):
         
         # Get labour entries with supervisor names, roles, timestamps, extra costs, and submitted_by_role
         # Use CASE to fall back to canonical defaults when no admin rate is set
+        # Use DISTINCT ON to avoid duplicates when multiple rates exist
         labour_query = """
-            SELECT
+            SELECT DISTINCT ON (l.id)
                 l.id,
                 l.site_id,
                 l.labour_type,
@@ -1458,7 +1479,7 @@ def get_all_entries_for_accountant(request):
                 ON lsr.site_id IS NULL
                 AND lsr.labour_type = l.labour_type
                 AND lsr.is_active = TRUE
-            ORDER BY l.entry_time DESC
+            ORDER BY l.id, lsr.created_at DESC, l.entry_time DESC
             LIMIT 200
         """
         labour_entries = fetch_all(labour_query)
@@ -1492,7 +1513,12 @@ def get_all_entries_for_accountant(request):
         """
         material_entries = fetch_all(material_query)
         
-        return Response({
+        # Debug logging BEFORE creating response
+        print(f"📊 [ACCOUNTANT API] Returning {len(labour_entries)} labour entries, {len(material_entries)} material entries")
+        total_salary = sum(float(e.get('total_cost', 0) or 0) for e in labour_entries)
+        print(f"💰 [ACCOUNTANT API] Total salary: ₹{total_salary}")
+        
+        response_data = {
             'labour_entries': [
                 {
                     'id': str(e['id']),
@@ -1541,7 +1567,9 @@ def get_all_entries_for_accountant(request):
             'total_labour_entries': len(labour_entries),
             'total_material_entries': len(material_entries),
             'message': 'Showing ALL entries from ALL supervisors and sites for accountant'
-        }, status=status.HTTP_200_OK)
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
         
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -1551,10 +1579,169 @@ def get_all_entries_for_accountant(request):
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
+def get_entries_by_date_and_role(request):
+    """
+    Accountant: Get labour entries by date and role for comparison
+    GET /api/construction/entries-by-date-role/?date=YYYY-MM-DD&role=Supervisor
+    """
+    try:
+        user_role = request.user.get('role', '')
+        
+        if user_role != 'Accountant':
+            return Response({'error': 'Only Accountant can access this endpoint'}, 
+                          status=status.HTTP_403_FORBIDDEN)
+        
+        date_str = request.query_params.get('date')
+        role = request.query_params.get('role')  # 'Supervisor' or 'Site Engineer'
+        
+        print(f"🔍 [BACKEND] get_entries_by_date_and_role called - date: {date_str}, role: {role}")
+        
+        if not date_str:
+            return Response({'error': 'date is required'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        # Parse date
+        try:
+            entry_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'error': 'Invalid date format. Use YYYY-MM-DD'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        # Build query based on role
+        if role == 'Supervisor':
+            # Get supervisor entries (where submitted_by_role is 'Supervisor' or NULL - default to Supervisor)
+            query = """
+                SELECT
+                    l.id,
+                    l.site_id,
+                    s.site_name,
+                    s.customer_name,
+                    l.supervisor_id,
+                    u.full_name as submitted_by,
+                    l.labour_type,
+                    l.labour_count,
+                    l.entry_date,
+                    l.entry_time,
+                    l.entry_time as submitted_at
+                FROM labour_entries l
+                JOIN sites s ON l.site_id = s.id
+                JOIN users u ON l.supervisor_id = u.id
+                WHERE l.entry_date = %s 
+                  AND (l.submitted_by_role = 'Supervisor' OR l.submitted_by_role IS NULL)
+                ORDER BY l.site_id, l.entry_time DESC
+            """
+        elif role == 'Site Engineer':
+            # Get site engineer entries from labour_entries table (submitted_by_role = 'Site Engineer')
+            query = """
+                SELECT
+                    l.id,
+                    l.site_id,
+                    s.site_name,
+                    s.customer_name,
+                    l.supervisor_id as engineer_id,
+                    u.full_name as submitted_by,
+                    l.labour_type,
+                    l.labour_count,
+                    l.entry_date,
+                    l.entry_time,
+                    l.entry_time as submitted_at
+                FROM labour_entries l
+                JOIN sites s ON l.site_id = s.id
+                JOIN users u ON l.supervisor_id = u.id
+                WHERE l.entry_date = %s AND l.submitted_by_role = 'Site Engineer'
+                ORDER BY l.site_id, l.entry_time DESC
+            """
+        else:
+            # Get both
+            query = """
+                SELECT
+                    l.id,
+                    l.site_id,
+                    s.site_name,
+                    s.customer_name,
+                    'Supervisor' as role,
+                    u.full_name as submitted_by,
+                    l.labour_type,
+                    l.labour_count,
+                    l.entry_date,
+                    l.entry_time as submitted_at
+                FROM labour_entries l
+                JOIN sites s ON l.site_id = s.id
+                JOIN users u ON l.supervisor_id = u.id
+                WHERE l.entry_date = %s 
+                  AND (l.submitted_by_role = 'Supervisor' OR l.submitted_by_role IS NULL)
+                
+                UNION ALL
+                
+                SELECT
+                    l.id,
+                    l.site_id,
+                    s.site_name,
+                    s.customer_name,
+                    'Site Engineer' as role,
+                    u.full_name as submitted_by,
+                    l.labour_type,
+                    l.labour_count,
+                    l.entry_date,
+                    l.entry_time as submitted_at
+                FROM labour_entries l
+                JOIN sites s ON l.site_id = s.id
+                JOIN users u ON l.supervisor_id = u.id
+                WHERE l.entry_date = %s AND l.submitted_by_role = 'Site Engineer'
+                
+                ORDER BY site_id, submitted_at DESC
+            """
+            entries = fetch_all(query, (entry_date, entry_date))
+        
+        if role in ['Supervisor', 'Site Engineer']:
+            entries = fetch_all(query, (entry_date,))
+        
+        print(f"📊 [BACKEND] Found {len(entries)} raw entries")
+        
+        # Group by site
+        sites_data = {}
+        for entry in entries:
+            site_id = str(entry['site_id'])
+            if site_id not in sites_data:
+                customer_name = entry.get('customer_name', '')
+                site_name = entry.get('site_name', '')
+                display_name = f"{customer_name} {site_name}" if customer_name else site_name
+                
+                sites_data[site_id] = {
+                    'site_id': site_id,
+                    'site_name': display_name,
+                    'submitted_by': entry['submitted_by'],
+                    'submitted_at': entry['submitted_at'].isoformat() if entry.get('submitted_at') else None,
+                    'labour_entries': []
+                }
+            
+            sites_data[site_id]['labour_entries'].append({
+                'labour_type': entry['labour_type'],
+                'labour_count': entry['labour_count'],
+            })
+        
+        result = list(sites_data.values())
+        print(f"✅ [BACKEND] Returning {len(result)} sites with entries")
+        if result:
+            print(f"📊 [BACKEND] First site: {result[0]}")
+        
+        return Response(result, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print(f"❌ [BACKEND] Error fetching entries by date and role: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def get_entries_by_date(request):
     """Get entries for a specific site and date"""
     try:
         user_id = request.user['user_id']
+        user_role = request.user.get('role', '')
         site_id = request.query_params.get('site_id')
         date_str = request.query_params.get('date')
         
@@ -1569,8 +1756,20 @@ def get_entries_by_date(request):
             return Response({'error': 'Invalid date format. Use YYYY-MM-DD'}, 
                           status=status.HTTP_400_BAD_REQUEST)
         
+        # Build WHERE clause based on user role
+        # Supervisor/Site Engineer: Only see their own entries
+        # Accountant: See all entries
+        if user_role in ['Supervisor', 'Site Engineer']:
+            user_filter = "AND l.supervisor_id = %s"
+            labour_params = (site_id, entry_date, user_id)
+            print(f"🔍 [ENTRIES_BY_DATE] Filtering for {user_role} (user_id: {user_id})")
+        else:
+            user_filter = ""
+            labour_params = (site_id, entry_date)
+            print(f"🔍 [ENTRIES_BY_DATE] No filter for {user_role}")
+        
         # Get labour entries for this site and date
-        labour_query = """
+        labour_query = f"""
             SELECT
                 l.id,
                 l.labour_type,
@@ -1587,10 +1786,12 @@ def get_entries_by_date(request):
                 ON lsr.site_id IS NULL
                 AND lsr.labour_type = l.labour_type
                 AND lsr.is_active = TRUE
-            WHERE l.site_id = %s AND l.entry_date = %s
+            WHERE l.site_id = %s AND l.entry_date = %s {user_filter}
             ORDER BY l.entry_time DESC
         """
-        labour_entries = fetch_all(labour_query, (site_id, entry_date))
+        print(f"🔍 [ENTRIES_BY_DATE] Query params: {labour_params}")
+        labour_entries = fetch_all(labour_query, labour_params)
+        print(f"🔍 [ENTRIES_BY_DATE] Returned {len(labour_entries)} labour entries")
         
         # Get material entries for this site and date
         material_query = """
@@ -4037,6 +4238,51 @@ def clear_working_sites(request):
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
+def get_accountant_working_sites_count(request):
+    """
+    Accountant: Get count of unique sites assigned by this accountant
+    GET /api/construction/accountant-working-sites-count/
+    
+    Returns the number of unique sites this accountant has assigned to supervisors.
+    """
+    try:
+        user_id = request.user['user_id']
+        user_role = request.user.get('role', '')
+        
+        # Only accountants can access this
+        if user_role != 'Accountant':
+            return Response({
+                'error': 'Only accountants can access this endpoint'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Get count of unique sites assigned by this accountant
+        result = fetch_one("""
+            SELECT COUNT(DISTINCT site_id) as count
+            FROM working_sites
+            WHERE accountant_id = %s AND is_active = TRUE
+        """, (user_id,))
+        
+        sites_count = result['count'] if result else 0
+        
+        print(f"📊 [WORKING SITES] Accountant {user_id} has {sites_count} working sites")
+        
+        return Response({
+            'success': True,
+            'working_sites_count': sites_count
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print(f"Error getting working sites count: {e}")
+        import traceback
+        traceback.print_exc()
+        return Response({
+            'error': f'Error getting working sites count: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def get_today_sites_with_data(request):
     """
     Supervisor: Get sites where data was entered today
@@ -5011,3 +5257,370 @@ def delete_material_requirement(request, requirement_id):
         return Response({
             'error': f'Error deleting requirement: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_all_working_sites(request):
+    """
+    Admin: Get all active working sites assigned by accountants
+    GET /api/construction/admin/all-working-sites/
+    
+    Returns sites from working_sites table (sites assigned by accountants to supervisors)
+    with counts of labour entries, material bills, and photos
+    """
+    try:
+        user_role = request.user.get('role', '')
+        
+        # Only Admin can view all working sites
+        if user_role != 'Admin':
+            return Response({
+                'error': 'Only Admin can view all working sites'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Get all active working sites from working_sites table
+        sites = fetch_all("""
+            SELECT 
+                s.id as site_id,
+                s.site_name,
+                s.customer_name,
+                s.area,
+                s.street,
+                MAX(ws.assigned_date) as assigned_date,
+                MAX(ws.description) as description,
+                (
+                    SELECT COUNT(*) 
+                    FROM labour_entries le 
+                    WHERE le.site_id = s.id
+                ) as labour_count,
+                (
+                    SELECT COUNT(*) 
+                    FROM material_bills mb 
+                    WHERE mb.site_id = s.id
+                ) as material_count,
+                (
+                    SELECT COUNT(*) 
+                    FROM work_updates wu 
+                    WHERE wu.site_id = s.id
+                ) as photo_count,
+                (
+                    SELECT MAX(le.entry_date)
+                    FROM labour_entries le
+                    WHERE le.site_id = s.id
+                ) as last_labour_date,
+                (
+                    SELECT MAX(mb.created_at)
+                    FROM material_bills mb
+                    WHERE mb.site_id = s.id
+                ) as last_material_update,
+                (
+                    SELECT MAX(wu.uploaded_at)
+                    FROM work_updates wu
+                    WHERE wu.site_id = s.id
+                ) as last_photo_update
+            FROM working_sites ws
+            JOIN sites s ON ws.site_id = s.id
+            WHERE ws.is_active = TRUE
+            GROUP BY s.id, s.site_name, s.customer_name, s.area, s.street
+            ORDER BY MAX(ws.assigned_date) DESC
+        """)
+        
+        # Format sites
+        formatted_sites = []
+        for site in sites:
+            # Find the most recent update from all sources
+            last_updates = []
+            
+            # Add labour date if exists (this is a date object)
+            if site.get('last_labour_date'):
+                from datetime import datetime
+                labour_date = site['last_labour_date']
+                # Convert date to datetime for comparison
+                if not isinstance(labour_date, datetime):
+                    labour_date = datetime.combine(labour_date, datetime.min.time())
+                # Remove timezone if present
+                if labour_date.tzinfo is not None:
+                    labour_date = labour_date.replace(tzinfo=None)
+                last_updates.append(labour_date)
+            
+            # Add material and photo updates (these are datetime objects)
+            for key in ['last_material_update', 'last_photo_update']:
+                if site.get(key):
+                    update_val = site[key]
+                    # Ensure it's a datetime object
+                    if isinstance(update_val, str):
+                        update_val = datetime.fromisoformat(update_val)
+                    # Remove timezone if present
+                    if hasattr(update_val, 'tzinfo') and update_val.tzinfo is not None:
+                        update_val = update_val.replace(tzinfo=None)
+                    last_updates.append(update_val)
+            
+            last_update = max(last_updates) if last_updates else None
+            
+            if last_update:
+                # Format as relative time
+                from datetime import datetime, timedelta
+                now = datetime.now()
+                
+                diff = now - last_update
+                if diff.days == 0:
+                    if diff.seconds < 3600:
+                        last_update_str = f"{diff.seconds // 60} min ago"
+                    else:
+                        last_update_str = f"{diff.seconds // 3600} hours ago"
+                elif diff.days == 1:
+                    last_update_str = "Yesterday"
+                elif diff.days < 7:
+                    last_update_str = f"{diff.days} days ago"
+                else:
+                    last_update_str = last_update.strftime('%b %d, %Y')
+            else:
+                last_update_str = ""
+            
+            # Create display name
+            display_name = f"{site['customer_name']} {site['site_name']}" if site['customer_name'] else site['site_name']
+            
+            formatted_sites.append({
+                'id': str(site['site_id']),
+                'site_name': site['site_name'],
+                'customer_name': site['customer_name'],
+                'display_name': display_name,
+                'area': site['area'],
+                'street': site['street'],
+                'labour_count': site['labour_count'] or 0,
+                'material_count': site['material_count'] or 0,
+                'photo_count': site['photo_count'] or 0,
+                'last_update': last_update_str,
+            })
+        
+        return Response({
+            'success': True,
+            'sites': formatted_sites,
+            'count': len(formatted_sites),
+        })
+        
+    except Exception as e:
+        print(f"Error fetching all working sites: {e}")
+        import traceback
+        traceback.print_exc()
+        return Response({
+            'error': f'Error fetching working sites: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+# ============================================
+# CASH ENTRIES APIS (ACCOUNTANT)
+# ============================================
+
+@api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def confirm_cash_entry(request):
+    """
+    Accountant: Confirm a supervisor/engineer entry and save to cash_entries
+    POST /api/construction/confirm-cash-entry/
+    Body: {
+        "site_id": "uuid",
+        "entry_date": "YYYY-MM-DD",
+        "source_type": "supervisor" or "site_engineer",
+        "source_entry_id": "uuid",
+        "labour_entries": [{"labour_type": "...", "labour_count": 1, "daily_rate": 600}]
+    }
+    """
+    try:
+        user_id = request.user['user_id']
+        user_role = request.user.get('role', '')
+        
+        if user_role != 'Accountant':
+            return Response({'error': 'Only Accountant can confirm cash entries'}, 
+                          status=status.HTTP_403_FORBIDDEN)
+        
+        site_id = request.data.get('site_id')
+        entry_date_str = request.data.get('entry_date')
+        source_type = request.data.get('source_type')  # 'supervisor' or 'site_engineer'
+        source_entry_id = request.data.get('source_entry_id')
+        labour_entries = request.data.get('labour_entries', [])
+        
+        print(f"🔍 [CASH ENTRY] Confirming entry - site: {site_id}, date: {entry_date_str}, source: {source_type}")
+        
+        if not all([site_id, entry_date_str, source_type, labour_entries]):
+            return Response({'error': 'site_id, entry_date, source_type, and labour_entries are required'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        # Parse date
+        try:
+            entry_date = datetime.strptime(entry_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'error': 'Invalid date format. Use YYYY-MM-DD'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if cash entry already exists for this site and date (any labour type)
+        existing = fetch_one("""
+            SELECT COUNT(*) as count FROM cash_entries
+            WHERE site_id = %s AND entry_date = %s
+        """, (site_id, entry_date))
+        
+        if existing and existing['count'] > 0:
+            return Response({
+                'error': 'Cash entry already exists for this site and date. Only one entry per site per day is allowed.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get submitted_by name from source entry
+        submitted_by_name = None
+        if source_entry_id:
+            source_entry = fetch_one("""
+                SELECT u.full_name
+                FROM labour_entries l
+                JOIN users u ON l.supervisor_id = u.id
+                WHERE l.id = %s
+            """, (source_entry_id,))
+            if source_entry:
+                submitted_by_name = source_entry['full_name']
+        
+        # Insert cash entries for each labour type
+        for labour in labour_entries:
+            labour_type = labour.get('labour_type')
+            labour_count = labour.get('labour_count', 0)
+            daily_rate = labour.get('daily_rate', 0)
+            total_cost = labour_count * daily_rate
+            
+            cash_entry_id = str(uuid.uuid4())
+            execute_query("""
+                INSERT INTO cash_entries
+                (id, site_id, accountant_id, entry_date, source_type, source_entry_id,
+                 labour_type, labour_count, daily_rate, total_cost, submitted_by_name, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (cash_entry_id, site_id, user_id, entry_date, source_type, source_entry_id,
+                  labour_type, labour_count, daily_rate, total_cost, submitted_by_name, timezone.now()))
+        
+        print(f"✅ [CASH ENTRY] Created {len(labour_entries)} cash entries")
+        
+        return Response({
+            'message': 'Cash entry confirmed successfully',
+            'entries_count': len(labour_entries),
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        print(f"❌ [CASH ENTRY] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def create_custom_cash_entry(request):
+    """
+    Accountant: Create a custom cash entry (not from supervisor/engineer)
+    POST /api/construction/create-custom-cash-entry/
+    Body: {
+        "site_id": "uuid",
+        "entry_date": "YYYY-MM-DD",
+        "labour_entries": [{"labour_type": "...", "labour_count": 1, "daily_rate": 600}],
+        "notes": "optional notes"
+    }
+    """
+    try:
+        user_id = request.user['user_id']
+        user_role = request.user.get('role', '')
+        
+        if user_role != 'Accountant':
+            return Response({'error': 'Only Accountant can create custom cash entries'}, 
+                          status=status.HTTP_403_FORBIDDEN)
+        
+        site_id = request.data.get('site_id')
+        entry_date_str = request.data.get('entry_date')
+        labour_entries = request.data.get('labour_entries', [])
+        notes = request.data.get('notes', '')
+        
+        print(f"🔍 [CUSTOM CASH ENTRY] Creating custom entry - site: {site_id}, date: {entry_date_str}")
+        
+        if not all([site_id, entry_date_str, labour_entries]):
+            return Response({'error': 'site_id, entry_date, and labour_entries are required'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        # Parse date
+        try:
+            entry_date = datetime.strptime(entry_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'error': 'Invalid date format. Use YYYY-MM-DD'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if cash entry already exists for this site and date (any labour type)
+        existing = fetch_one("""
+            SELECT COUNT(*) as count FROM cash_entries
+            WHERE site_id = %s AND entry_date = %s
+        """, (site_id, entry_date))
+        
+        if existing and existing['count'] > 0:
+            return Response({
+                'error': 'Cash entry already exists for this site and date. Only one entry per site per day is allowed.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Insert cash entries for each labour type
+        for labour in labour_entries:
+            labour_type = labour.get('labour_type')
+            labour_count = labour.get('labour_count', 0)
+            daily_rate = labour.get('daily_rate', 0)
+            total_cost = labour_count * daily_rate
+            
+            cash_entry_id = str(uuid.uuid4())
+            execute_query("""
+                INSERT INTO cash_entries
+                (id, site_id, accountant_id, entry_date, source_type, 
+                 labour_type, labour_count, daily_rate, total_cost, notes, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (cash_entry_id, site_id, user_id, entry_date, 'accountant_created',
+                  labour_type, labour_count, daily_rate, total_cost, notes, timezone.now()))
+        
+        print(f"✅ [CUSTOM CASH ENTRY] Created {len(labour_entries)} custom cash entries")
+        
+        return Response({
+            'message': 'Custom cash entry created successfully',
+            'entries_count': len(labour_entries)
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        print(f"❌ [CUSTOM CASH ENTRY] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def check_cash_entry_exists(request):
+    """
+    Check if a cash entry already exists for a site and date
+    GET /api/construction/check-cash-entry/?site_id=xxx&date=YYYY-MM-DD
+    """
+    try:
+        site_id = request.query_params.get('site_id')
+        date_str = request.query_params.get('date')
+        
+        if not site_id or not date_str:
+            return Response({'error': 'site_id and date are required'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        existing = fetch_one("""
+            SELECT id, source_type, created_at
+            FROM cash_entries
+            WHERE site_id = %s AND entry_date = %s
+            LIMIT 1
+        """, (site_id, date_str))
+        
+        return Response({
+            'exists': existing is not None,
+            'entry': {
+                'id': str(existing['id']),
+                'source_type': existing['source_type'],
+                'created_at': existing['created_at'].isoformat()
+            } if existing else None
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

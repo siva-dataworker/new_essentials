@@ -3,6 +3,7 @@ import '../services/construction_service.dart';
 import '../services/material_service.dart';
 import '../services/budget_management_service.dart';
 import '../services/notification_service.dart';
+import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/time_validator.dart';
 import 'supervisor_history_screen.dart';
@@ -19,6 +20,7 @@ class SiteDetailScreen extends StatefulWidget {
 
 class _SiteDetailScreenState extends State<SiteDetailScreen> {
   final _constructionService = ConstructionService();
+  final _authService = AuthService();
   
   // Cache for site-specific data
   static final Map<String, Map<String, dynamic>?> _siteDataCache = {};
@@ -28,8 +30,9 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
   Map<String, dynamic>? _todayEntries;
   bool _isLoading = false;
   DateTime _selectedDate = DateTime.now();
+  String? _userId; // Store user ID for cache key
   String get _siteId => widget.site['id'].toString();
-  String get _cacheKey => '${_siteId}_${_selectedDate.toIso8601String().split('T')[0]}';
+  String get _cacheKey => '${_userId ?? 'unknown'}_${_siteId}_${_selectedDate.toIso8601String().split('T')[0]}';
   
   // Dropdown functionality
   final Set<String> _expandedDates = {};
@@ -37,7 +40,20 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _loadUserId();
     _loadTodayEntriesWithCache();
+  }
+
+  Future<void> _loadUserId() async {
+    try {
+      final user = await _authService.getCurrentUser();
+      setState(() {
+        _userId = user?['id']?.toString();
+      });
+      print('🔑 [SITE_DETAIL] User ID loaded: $_userId');
+    } catch (e) {
+      print('❌ [SITE_DETAIL] Error loading user ID: $e');
+    }
   }
 
   Future<void> _loadTodayEntriesWithCache() async {
@@ -1280,37 +1296,9 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
   final _constructionService = ConstructionService();
   final _budgetService = BudgetManagementService();
   
-  // Morning labour counts
-  final Map<String, int> _morningLabourCounts = {
-    'Carpenter': 0,
-    'Mason': 0,
-    'Electrician': 0,
-    'Plumber': 0,
-    'Painter': 0,
-    'Helper': 0,
-    'General': 0,
-    'Tile Layer': 0,
-    'Tile Layerhelper': 0,
-    'Kambi Fitter': 0,
-    'Concrete Kot': 0,
-    'Pile Labour': 0,
-  };
-  
-  // Evening labour counts
-  final Map<String, int> _eveningLabourCounts = {
-    'Carpenter': 0,
-    'Mason': 0,
-    'Electrician': 0,
-    'Plumber': 0,
-    'Painter': 0,
-    'Helper': 0,
-    'General': 0,
-    'Tile Layer': 0,
-    'Tile Layerhelper': 0,
-    'Kambi Fitter': 0,
-    'Concrete Kot': 0,
-    'Pile Labour': 0,
-  };
+  // Dynamic labour counts for morning and evening
+  Map<String, int> _morningLabourCounts = {};
+  Map<String, int> _eveningLabourCounts = {};
 
   // Morning data for evening display
   Map<String, dynamic>? _morningData;
@@ -1323,6 +1311,7 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
   // Default salary rates (used if admin hasn't set custom rates)
   // Rates loaded from admin global rates (single source of truth)
   Map<String, double> _rates = {};
+  bool _isLoadingRates = true;
 
   final _morningExtraCostController = TextEditingController();
   final _morningExtraCostNotesController = TextEditingController();
@@ -1450,15 +1439,35 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
   }
 
   Future<void> _fetchRates() async {
+    setState(() => _isLoadingRates = true);
+    
     final rates = await _budgetService.getLabourRates('global');
     if (rates.isNotEmpty && mounted) {
       final Map<String, double> loaded = {};
+      final Map<String, int> morningCounts = {};
+      final Map<String, int> eveningCounts = {};
+      
       for (final r in rates) {
         final type = r['labour_type'] as String?;
         final rate = (r['daily_rate'] as num?)?.toDouble();
-        if (type != null && rate != null) loaded[type] = rate;
+        if (type != null && rate != null) {
+          loaded[type] = rate;
+          // Initialize counts to 0 for each labour type
+          morningCounts[type] = 0;
+          eveningCounts[type] = 0;
+        }
       }
-      setState(() => _rates = loaded);
+      
+      setState(() {
+        _rates = loaded;
+        _morningLabourCounts = morningCounts;
+        _eveningLabourCounts = eveningCounts;
+        _isLoadingRates = false;
+      });
+      
+      print('✅ Loaded ${loaded.length} labour types from admin');
+    } else {
+      setState(() => _isLoadingRates = false);
     }
   }
 
@@ -1622,6 +1631,59 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
   }
 
   Widget _buildTabContent(bool isMorning) {
+    // Show loading indicator while rates are being fetched
+    if (_isLoadingRates) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              'Loading labour types...',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Show message if no labour types are available
+    if (_morningLabourCounts.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No Labour Types Available',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.deepNavy,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Admin needs to add labour types first',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
     // For evening tab, show morning data in read-only format
     if (!isMorning) {
       return _buildEveningDisplayContent();
