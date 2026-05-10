@@ -771,18 +771,6 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
         iconTheme: const IconThemeData(color: AppColors.deepNavy),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AssignWorkingSitesScreen(),
-                ),
-              );
-            },
-            tooltip: 'Assign Working Sites',
-          ),
-          IconButton(
             icon: const Icon(Icons.logout_rounded),
             onPressed: _logout,
           ),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/construction_provider.dart';
 import '../utils/app_colors.dart';
+import 'assign_working_sites_screen.dart';
 
 class AccountantReportsScreen extends StatefulWidget {
   const AccountantReportsScreen({super.key});
@@ -278,6 +279,18 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
             iconTheme: const IconThemeData(color: AppColors.deepNavy),
             actions: [
               IconButton(
+                icon: const Icon(Icons.add_circle_outline, color: AppColors.deepNavy),
+                tooltip: 'Assign Working Sites',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AssignWorkingSitesScreen(),
+                    ),
+                  );
+                },
+              ),
+              IconButton(
                 icon: const Icon(Icons.refresh, color: AppColors.deepNavy),
                 onPressed: () async {
                   provider.clearAccountantCache();
@@ -543,24 +556,6 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
               ),
               const SizedBox(height: 12),
 
-              // ── Client Button ────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: ElevatedButton.icon(
-                  onPressed: _showClientRequirementDialog,
-                  icon: const Icon(Icons.person_add, size: 18),
-                  label: const Text('Client Extra Requirement'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:AppColors.deepNavy,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    minimumSize: const Size(double.infinity, 44),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
               const SizedBox(height: 12),
 
               // ── Entry Type filter chips ──────────────────────

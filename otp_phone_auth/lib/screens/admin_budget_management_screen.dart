@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import '../services/auth_service.dart';
 import '../services/budget_management_service.dart';
 import '../services/cache_service.dart';
 import '../services/construction_service.dart';
@@ -61,7 +65,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
     // Add listener to load utilization only on first access
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
@@ -275,6 +279,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
             Tab(text: 'Utilization'),
             Tab(text: 'Updates'),
             Tab(text: 'Inventory'),
+            Tab(text: 'Document'),
             Tab(text: 'Requirement'),
           ],
         ),
@@ -286,6 +291,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
           _buildUtilizationTab(),
           PhotoTabsSection(siteId: widget.siteId),
           _buildInventoryTab(),
+          _buildDocumentTab(),
           _buildRequirementTab(),
         ],
       ),
@@ -1162,6 +1168,10 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
       siteId: widget.siteId,
       siteName: widget.siteName,
     );
+  }
+
+  Widget _buildDocumentTab() {
+    return _AdminDocumentTab(siteId: widget.siteId);
   }
 
   Widget _buildRequirementTab() {
@@ -2369,6 +2379,203 @@ class _PhotoTabsSectionState extends State<PhotoTabsSection>
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+// ── Admin Document Tab ─────────────────────────────────────────────────────
+class _AdminDocumentTab extends StatefulWidget {
+  final String siteId;
+  const _AdminDocumentTab({required this.siteId});
+
+  @override
+  State<_AdminDocumentTab> createState() => _AdminDocumentTabState();
+}
+
+class _AdminDocumentTabState extends State<_AdminDocumentTab> {
+  List<Map<String, dynamic>> _documents = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDocuments();
+  }
+
+  Future<void> _loadDocuments() async {
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      final authService = AuthService();
+      final token = await authService.getToken();
+      final response = await http.get(
+        Uri.parse('${AuthService.baseUrl}/admin/sites/${widget.siteId}/documents/'),
+        headers: {'Authorization': 'Bearer ${token ?? ''}'},
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _documents = List<Map<String, dynamic>>.from(data['documents'] ?? []);
+          _isLoading = false;
+        });
+      } else {
+        setState(() { _error = 'Failed to load documents'; _isLoading = false; });
+      }
+    } catch (e) {
+      setState(() { _error = e.toString(); _isLoading = false; });
+    }
+  }
+
+  Future<void> _openDocument(String fileUrl) async {
+    final url = fileUrl.startsWith('http')
+        ? fileUrl
+        : 'http://187.127.164.22$fileUrl';
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open document')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF1A1A2E)));
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 56, color: Colors.red),
+            const SizedBox(height: 12),
+            Text(_error!, style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _loadDocuments,
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A1A2E),
+                  foregroundColor: Colors.white),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+    if (_documents.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.folder_open, size: 72, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            const Text('No documents uploaded yet',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1A2E))),
+            const SizedBox(height: 8),
+            Text('Documents uploaded by site engineers\nwill appear here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+          ],
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _loadDocuments,
+      color: const Color(0xFF1A1A2E),
+      child: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: _documents.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final doc = _documents[index];
+          final title = doc['title'] as String? ?? doc['document_type'] as String? ?? 'Document';
+          final docType = doc['document_type'] as String? ?? '';
+          final uploadedBy = doc['uploaded_by'] as String? ?? doc['engineer_name'] as String? ?? 'Unknown';
+          final uploadDate = (doc['upload_date'] as String? ?? doc['uploaded_at'] as String? ?? '');
+          final dateStr = uploadDate.length >= 10 ? uploadDate.substring(0, 10) : uploadDate;
+          final fileUrl = doc['file_url'] as String? ?? '';
+
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF1A1A2E).withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A2E).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.insert_drive_file,
+                        color: Color(0xFF1A1A2E), size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title,
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A1A2E))),
+                        if (docType.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(docType,
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey.shade600)),
+                        ],
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.person_outline,
+                                size: 13, color: Colors.grey.shade500),
+                            const SizedBox(width: 4),
+                            Text(uploadedBy,
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey.shade600)),
+                            const SizedBox(width: 12),
+                            Icon(Icons.calendar_today_outlined,
+                                size: 13, color: Colors.grey.shade500),
+                            const SizedBox(width: 4),
+                            Text(dateStr,
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey.shade600)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (fileUrl.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.open_in_new,
+                          color: Color(0xFF1A1A2E), size: 22),
+                      onPressed: () => _openDocument(fileUrl),
+                      tooltip: 'Open document',
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
