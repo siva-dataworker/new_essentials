@@ -793,6 +793,28 @@ class ConstructionService {
     }
   }
 
+  // Get supervisor photos for accountant/admin (from site_photos table)
+  Future<Map<String, dynamic>> getSupervisorPhotosForAccountant({
+    String? siteId,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      String url = '$baseUrl/construction/supervisor-photos-for-accountant/';
+      if (siteId != null) url += '?site_id=$siteId';
+
+      final response = await http.get(Uri.parse(url), headers: headers);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      print('❌ [SUPERVISOR PHOTOS] Error: ${response.statusCode} ${response.body}');
+      return {'photos': [], 'count': 0};
+    } catch (e) {
+      print('❌ [SUPERVISOR PHOTOS] Exception: $e');
+      return {'photos': [], 'count': 0};
+    }
+  }
+
   // ============================================
   // ARCHITECT APIS
   // ============================================

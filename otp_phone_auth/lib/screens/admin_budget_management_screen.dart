@@ -2032,40 +2032,37 @@ class _PhotoTabsSectionState extends State<PhotoTabsSection>
       _isLoadingEngineer = true;
     });
 
-    // Load all photos for this site
-    final result = await _constructionService.getAccountantPhotos(
+    // Load supervisor photos (from site_photos table via supervisor-photos-for-accountant)
+    // and site engineer photos (from work_updates table via accountant/all-photos)
+    final supervisorResult = await _constructionService.getSupervisorPhotosForAccountant(
+      siteId: widget.siteId,
+    );
+    final engineerResult = await _constructionService.getAccountantPhotos(
       siteId: widget.siteId,
     );
 
-    if (result['photos'] != null) {
-      final allPhotos = List<Map<String, dynamic>>.from(result['photos']);
-      
-      // Separate supervisor photos (from site_photos table) and engineer photos (from work_updates table)
-      // Supervisor photos have 'supervisor_name' field
-      // Engineer photos have 'uploaded_by_role' field
-      
+    if (mounted) {
       setState(() {
-        _supervisorPhotos = allPhotos.where((photo) {
-          // Check if it's a supervisor photo (has supervisor_name or uploaded_by_role is Supervisor)
-          return photo['uploaded_by_role'] == 'Supervisor' || photo.containsKey('supervisor_name');
+        // Supervisor photos from site_photos table
+        _supervisorPhotos = List<Map<String, dynamic>>.from(
+          supervisorResult['photos'] ?? [],
+        );
+
+        // Site engineer photos from work_updates table
+        final allEngineerPhotos = List<Map<String, dynamic>>.from(
+          engineerResult['photos'] ?? [],
+        );
+        _engineerPhotos = allEngineerPhotos.where((photo) {
+          final role = (photo['uploaded_by_role'] as String? ?? '').toLowerCase();
+          return role == 'site engineer' || role == 'siteengineer';
         }).toList();
-        
-        _engineerPhotos = allPhotos.where((photo) {
-          // Site engineer photos
-          return photo['uploaded_by_role'] == 'Site Engineer';
-        }).toList();
-        
+
         _isLoadingSupervisor = false;
         _isLoadingEngineer = false;
       });
-      
+
       print('📸 Loaded ${_supervisorPhotos.length} supervisor photos');
       print('📸 Loaded ${_engineerPhotos.length} engineer photos');
-    } else {
-      setState(() {
-        _isLoadingSupervisor = false;
-        _isLoadingEngineer = false;
-      });
     }
   }
 
