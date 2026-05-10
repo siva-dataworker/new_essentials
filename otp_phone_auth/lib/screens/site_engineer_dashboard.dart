@@ -14,6 +14,7 @@ import 'site_engineer_site_detail_screen.dart';
 import 'site_engineer_material_screen.dart';
 import 'site_engineer_document_screen.dart';
 import 'site_engineer_labour_screen.dart';
+import 'site_engineer_reports_screen.dart';
 
 class SiteEngineerDashboard extends StatefulWidget {
   final UserModel user;
@@ -26,7 +27,7 @@ class SiteEngineerDashboard extends StatefulWidget {
 
 class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
   final _authService = AuthService();
-  int _currentBottomIndex = 0; // 0=Dashboard, 1=Sites, 2=Notifications, 3=Profile
+  int _currentBottomIndex = 0; // 0=Dashboard, 1=Sites, 2=Reports, 3=Notifications, 4=Profile
   final _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -125,10 +126,13 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
           case 1: // Sites
             currentScreen = _buildSitesTab(provider);
             break;
-          case 2: // Notifications
+          case 2: // Reports
+            currentScreen = const SiteEngineerReportsScreen();
+            break;
+          case 3: // Notifications
             currentScreen = _buildNotificationsTab();
             break;
-          case 3: // Profile
+          case 4: // Profile
             currentScreen = _buildProfileTab();
             break;
           default:
@@ -165,6 +169,11 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                 label: 'Sites',
               ),
               BottomNavigationBarItem(
+                icon: Icon(Icons.bar_chart),
+                activeIcon: Icon(Icons.bar_chart, size: 28),
+                label: 'Reports',
+              ),
+              BottomNavigationBarItem(
                 icon: Icon(Icons.notifications),
                 activeIcon: Icon(Icons.notifications, size: 28),
                 label: 'Notifications',
@@ -188,8 +197,10 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
       case 1:
         return 'Sites';
       case 2:
-        return 'Notifications';
+        return 'Reports';
       case 3:
+        return 'Notifications';
+      case 4:
         return 'Profile';
       default:
         return 'Site Engineer';
