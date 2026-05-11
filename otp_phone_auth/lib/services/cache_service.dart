@@ -897,4 +897,428 @@ class CacheService {
       print('Error clearing site photos data: $e');
     }
   }
+
+  // ============================================
+  // LABOUR RATES CACHE
+  // ============================================
+
+  static const String _labourRatesKey = 'admin_labour_rates_cache';
+  static const String _labourRatesTimestampKey = 'admin_labour_rates_timestamp';
+
+  /// Save labour rates to cache
+  static Future<void> saveLabourRates(Map<String, dynamic> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_labourRatesKey, json.encode(data));
+      await prefs.setInt(_labourRatesTimestampKey, DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      print('Error saving labour rates cache: $e');
+    }
+  }
+
+  /// Load labour rates from cache
+  static Future<Map<String, dynamic>?> loadLabourRates() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timestamp = prefs.getInt(_labourRatesTimestampKey);
+
+      if (timestamp != null) {
+        final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        if (DateTime.now().difference(cacheTime) > _cacheExpiry) {
+          await clearLabourRates();
+          return null;
+        }
+      }
+
+      final cached = prefs.getString(_labourRatesKey);
+      if (cached != null) {
+        return Map<String, dynamic>.from(json.decode(cached));
+      }
+    } catch (e) {
+      print('Error loading labour rates cache: $e');
+    }
+    return null;
+  }
+
+  /// Clear labour rates cache
+  static Future<void> clearLabourRates() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_labourRatesKey);
+      await prefs.remove(_labourRatesTimestampKey);
+    } catch (e) {
+      print('Error clearing labour rates cache: $e');
+    }
+  }
+
+  // ============================================
+  // MATERIAL REQUIREMENTS CACHE
+  // ============================================
+
+  static const String _materialRequirementsKey = 'admin_material_requirements_cache';
+  static const String _materialRequirementsTimestampKey = 'admin_material_requirements_timestamp';
+
+  /// Save material requirements to cache
+  static Future<void> saveMaterialRequirements(List<dynamic> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_materialRequirementsKey, json.encode(data));
+      await prefs.setInt(_materialRequirementsTimestampKey, DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      print('Error saving material requirements cache: $e');
+    }
+  }
+
+  /// Load material requirements from cache
+  static Future<List<dynamic>?> loadMaterialRequirements() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timestamp = prefs.getInt(_materialRequirementsTimestampKey);
+
+      if (timestamp != null) {
+        final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        if (DateTime.now().difference(cacheTime) > _cacheExpiry) {
+          await clearMaterialRequirements();
+          return null;
+        }
+      }
+
+      final cached = prefs.getString(_materialRequirementsKey);
+      if (cached != null) {
+        return json.decode(cached) as List<dynamic>;
+      }
+    } catch (e) {
+      print('Error loading material requirements cache: $e');
+    }
+    return null;
+  }
+
+  /// Clear material requirements cache
+  static Future<void> clearMaterialRequirements() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_materialRequirementsKey);
+      await prefs.remove(_materialRequirementsTimestampKey);
+    } catch (e) {
+      print('Error clearing material requirements cache: $e');
+    }
+  }
+
+  // ============================================
+  // MATERIALS LIST CACHE
+  // ============================================
+
+  static const String _materialsListKey = 'admin_materials_list_cache';
+  static const String _materialsListTimestampKey = 'admin_materials_list_timestamp';
+
+  /// Save materials list to cache
+  static Future<void> saveMaterialsList(List<Map<String, dynamic>> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_materialsListKey, json.encode(data));
+      await prefs.setInt(_materialsListTimestampKey, DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      print('Error saving materials list cache: $e');
+    }
+  }
+
+  /// Load materials list from cache
+  static Future<List<Map<String, dynamic>>?> loadMaterialsList() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timestamp = prefs.getInt(_materialsListTimestampKey);
+
+      if (timestamp != null) {
+        final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        if (DateTime.now().difference(cacheTime) > _cacheExpiry) {
+          await clearMaterialsList();
+          return null;
+        }
+      }
+
+      final cached = prefs.getString(_materialsListKey);
+      if (cached != null) {
+        return List<Map<String, dynamic>>.from(json.decode(cached));
+      }
+    } catch (e) {
+      print('Error loading materials list cache: $e');
+    }
+    return null;
+  }
+
+  /// Clear materials list cache
+  static Future<void> clearMaterialsList() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_materialsListKey);
+      await prefs.remove(_materialsListTimestampKey);
+    } catch (e) {
+      print('Error clearing materials list cache: $e');
+    }
+  }
+
+  // ============================================
+  // ALL WORKING SITES CACHE
+  // ============================================
+
+  static const String _allWorkingSitesKey = 'admin_all_working_sites_cache';
+  static const String _allWorkingSitesTimestampKey = 'admin_all_working_sites_timestamp';
+
+  /// Save all working sites to cache
+  static Future<void> saveAllWorkingSites(List<Map<String, dynamic>> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_allWorkingSitesKey, json.encode(data));
+      await prefs.setInt(_allWorkingSitesTimestampKey, DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      print('Error saving all working sites cache: $e');
+    }
+  }
+
+  /// Load all working sites from cache
+  static Future<List<Map<String, dynamic>>?> loadAllWorkingSites() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timestamp = prefs.getInt(_allWorkingSitesTimestampKey);
+
+      if (timestamp != null) {
+        final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        if (DateTime.now().difference(cacheTime) > _cacheExpiry) {
+          await clearAllWorkingSites();
+          return null;
+        }
+      }
+
+      final cached = prefs.getString(_allWorkingSitesKey);
+      if (cached != null) {
+        return List<Map<String, dynamic>>.from(json.decode(cached));
+      }
+    } catch (e) {
+      print('Error loading all working sites cache: $e');
+    }
+    return null;
+  }
+
+  /// Clear all working sites cache
+  static Future<void> clearAllWorkingSites() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_allWorkingSitesKey);
+      await prefs.remove(_allWorkingSitesTimestampKey);
+    } catch (e) {
+      print('Error clearing all working sites cache: $e');
+    }
+  }
+
+  // ============================================
+  // SUPERVISOR WORKING SITES CACHE
+  // ============================================
+
+  static const String _supervisorWorkingSitesKey = 'supervisor_working_sites_cache';
+  static const String _supervisorWorkingSitesTimestampKey = 'supervisor_working_sites_timestamp';
+
+  /// Save supervisor working sites to cache
+  static Future<void> saveSupervisorWorkingSites(List<Map<String, dynamic>> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_supervisorWorkingSitesKey, json.encode(data));
+      await prefs.setInt(_supervisorWorkingSitesTimestampKey, DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      print('Error saving supervisor working sites cache: $e');
+    }
+  }
+
+  /// Load supervisor working sites from cache
+  static Future<List<Map<String, dynamic>>?> loadSupervisorWorkingSites() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timestamp = prefs.getInt(_supervisorWorkingSitesTimestampKey);
+
+      if (timestamp != null) {
+        final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        if (DateTime.now().difference(cacheTime) > _cacheExpiry) {
+          await clearSupervisorWorkingSites();
+          return null;
+        }
+      }
+
+      final cached = prefs.getString(_supervisorWorkingSitesKey);
+      if (cached != null) {
+        return List<Map<String, dynamic>>.from(json.decode(cached));
+      }
+    } catch (e) {
+      print('Error loading supervisor working sites cache: $e');
+    }
+    return null;
+  }
+
+  /// Clear supervisor working sites cache
+  static Future<void> clearSupervisorWorkingSites() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_supervisorWorkingSitesKey);
+      await prefs.remove(_supervisorWorkingSitesTimestampKey);
+    } catch (e) {
+      print('Error clearing supervisor working sites cache: $e');
+    }
+  }
+
+  // ============================================
+  // TOTAL COUNTS CACHE
+  // ============================================
+
+  static const String _totalCountsKey = 'supervisor_total_counts_cache';
+  static const String _totalCountsTimestampKey = 'supervisor_total_counts_timestamp';
+
+  /// Save total counts to cache
+  static Future<void> saveTotalCounts(Map<String, dynamic> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_totalCountsKey, json.encode(data));
+      await prefs.setInt(_totalCountsTimestampKey, DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      print('Error saving total counts cache: $e');
+    }
+  }
+
+  /// Load total counts from cache
+  static Future<Map<String, dynamic>?> loadTotalCounts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timestamp = prefs.getInt(_totalCountsTimestampKey);
+
+      if (timestamp != null) {
+        final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        if (DateTime.now().difference(cacheTime) > _cacheExpiry) {
+          await clearTotalCounts();
+          return null;
+        }
+      }
+
+      final cached = prefs.getString(_totalCountsKey);
+      if (cached != null) {
+        return Map<String, dynamic>.from(json.decode(cached));
+      }
+    } catch (e) {
+      print('Error loading total counts cache: $e');
+    }
+    return null;
+  }
+
+  /// Clear total counts cache
+  static Future<void> clearTotalCounts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_totalCountsKey);
+      await prefs.remove(_totalCountsTimestampKey);
+    } catch (e) {
+      print('Error clearing total counts cache: $e');
+    }
+  }
+
+  // ============================================
+  // TODAY SITES WITH DATA CACHE
+  // ============================================
+
+  static const String _todaySitesKey = 'supervisor_today_sites_cache';
+  static const String _todaySitesTimestampKey = 'supervisor_today_sites_timestamp';
+
+  /// Save today sites with data to cache
+  static Future<void> saveTodaySitesWithData(List<Map<String, dynamic>> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_todaySitesKey, json.encode(data));
+      await prefs.setInt(_todaySitesTimestampKey, DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      print('Error saving today sites with data cache: $e');
+    }
+  }
+
+  /// Load today sites with data from cache
+  static Future<List<Map<String, dynamic>>?> loadTodaySitesWithData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timestamp = prefs.getInt(_todaySitesTimestampKey);
+
+      if (timestamp != null) {
+        final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        if (DateTime.now().difference(cacheTime) > _cacheExpiry) {
+          await clearTodaySitesWithData();
+          return null;
+        }
+      }
+
+      final cached = prefs.getString(_todaySitesKey);
+      if (cached != null) {
+        return List<Map<String, dynamic>>.from(json.decode(cached));
+      }
+    } catch (e) {
+      print('Error loading today sites with data cache: $e');
+    }
+    return null;
+  }
+
+  /// Clear today sites with data cache
+  static Future<void> clearTodaySitesWithData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_todaySitesKey);
+      await prefs.remove(_todaySitesTimestampKey);
+    } catch (e) {
+      print('Error clearing today sites with data cache: $e');
+    }
+  }
+
+  // ============================================
+  // SUPERVISOR REPORTS SITES CACHE
+  // ============================================
+
+  static const String _supervisorReportsSitesKey = 'supervisor_reports_sites_cache';
+  static const String _supervisorReportsSitesTimestampKey = 'supervisor_reports_sites_timestamp';
+
+  /// Save supervisor reports sites to cache
+  static Future<void> saveSupervisorReportsSites(List<Map<String, dynamic>> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_supervisorReportsSitesKey, json.encode(data));
+      await prefs.setInt(_supervisorReportsSitesTimestampKey, DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      print('Error saving supervisor reports sites cache: $e');
+    }
+  }
+
+  /// Load supervisor reports sites from cache
+  static Future<List<Map<String, dynamic>>?> loadSupervisorReportsSites() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timestamp = prefs.getInt(_supervisorReportsSitesTimestampKey);
+
+      if (timestamp != null) {
+        final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        if (DateTime.now().difference(cacheTime) > _cacheExpiry) {
+          await clearSupervisorReportsSites();
+          return null;
+        }
+      }
+
+      final cached = prefs.getString(_supervisorReportsSitesKey);
+      if (cached != null) {
+        return List<Map<String, dynamic>>.from(json.decode(cached));
+      }
+    } catch (e) {
+      print('Error loading supervisor reports sites cache: $e');
+    }
+    return null;
+  }
+
+  /// Clear supervisor reports sites cache
+  static Future<void> clearSupervisorReportsSites() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_supervisorReportsSitesKey);
+      await prefs.remove(_supervisorReportsSitesTimestampKey);
+    } catch (e) {
+      print('Error clearing supervisor reports sites cache: $e');
+    }
+  }
 }

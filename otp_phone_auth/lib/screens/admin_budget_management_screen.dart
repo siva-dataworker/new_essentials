@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:excel/excel.dart' hide Border;
+import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
+import '../services/accountant_bills_service.dart';
 import '../services/budget_management_service.dart';
 import '../services/cache_service.dart';
 import '../services/construction_service.dart';
@@ -62,10 +69,13 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
   bool _utilizationLoaded = false;
   bool _requirementsLoaded = false;
 
+  // Excel export state
+  bool _isExporting = false;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     // Add listener to load utilization only on first access
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
@@ -281,6 +291,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
             Tab(text: 'Inventory'),
             Tab(text: 'Document'),
             Tab(text: 'Requirement'),
+            Tab(text:'Bills')
           ],
         ),
       ),
@@ -293,6 +304,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
           _buildInventoryTab(),
           _buildDocumentTab(),
           _buildRequirementTab(),
+          _buildBillsTab(),
         ],
       ),
       floatingActionButton: _tabController.index == 1
@@ -533,6 +545,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
     final notesController = TextEditingController();
     DateTime selectedDate = DateTime.now();
     bool isSubmitting = false; // Track submission state
+    final outerSetState = setState; // capture outer widget's setState before dialog shadows it
 
     showDialog(
       context: context,
@@ -664,7 +677,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
 
                 // Optimistically update UI immediately (before API call)
                 if (mounted) {
-                  setState(() {
+                  outerSetState(() {
                     // Update phase payments optimistically
                     if (_phasePayments != null) {
                       final phases = List<Map<String, dynamic>>.from(_phasePayments!['phases'] ?? []);
@@ -674,11 +687,11 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
                         'payment_date': '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}',
                       });
                       _phasePayments!['phases'] = phases;
-                      
+
                       // Update client balance
                       final currentBalance = _phasePayments!['client_balance'] ?? 0.0;
                       _phasePayments!['client_balance'] = currentBalance - amount;
-                      
+
                       // Update total received
                       final currentReceived = _phasePayments!['total_received'] ?? 0.0;
                       _phasePayments!['total_received'] = currentReceived + amount;
@@ -774,6 +787,9 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
       ),
     );
   }
+Widget _buildBillsTab() {
+  return _AdminBillsTab(siteId: widget.siteId, siteName: widget.siteName);
+}
 
   Widget _buildRecentUpdatesDropdown() {
     return Card(
@@ -924,6 +940,41 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Download Excel Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isExporting ? null : _exportToExcel,
+                          icon: _isExporting
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.download_rounded,
+                                  color: Colors.white),
+                          label: Text(
+                            _isExporting
+                                ? 'Generating Excel...'
+                                : 'Download Expense Report (Excel)',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1B5E20),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            elevation: 2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
                       // Date Filter Card
                       Card(
                         elevation: 2,
@@ -1133,6 +1184,361 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
     );
   }
   
+  // ── Excel Export ─────────────────────────────────────────────────────────
+  // Layout matches reference: each labour type = one column,
+  // LABOUR COUNT row + SALARY row, TOTAL AMOUNT in last column.
+
+  Future<void> _exportToExcel() async {
+    if (_utilization == null || _isExporting) return;
+    setState(() => _isExporting = true);
+
+    try {
+      final excelFile = Excel.createExcel();
+      const sheetName = 'Salary Sheet';
+      final Sheet sheet = excelFile[sheetName];
+      if (excelFile.sheets.containsKey('Sheet1')) excelFile.delete('Sheet1');
+
+      final summary =
+          Map<String, dynamic>.from(_utilization!['summary'] ?? {});
+      final labourBreakdown = List<Map<String, dynamic>>.from(
+          _utilization!['labour_breakdown'] ?? []);
+      final materialBreakdown = List<Map<String, dynamic>>.from(
+          _utilization!['material_breakdown'] ?? []);
+      final otherBreakdown = List<Map<String, dynamic>>.from(
+          _utilization!['other_breakdown'] ?? []);
+
+      final now = DateTime.now();
+      final dateStr =
+          '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
+
+      // ── Calculate column layout ────────────────────────────────────────
+      // Col 0        : SITE NAME / row label
+      // Col 1..N     : one per labour type
+      // Col N+1      : MATERIAL (if any material data)
+      // Col N+2      : MISCELLANEOUS (if any other data)
+      // Last col     : TOTAL AMOUNT
+      final labourTypes = labourBreakdown
+          .map((l) => (l['labour_type'] as String? ?? 'Unknown').toUpperCase())
+          .toList();
+      final hasMaterial = materialBreakdown.isNotEmpty;
+      final hasOther = otherBreakdown.isNotEmpty;
+
+      const int labelCol = 0;
+      const int labourStart = 1;
+      final int labourEnd = labourStart + labourTypes.length - 1;
+      int nextCol = labourEnd + 1;
+      final int? materialCol = hasMaterial ? nextCol++ : null;
+      final int? otherCol = hasOther ? nextCol++ : null;
+      final int totalCol = nextCol;
+      final int numCols = totalCol + 1;
+
+      int row = 0;
+
+      // ── Title row ─────────────────────────────────────────────────────
+      _xlBand(sheet, row, 'ESSENTIAL HOMES — SALARY SHEET', 'FF1A1A2E', 14, numCols);
+      row++;
+
+      _xlBand(sheet, row,
+          'Site: ${widget.siteName}   |   Generated: $dateStr', 'FF2E7D32', 11, numCols);
+      row++;
+      row++; // blank
+
+      // ── Column headers (matches reference: black bg, white text) ───────
+      final hdrStyle = CellStyle(
+        bold: true,
+        fontColorHex: ExcelColor.fromHexString('#FFFFFFFF'),
+        backgroundColorHex: ExcelColor.fromHexString('#FF000000'),
+      );
+      _xlStyled(sheet, labelCol, row, 'SITE NAME', hdrStyle);
+      for (int i = 0; i < labourTypes.length; i++) {
+        _xlStyled(sheet, labourStart + i, row, labourTypes[i], hdrStyle);
+      }
+      if (materialCol != null) _xlStyled(sheet, materialCol, row, 'MATERIAL', hdrStyle);
+      if (otherCol != null) _xlStyled(sheet, otherCol, row, 'MISCELLANEOUS', hdrStyle);
+      _xlStyled(sheet, totalCol, row, 'TOTAL AMOUNT', hdrStyle);
+      row++;
+
+      // ── Site name row (just the site name in col 0) ───────────────────
+      final siteStyle = CellStyle(
+        bold: true,
+        fontColorHex: ExcelColor.fromHexString('#FF1A1A2E'),
+      );
+      _xlStyled(sheet, labelCol, row, widget.siteName, siteStyle);
+      for (int c = 1; c < numCols; c++) {
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: row))
+            .value = TextCellValue('');
+      }
+      row++;
+
+      // ── LABOUR COUNT row (dark navy bg, green text — like reference) ───
+      final countLabelStyle = CellStyle(
+        bold: true,
+        fontColorHex: ExcelColor.fromHexString('#FF00DD00'),
+        backgroundColorHex: ExcelColor.fromHexString('#FF1A1A2E'),
+      );
+      final countValStyle = CellStyle(
+        fontColorHex: ExcelColor.fromHexString('#FF000000'),
+        backgroundColorHex: ExcelColor.fromHexString('#FFFFFFFF'),
+      );
+      _xlStyled(sheet, labelCol, row, 'LABOUR COUNT', countLabelStyle);
+      int totalCount = 0;
+      for (int i = 0; i < labourBreakdown.length; i++) {
+        final cnt = (labourBreakdown[i]['total_count'] as num?)?.toInt() ?? 0;
+        _xlStyled(sheet, labourStart + i, row, cnt.toString(), countValStyle);
+        totalCount += cnt;
+      }
+      if (materialCol != null) _xlStyled(sheet, materialCol, row, '-', countValStyle);
+      if (otherCol != null) _xlStyled(sheet, otherCol, row, '-', countValStyle);
+      _xlStyled(sheet, totalCol, row, totalCount.toString(),
+          CellStyle(
+            bold: true,
+            fontColorHex: ExcelColor.fromHexString('#FF1A1A2E'),
+            backgroundColorHex: ExcelColor.fromHexString('#FFE8F5E9'),
+          ));
+      row++;
+
+      // ── SALARY row (black bg, yellow text — like reference) ───────────
+      final salaryLabelStyle = CellStyle(
+        bold: true,
+        fontColorHex: ExcelColor.fromHexString('#FFFFFF00'),
+        backgroundColorHex: ExcelColor.fromHexString('#FF000000'),
+      );
+      final salaryValStyle = CellStyle(
+        fontColorHex: ExcelColor.fromHexString('#FF000000'),
+        backgroundColorHex: ExcelColor.fromHexString('#FFFFFFFF'),
+      );
+      _xlStyled(sheet, labelCol, row, 'SALARY', salaryLabelStyle);
+
+      double totalLabour = 0;
+      for (int i = 0; i < labourBreakdown.length; i++) {
+        final cost = _toDouble(labourBreakdown[i]['total_cost']);
+        _xlStyled(sheet, labourStart + i, row, _excelAmount(cost), salaryValStyle);
+        totalLabour += cost;
+      }
+
+      final materialTotal =
+          materialBreakdown.fold<double>(0, (s, m) => s + _toDouble(m['total_cost']));
+      if (materialCol != null) {
+        _xlStyled(sheet, materialCol, row, _excelAmount(materialTotal), salaryValStyle);
+      }
+
+      final otherTotal =
+          otherBreakdown.fold<double>(0, (s, o) => s + _toDouble(o['total_cost']));
+      if (otherCol != null) {
+        _xlStyled(sheet, otherCol, row, _excelAmount(otherTotal), salaryValStyle);
+      }
+
+      final grandTotal = totalLabour + materialTotal + otherTotal;
+      _xlStyled(sheet, totalCol, row, _excelAmount(grandTotal),
+          CellStyle(
+            bold: true,
+            fontSize: 11,
+            fontColorHex: ExcelColor.fromHexString('#FFCC0000'),
+            backgroundColorHex: ExcelColor.fromHexString('#FFFFF8DC'),
+          ));
+      row++;
+      row++; // blank
+
+      // ── Financial summary block ────────────────────────────────────────
+      _xlBand(sheet, row, 'FINANCIAL SUMMARY', 'FF37474F', 11, numCols);
+      row++;
+
+      final sumHdrStyle = CellStyle(
+        bold: true,
+        fontColorHex: ExcelColor.fromHexString('#FFFFFFFF'),
+        backgroundColorHex: ExcelColor.fromHexString('#FF455A64'),
+      );
+      for (final h in ['Field', 'Value', 'Field', 'Value']) {
+        final c = ['Field', 'Value', 'Field', 'Value'].indexOf(h);
+        _xlStyled(sheet, c, row, h, sumHdrStyle);
+      }
+      row++;
+
+      _xlText(sheet, 0, row, 'Total Budget', bold: true);
+      _xlText(sheet, 1, row, _excelAmount(summary['total_budget']), fgHex: 'FF1565C0');
+      _xlText(sheet, 2, row, 'Total Spent', bold: true);
+      _xlText(sheet, 3, row, _excelAmount(summary['total_spent']), bold: true, fgHex: 'FFCC0000');
+      row++;
+
+      _xlText(sheet, 0, row, 'Total Labour Cost', bold: true);
+      _xlText(sheet, 1, row, _excelAmount(summary['total_labour_cost']), fgHex: 'FF1A1A2E');
+      _xlText(sheet, 2, row, 'Total Material Cost', bold: true);
+      _xlText(sheet, 3, row, _excelAmount(summary['total_material_cost']), fgHex: 'FF4E342E');
+      row++;
+
+      _xlText(sheet, 0, row, 'Remaining Budget', bold: true);
+      _xlText(sheet, 1, row, _excelAmount(summary['remaining_budget']), fgHex: 'FF1B5E20');
+      _xlText(sheet, 2, row, 'Utilization %', bold: true);
+      _xlText(sheet, 3, row,
+          '${((summary['utilization_percentage'] ?? 0) as num).toStringAsFixed(1)}%');
+      row++;
+      row++; // blank
+
+      // ── Labour detail table ───────────────────────────────────────────
+      _xlBand(sheet, row, 'LABOUR DETAILS (BY TYPE)', 'FF1A1A2E', 11, numCols);
+      row++;
+
+      final detailHdrStyle = CellStyle(
+        bold: true,
+        fontColorHex: ExcelColor.fromHexString('#FFFFFFFF'),
+        backgroundColorHex: ExcelColor.fromHexString('#FF37474F'),
+      );
+      for (final pair in {
+        0: 'Labour Type',
+        1: 'Workers Count',
+        2: 'Rate / Day (₹)',
+        3: 'Total Cost (₹)'
+      }.entries) {
+        _xlStyled(sheet, pair.key, row, pair.value, detailHdrStyle);
+      }
+      for (int c = 4; c < numCols; c++) {
+        _xlStyled(sheet, c, row, '', detailHdrStyle);
+      }
+      row++;
+
+      for (final l in labourBreakdown) {
+        _xlText(sheet, 0, row, l['labour_type'] as String? ?? '');
+        _xlText(sheet, 1, row,
+            ((l['total_count'] as num?)?.toInt() ?? 0).toString());
+        _xlText(sheet, 2, row, _excelAmount(l['avg_rate']));
+        _xlText(sheet, 3, row, _excelAmount(l['total_cost']), bold: true);
+        row++;
+      }
+      if (labourBreakdown.isEmpty) {
+        _xlText(sheet, 0, row, 'No labour data recorded', fgHex: 'FF999999');
+        row++;
+      }
+
+      // ── Material detail table (if any) ────────────────────────────────
+      if (hasMaterial) {
+        row++;
+        _xlBand(sheet, row, 'MATERIAL DETAILS', 'FF4E342E', 11, numCols);
+        row++;
+
+        for (final pair in {
+          0: 'Material Type',
+          1: 'Quantity',
+          2: 'Unit',
+          3: 'Total Cost (₹)'
+        }.entries) {
+          _xlStyled(sheet, pair.key, row, pair.value, detailHdrStyle);
+        }
+        for (int c = 4; c < numCols; c++) {
+          _xlStyled(sheet, c, row, '', detailHdrStyle);
+        }
+        row++;
+
+        for (final m in materialBreakdown) {
+          _xlText(sheet, 0, row, m['material_type'] as String? ?? '');
+          _xlText(sheet, 1, row,
+              ((m['total_quantity'] as num?)?.toStringAsFixed(2)) ?? '0');
+          _xlText(sheet, 2, row, m['unit'] as String? ?? '');
+          _xlText(sheet, 3, row, _excelAmount(m['total_cost']), bold: true);
+          row++;
+        }
+      }
+
+      // ── Column widths ─────────────────────────────────────────────────
+      sheet.setColumnWidth(labelCol, 22.0);
+      for (int i = 0; i < labourTypes.length; i++) {
+        // Wider for long names (e.g. TILE LAYER HELPER)
+        final len = labourTypes[i].length.toDouble();
+        sheet.setColumnWidth(labourStart + i, (len < 10 ? 14.0 : len * 1.1).clamp(14.0, 22.0));
+      }
+      if (materialCol != null) sheet.setColumnWidth(materialCol, 18.0);
+      if (otherCol != null) sheet.setColumnWidth(otherCol, 18.0);
+      sheet.setColumnWidth(totalCol, 20.0);
+
+      // ── Save & open ───────────────────────────────────────────────────
+      final dir = await getTemporaryDirectory();
+      final safeName = widget.siteName.replaceAll(RegExp(r'[^\w]'), '_');
+      final fileName =
+          '${safeName}_salary_${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}.xlsx';
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsBytes(excelFile.encode()!);
+
+      if (mounted) {
+        final result = await OpenFilex.open(file.path);
+        if (result.type != ResultType.done && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('File saved: ${file.path}'),
+            backgroundColor: Colors.green.shade700,
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Export failed: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  // ── Excel cell helpers ────────────────────────────────────────────────
+
+  /// Set a cell with pre-built CellStyle.
+  void _xlStyled(Sheet s, int col, int row, String text, CellStyle style) {
+    final cell =
+        s.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row));
+    cell.value = TextCellValue(text);
+    cell.cellStyle = style;
+  }
+
+  /// Plain text cell with optional bold / colour.
+  void _xlText(Sheet s, int col, int row, String text,
+      {bool bold = false, String fgHex = 'FF000000'}) {
+    final cell =
+        s.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row));
+    cell.value = TextCellValue(text);
+    if (bold || fgHex != 'FF000000') {
+      cell.cellStyle = CellStyle(
+        bold: bold,
+        fontColorHex: ExcelColor.fromHexString('#$fgHex'),
+      );
+    }
+  }
+
+  /// Full-width merged coloured header band spanning [numCols] columns.
+  void _xlBand(Sheet s, int row, String title, String bgHex, int fontSize, int numCols) {
+    final style = CellStyle(
+      bold: true,
+      fontSize: fontSize,
+      fontColorHex: ExcelColor.fromHexString('#FFFFFFFF'),
+      backgroundColorHex: ExcelColor.fromHexString('#$bgHex'),
+    );
+    for (int c = 0; c < numCols; c++) {
+      final cell =
+          s.cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: row));
+      cell.value = c == 0 ? TextCellValue(title) : TextCellValue('');
+      cell.cellStyle = style;
+    }
+    if (numCols > 1) {
+      s.merge(
+        CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row),
+        CellIndex.indexByColumnRow(columnIndex: numCols - 1, rowIndex: row),
+      );
+    }
+  }
+
+  String _excelAmount(dynamic value) {
+    final d = _toDouble(value);
+    return '₹${NumberFormat('#,##0.00', 'en_IN').format(d)}';
+  }
+
+  double _toDouble(dynamic v) {
+    if (v == null) return 0;
+    if (v is num) return v.toDouble();
+    return double.tryParse(v.toString()) ?? 0;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+
   void _showDateFilterPicker() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -2595,6 +3001,1214 @@ class _AdminDocumentTabState extends State<_AdminDocumentTab> {
           );
         },
       ),
+    );
+  }
+}
+
+// ============================================================
+// Admin Bills Tab  – Material Bills / Vendor Bills / Agreements
+// ============================================================
+
+class _AdminBillsTab extends StatefulWidget {
+  final String siteId;
+  final String siteName;
+  const _AdminBillsTab({required this.siteId, required this.siteName});
+
+  @override
+  State<_AdminBillsTab> createState() => _AdminBillsTabState();
+}
+
+class _AdminBillsTabState extends State<_AdminBillsTab>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final _billsService = AccountantBillsService();
+
+  List<Map<String, dynamic>> _materialBills = [];
+  List<Map<String, dynamic>> _vendorBills = [];
+  List<Map<String, dynamic>> _agreements = [];
+
+  bool _isLoadingMaterial = false;
+  bool _isLoadingVendor = false;
+  bool _isLoadingAgreements = false;
+
+  static const _navy = Color(0xFF1A1A2E);
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _loadAll();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _loadAll() {
+    _loadMaterialBills();
+    _loadVendorBills();
+    _loadAgreements();
+  }
+
+  Future<void> _loadMaterialBills() async {
+    setState(() => _isLoadingMaterial = true);
+    final result = await _billsService.getMaterialBills(siteId: widget.siteId);
+    if (mounted) {
+      setState(() {
+        if (result['success'] == true) _materialBills = List<Map<String, dynamic>>.from(result['bills'] ?? []);
+        _isLoadingMaterial = false;
+      });
+    }
+  }
+
+  Future<void> _loadVendorBills() async {
+    setState(() => _isLoadingVendor = true);
+    final result = await _billsService.getVendorBills(siteId: widget.siteId);
+    if (mounted) {
+      setState(() {
+        if (result['success'] == true) _vendorBills = List<Map<String, dynamic>>.from(result['bills'] ?? []);
+        _isLoadingVendor = false;
+      });
+    }
+  }
+
+  Future<void> _loadAgreements() async {
+    setState(() => _isLoadingAgreements = true);
+    final result = await _billsService.getSiteAgreements(siteId: widget.siteId);
+    if (mounted) {
+      setState(() {
+        if (result['success'] == true) _agreements = List<Map<String, dynamic>>.from(result['agreements'] ?? []);
+        _isLoadingAgreements = false;
+      });
+    }
+  }
+
+  Future<void> _openDocument(String? fileUrl) async {
+    if (fileUrl == null || fileUrl.isEmpty) return;
+    final url = fileUrl.startsWith('http') ? fileUrl : 'http://187.127.164.22$fileUrl';
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open document')),
+      );
+    }
+  }
+
+  void _showUploadDialog() {
+    final tab = _tabController.index;
+    if (tab == 0) {
+      _showMaterialBillDialog();
+    } else if (tab == 1) {
+      _showVendorBillDialog();
+    } else {
+      _showAgreementDialog();
+    }
+  }
+
+  void _showMaterialBillDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => _MaterialBillDialog(
+        siteId: widget.siteId,
+        siteName: widget.siteName,
+        billsService: _billsService,
+        onSuccess: _loadMaterialBills,
+      ),
+    );
+  }
+
+  void _showVendorBillDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => _VendorBillDialog(
+        siteId: widget.siteId,
+        siteName: widget.siteName,
+        billsService: _billsService,
+        onSuccess: _loadVendorBills,
+      ),
+    );
+  }
+
+  void _showAgreementDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => _AgreementDialog(
+        siteId: widget.siteId,
+        siteName: widget.siteName,
+        billsService: _billsService,
+        onSuccess: _loadAgreements,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      body: Column(
+        children: [
+          Container(
+            color: _navy.withValues(alpha: 0.05),
+            child: TabBar(
+              controller: _tabController,
+              labelColor: _navy,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: _navy,
+              indicatorWeight: 3,
+              tabs: [
+                Tab(text: 'Material Bills (${_materialBills.length})'),
+                Tab(text: 'Vendor Bills (${_vendorBills.length})'),
+                Tab(text: 'Agreements (${_agreements.length})'),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildMaterialBillsList(),
+                _buildVendorBillsList(),
+                _buildAgreementsList(),
+              ],
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showUploadDialog,
+        backgroundColor: _navy,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.upload_file),
+        label: const Text('Upload'),
+      ),
+    );
+  }
+
+  Widget _buildMaterialBillsList() {
+    if (_isLoadingMaterial) {
+      return const Center(child: CircularProgressIndicator(color: _navy));
+    }
+    if (_materialBills.isEmpty) {
+      return _emptyState(
+        icon: Icons.receipt_long,
+        title: 'No Material Bills',
+        subtitle: 'Tap Upload to add a material bill',
+        onTap: _showMaterialBillDialog,
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _loadMaterialBills,
+      color: _navy,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _materialBills.length,
+        itemBuilder: (_, i) => _MaterialBillCard(
+          bill: _materialBills[i],
+          onOpen: () => _openDocument(_materialBills[i]['file_url'] as String?),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVendorBillsList() {
+    if (_isLoadingVendor) {
+      return const Center(child: CircularProgressIndicator(color: _navy));
+    }
+    if (_vendorBills.isEmpty) {
+      return _emptyState(
+        icon: Icons.business_center,
+        title: 'No Vendor Bills',
+        subtitle: 'Tap Upload to add a vendor bill',
+        onTap: _showVendorBillDialog,
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _loadVendorBills,
+      color: _navy,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _vendorBills.length,
+        itemBuilder: (_, i) => _VendorBillCard(
+          bill: _vendorBills[i],
+          onOpen: () => _openDocument(_vendorBills[i]['file_url'] as String?),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAgreementsList() {
+    if (_isLoadingAgreements) {
+      return const Center(child: CircularProgressIndicator(color: _navy));
+    }
+    if (_agreements.isEmpty) {
+      return _emptyState(
+        icon: Icons.description,
+        title: 'No Agreements',
+        subtitle: 'Tap Upload to add an agreement',
+        onTap: _showAgreementDialog,
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _loadAgreements,
+      color: _navy,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _agreements.length,
+        itemBuilder: (_, i) => _AgreementCard(
+          agreement: _agreements[i],
+          onOpen: () => _openDocument(_agreements[i]['file_url'] as String?),
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 72, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text(title,
+              style: const TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.bold, color: _navy)),
+          const SizedBox(height: 8),
+          Text(subtitle,
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: onTap,
+            icon: const Icon(Icons.upload_file),
+            label: const Text('Upload Now'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _navy,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Bill / Agreement card widgets ─────────────────────────────
+
+class _MaterialBillCard extends StatelessWidget {
+  final Map<String, dynamic> bill;
+  final VoidCallback onOpen;
+  const _MaterialBillCard({required this.bill, required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) {
+    const navy = Color(0xFF1A1A2E);
+    final status = bill['payment_status'] as String? ?? 'PENDING';
+    final statusColor = status == 'PAID'
+        ? Colors.green
+        : status == 'PARTIAL'
+            ? Colors.orange
+            : Colors.red;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+              color: navy.withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
+        ],
+      ),
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                    color: navy.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.receipt_long, color: navy, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(bill['vendor_name'] as String? ?? '',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: navy)),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${bill['material_type'] ?? ''} • Bill #${bill['bill_number'] ?? ''}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '₹${(bill['final_amount'] ?? 0).toStringAsFixed(2)}  •  ${(bill['bill_date'] as String? ?? '').substring(0, 10 < (bill['bill_date'] as String? ?? '').length ? 10 : (bill['bill_date'] as String? ?? '').length)}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: navy),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10)),
+                    child: Text(status,
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor)),
+                  ),
+                  const SizedBox(height: 8),
+                  const Icon(Icons.open_in_new, size: 18, color: navy),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VendorBillCard extends StatelessWidget {
+  final Map<String, dynamic> bill;
+  final VoidCallback onOpen;
+  const _VendorBillCard({required this.bill, required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) {
+    const navy = Color(0xFF1A1A2E);
+    final status = bill['payment_status'] as String? ?? 'PENDING';
+    final statusColor = status == 'PAID'
+        ? Colors.green
+        : status == 'PARTIAL'
+            ? Colors.orange
+            : Colors.red;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+              color: navy.withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
+        ],
+      ),
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                    color: navy.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.business_center, color: navy, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(bill['vendor_name'] as String? ?? '',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: navy)),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${bill['service_type'] ?? ''} • Bill #${bill['bill_number'] ?? ''}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '₹${(bill['final_amount'] ?? 0).toStringAsFixed(2)}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: navy),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10)),
+                    child: Text(status,
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor)),
+                  ),
+                  const SizedBox(height: 8),
+                  const Icon(Icons.open_in_new, size: 18, color: navy),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AgreementCard extends StatelessWidget {
+  final Map<String, dynamic> agreement;
+  final VoidCallback onOpen;
+  const _AgreementCard({required this.agreement, required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) {
+    const navy = Color(0xFF1A1A2E);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+              color: navy.withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
+        ],
+      ),
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                    color: navy.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.description, color: navy, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(agreement['title'] as String? ?? '',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: navy)),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${agreement['agreement_type'] ?? ''} • ${agreement['party_name'] ?? ''}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                    if ((agreement['contract_value'] as num?) != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '₹${(agreement['contract_value'] as num).toStringAsFixed(2)}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: navy),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const Icon(Icons.open_in_new, size: 18, color: navy),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Upload dialogs ────────────────────────────────────────────
+
+class _MaterialBillDialog extends StatefulWidget {
+  final String siteId;
+  final String siteName;
+  final AccountantBillsService billsService;
+  final VoidCallback onSuccess;
+  const _MaterialBillDialog({
+    required this.siteId,
+    required this.siteName,
+    required this.billsService,
+    required this.onSuccess,
+  });
+
+  @override
+  State<_MaterialBillDialog> createState() => _MaterialBillDialogState();
+}
+
+class _MaterialBillDialogState extends State<_MaterialBillDialog> {
+  final _billNumberCtrl = TextEditingController();
+  final _vendorNameCtrl = TextEditingController();
+  final _quantityCtrl = TextEditingController();
+  final _unitPriceCtrl = TextEditingController();
+  final _taxCtrl = TextEditingController(text: '0');
+  final _discountCtrl = TextEditingController(text: '0');
+  final _notesCtrl = TextEditingController();
+
+  String _vendorType = 'Tiles Shop';
+  String _materialType = 'Tiles';
+  String _unit = 'sqft';
+  String _paymentStatus = 'PENDING';
+  String? _paymentMode;
+  DateTime _billDate = DateTime.now();
+  DateTime? _paymentDate;
+  File? _selectedFile;
+  bool _isUploading = false;
+
+  static const _navy = Color(0xFF1A1A2E);
+
+  final _vendorTypes = ['Tiles Shop', 'Cement Supplier', 'Steel Supplier', 'Hardware Store', 'Paint Shop', 'Electrical Shop', 'Plumbing Shop', 'Other'];
+  final _materialTypes = ['Tiles', 'Cement', 'Steel', 'Sand', 'Bricks', 'Paint', 'Electrical', 'Plumbing', 'Other'];
+  final _units = ['nos', 'bags', 'kg', 'tons', 'sqft', 'boxes', 'pieces'];
+  final _paymentStatuses = ['PENDING', 'PARTIAL', 'PAID'];
+  final _paymentModes = ['Cash', 'Cheque', 'Bank Transfer', 'UPI', 'Credit'];
+
+  @override
+  void dispose() {
+    _billNumberCtrl.dispose();
+    _vendorNameCtrl.dispose();
+    _quantityCtrl.dispose();
+    _unitPriceCtrl.dispose();
+    _taxCtrl.dispose();
+    _discountCtrl.dispose();
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  double get _totalAmount {
+    final qty = double.tryParse(_quantityCtrl.text) ?? 0;
+    final price = double.tryParse(_unitPriceCtrl.text) ?? 0;
+    return qty * price;
+  }
+
+  double get _finalAmount =>
+      _totalAmount + (double.tryParse(_taxCtrl.text) ?? 0) - (double.tryParse(_discountCtrl.text) ?? 0);
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
+    if (result != null && result.files.single.path != null) {
+      setState(() => _selectedFile = File(result.files.single.path!));
+    }
+  }
+
+  Future<void> _upload() async {
+    if (_billNumberCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter bill number')));
+      return;
+    }
+    if (_vendorNameCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter vendor name')));
+      return;
+    }
+    if (_selectedFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a PDF file')));
+      return;
+    }
+    setState(() => _isUploading = true);
+    final result = await widget.billsService.uploadMaterialBill(
+      siteId: widget.siteId,
+      billNumber: _billNumberCtrl.text.trim(),
+      billDate: DateFormat('yyyy-MM-dd').format(_billDate),
+      vendorName: _vendorNameCtrl.text.trim(),
+      vendorType: _vendorType,
+      materialType: _materialType,
+      quantity: double.tryParse(_quantityCtrl.text) ?? 0,
+      unit: _unit,
+      unitPrice: double.tryParse(_unitPriceCtrl.text) ?? 0,
+      totalAmount: _totalAmount,
+      taxAmount: double.tryParse(_taxCtrl.text) ?? 0,
+      discountAmount: double.tryParse(_discountCtrl.text) ?? 0,
+      finalAmount: _finalAmount,
+      paymentStatus: _paymentStatus,
+      paymentMode: _paymentMode,
+      paymentDate: _paymentDate != null ? DateFormat('yyyy-MM-dd').format(_paymentDate!) : null,
+      notes: _notesCtrl.text,
+      file: _selectedFile!,
+    );
+    if (mounted) {
+      setState(() => _isUploading = false);
+      if (result['success'] == true) {
+        Navigator.pop(context);
+        widget.onSuccess();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Material bill uploaded successfully'), backgroundColor: Colors.green),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['error'] ?? 'Upload failed'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxHeight: 620),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('Upload Material Bill',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _navy)),
+              Text(widget.siteName,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _billNumberCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Bill Number *', border: OutlineInputBorder(), prefixIcon: Icon(Icons.numbers)),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _vendorNameCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Vendor Name *', border: OutlineInputBorder(), prefixIcon: Icon(Icons.store)),
+              ),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(child: _dropdown('Vendor Type', _vendorTypes, _vendorType, (v) => setState(() => _vendorType = v!))),
+                const SizedBox(width: 12),
+                Expanded(child: _dropdown('Material Type', _materialTypes, _materialType, (v) => setState(() => _materialType = v!))),
+              ]),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(
+                  child: TextField(
+                    controller: _quantityCtrl,
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(labelText: 'Qty', border: OutlineInputBorder()),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: _dropdown('Unit', _units, _unit, (v) => setState(() => _unit = v!))),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _unitPriceCtrl,
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(labelText: 'Unit Price', border: OutlineInputBorder()),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(
+                  child: TextField(
+                    controller: _taxCtrl,
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(labelText: 'Tax ₹', border: OutlineInputBorder()),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _discountCtrl,
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(labelText: 'Discount ₹', border: OutlineInputBorder()),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              Text('Final: ₹${_finalAmount.toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: _navy, fontSize: 14)),
+              const SizedBox(height: 12),
+              _dropdown('Payment Status', _paymentStatuses, _paymentStatus, (v) => setState(() => _paymentStatus = v!)),
+              const SizedBox(height: 12),
+              _dropdown('Payment Mode (optional)', _paymentModes, _paymentMode ?? _paymentModes.first,
+                  (v) => setState(() => _paymentMode = v)),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _pickFile,
+                icon: const Icon(Icons.attach_file),
+                label: Text(_selectedFile != null
+                    ? _selectedFile!.path.split(Platform.pathSeparator).last
+                    : 'Select PDF File *'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _notesCtrl,
+                maxLines: 2,
+                decoration: const InputDecoration(labelText: 'Notes', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _isUploading ? null : _upload,
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: _navy, foregroundColor: Colors.white, minimumSize: const Size.fromHeight(48)),
+                child: _isUploading
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Upload Bill'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _dropdown(String label, List<String> items, String value, ValueChanged<String?> onChanged) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, overflow: TextOverflow.ellipsis))).toList(),
+      onChanged: onChanged,
+    );
+  }
+}
+
+// ── Vendor Bill Dialog ────────────────────────────────────────
+
+class _VendorBillDialog extends StatefulWidget {
+  final String siteId;
+  final String siteName;
+  final AccountantBillsService billsService;
+  final VoidCallback onSuccess;
+  const _VendorBillDialog({
+    required this.siteId,
+    required this.siteName,
+    required this.billsService,
+    required this.onSuccess,
+  });
+
+  @override
+  State<_VendorBillDialog> createState() => _VendorBillDialogState();
+}
+
+class _VendorBillDialogState extends State<_VendorBillDialog> {
+  final _billNumberCtrl = TextEditingController();
+  final _vendorNameCtrl = TextEditingController();
+  final _amountCtrl = TextEditingController();
+  final _taxCtrl = TextEditingController(text: '0');
+  final _discountCtrl = TextEditingController(text: '0');
+  final _serviceDescCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+
+  String _vendorType = 'Contractor';
+  String _serviceType = 'Labour';
+  String _paymentStatus = 'PENDING';
+  String? _paymentMode;
+  DateTime _billDate = DateTime.now();
+  File? _selectedFile;
+  bool _isUploading = false;
+
+  static const _navy = Color(0xFF1A1A2E);
+
+  final _vendorTypes = ['Contractor', 'Sub-contractor', 'Equipment Supplier', 'Transport', 'Other'];
+  final _serviceTypes = ['Labour', 'Equipment Rental', 'Transport', 'Consultation', 'Other'];
+  final _paymentStatuses = ['PENDING', 'PARTIAL', 'PAID'];
+  final _paymentModes = ['Cash', 'Cheque', 'Bank Transfer', 'UPI', 'Credit'];
+
+  @override
+  void dispose() {
+    _billNumberCtrl.dispose();
+    _vendorNameCtrl.dispose();
+    _amountCtrl.dispose();
+    _taxCtrl.dispose();
+    _discountCtrl.dispose();
+    _serviceDescCtrl.dispose();
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  double get _finalAmount =>
+      (double.tryParse(_amountCtrl.text) ?? 0) +
+      (double.tryParse(_taxCtrl.text) ?? 0) -
+      (double.tryParse(_discountCtrl.text) ?? 0);
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
+    if (result != null && result.files.single.path != null) {
+      setState(() => _selectedFile = File(result.files.single.path!));
+    }
+  }
+
+  Future<void> _upload() async {
+    if (_billNumberCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter bill number')));
+      return;
+    }
+    if (_vendorNameCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter vendor name')));
+      return;
+    }
+    if (_selectedFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a PDF file')));
+      return;
+    }
+    setState(() => _isUploading = true);
+    final result = await widget.billsService.uploadVendorBill(
+      siteId: widget.siteId,
+      billNumber: _billNumberCtrl.text.trim(),
+      billDate: DateFormat('yyyy-MM-dd').format(_billDate),
+      vendorName: _vendorNameCtrl.text.trim(),
+      vendorType: _vendorType,
+      serviceType: _serviceType,
+      serviceDescription: _serviceDescCtrl.text,
+      amount: double.tryParse(_amountCtrl.text) ?? 0,
+      taxAmount: double.tryParse(_taxCtrl.text) ?? 0,
+      discountAmount: double.tryParse(_discountCtrl.text) ?? 0,
+      finalAmount: _finalAmount,
+      paymentStatus: _paymentStatus,
+      paymentMode: _paymentMode,
+      notes: _notesCtrl.text,
+      file: _selectedFile!,
+    );
+    if (mounted) {
+      setState(() => _isUploading = false);
+      if (result['success'] == true) {
+        Navigator.pop(context);
+        widget.onSuccess();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vendor bill uploaded successfully'), backgroundColor: Colors.green),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['error'] ?? 'Upload failed'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxHeight: 600),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('Upload Vendor Bill',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _navy)),
+              Text(widget.siteName, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _billNumberCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Bill Number *', border: OutlineInputBorder(), prefixIcon: Icon(Icons.numbers)),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _vendorNameCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Vendor Name *', border: OutlineInputBorder(), prefixIcon: Icon(Icons.business)),
+              ),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(child: _dropdown('Vendor Type', _vendorTypes, _vendorType, (v) => setState(() => _vendorType = v!))),
+                const SizedBox(width: 12),
+                Expanded(child: _dropdown('Service Type', _serviceTypes, _serviceType, (v) => setState(() => _serviceType = v!))),
+              ]),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _serviceDescCtrl,
+                maxLines: 2,
+                decoration: const InputDecoration(labelText: 'Service Description', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(
+                  child: TextField(
+                    controller: _amountCtrl,
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(labelText: 'Amount ₹ *', border: OutlineInputBorder()),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _taxCtrl,
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(labelText: 'Tax ₹', border: OutlineInputBorder()),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _discountCtrl,
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(labelText: 'Discount ₹', border: OutlineInputBorder()),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              Text('Final: ₹${_finalAmount.toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: _navy, fontSize: 14)),
+              const SizedBox(height: 12),
+              _dropdown('Payment Status', _paymentStatuses, _paymentStatus, (v) => setState(() => _paymentStatus = v!)),
+              const SizedBox(height: 12),
+              _dropdown('Payment Mode (optional)', _paymentModes, _paymentMode ?? _paymentModes.first,
+                  (v) => setState(() => _paymentMode = v)),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _pickFile,
+                icon: const Icon(Icons.attach_file),
+                label: Text(_selectedFile != null
+                    ? _selectedFile!.path.split(Platform.pathSeparator).last
+                    : 'Select PDF File *'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _notesCtrl,
+                maxLines: 2,
+                decoration: const InputDecoration(labelText: 'Notes', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _isUploading ? null : _upload,
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: _navy, foregroundColor: Colors.white, minimumSize: const Size.fromHeight(48)),
+                child: _isUploading
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Upload Bill'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _dropdown(String label, List<String> items, String value, ValueChanged<String?> onChanged) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, overflow: TextOverflow.ellipsis))).toList(),
+      onChanged: onChanged,
+    );
+  }
+}
+
+// ── Agreement Dialog ──────────────────────────────────────────
+
+class _AgreementDialog extends StatefulWidget {
+  final String siteId;
+  final String siteName;
+  final AccountantBillsService billsService;
+  final VoidCallback onSuccess;
+  const _AgreementDialog({
+    required this.siteId,
+    required this.siteName,
+    required this.billsService,
+    required this.onSuccess,
+  });
+
+  @override
+  State<_AgreementDialog> createState() => _AgreementDialogState();
+}
+
+class _AgreementDialogState extends State<_AgreementDialog> {
+  final _titleCtrl = TextEditingController();
+  final _agreementNumberCtrl = TextEditingController();
+  final _partyNameCtrl = TextEditingController();
+  final _contractValueCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+
+  String _agreementType = 'Construction';
+  String _partyType = 'Contractor';
+  DateTime _agreementDate = DateTime.now();
+  File? _selectedFile;
+  bool _isUploading = false;
+
+  static const _navy = Color(0xFF1A1A2E);
+
+  final _agreementTypes = ['Construction', 'Labour', 'Material Supply', 'Equipment Rental', 'Consultation', 'Other'];
+  final _partyTypes = ['Contractor', 'Sub-contractor', 'Supplier', 'Consultant', 'Client', 'Other'];
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _agreementNumberCtrl.dispose();
+    _partyNameCtrl.dispose();
+    _contractValueCtrl.dispose();
+    _descCtrl.dispose();
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
+    if (result != null && result.files.single.path != null) {
+      setState(() => _selectedFile = File(result.files.single.path!));
+    }
+  }
+
+  Future<void> _upload() async {
+    if (_titleCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter agreement title')));
+      return;
+    }
+    if (_partyNameCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter party name')));
+      return;
+    }
+    if (_selectedFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a PDF file')));
+      return;
+    }
+    setState(() => _isUploading = true);
+    final result = await widget.billsService.uploadSiteAgreement(
+      siteId: widget.siteId,
+      agreementType: _agreementType,
+      agreementNumber: _agreementNumberCtrl.text.trim().isEmpty ? null : _agreementNumberCtrl.text.trim(),
+      agreementDate: DateFormat('yyyy-MM-dd').format(_agreementDate),
+      partyName: _partyNameCtrl.text.trim(),
+      partyType: _partyType,
+      title: _titleCtrl.text.trim(),
+      description: _descCtrl.text,
+      contractValue: double.tryParse(_contractValueCtrl.text),
+      notes: _notesCtrl.text,
+      file: _selectedFile!,
+    );
+    if (mounted) {
+      setState(() => _isUploading = false);
+      if (result['success'] == true) {
+        Navigator.pop(context);
+        widget.onSuccess();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Agreement uploaded successfully'), backgroundColor: Colors.green),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['error'] ?? 'Upload failed'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxHeight: 600),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('Upload Agreement',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _navy)),
+              Text(widget.siteName, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _titleCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Agreement Title *', border: OutlineInputBorder(), prefixIcon: Icon(Icons.title)),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _agreementNumberCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Agreement Number (optional)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.numbers)),
+              ),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(child: _dropdown('Agreement Type', _agreementTypes, _agreementType, (v) => setState(() => _agreementType = v!))),
+                const SizedBox(width: 12),
+                Expanded(child: _dropdown('Party Type', _partyTypes, _partyType, (v) => setState(() => _partyType = v!))),
+              ]),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _partyNameCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Party Name *', border: OutlineInputBorder(), prefixIcon: Icon(Icons.person)),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _contractValueCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                    labelText: 'Contract Value ₹ (optional)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.currency_rupee)),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _descCtrl,
+                maxLines: 2,
+                decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _pickFile,
+                icon: const Icon(Icons.attach_file),
+                label: Text(_selectedFile != null
+                    ? _selectedFile!.path.split(Platform.pathSeparator).last
+                    : 'Select PDF File *'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _notesCtrl,
+                maxLines: 2,
+                decoration: const InputDecoration(labelText: 'Notes', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _isUploading ? null : _upload,
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: _navy, foregroundColor: Colors.white, minimumSize: const Size.fromHeight(48)),
+                child: _isUploading
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Upload Agreement'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _dropdown(String label, List<String> items, String value, ValueChanged<String?> onChanged) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, overflow: TextOverflow.ellipsis))).toList(),
+      onChanged: onChanged,
     );
   }
 }

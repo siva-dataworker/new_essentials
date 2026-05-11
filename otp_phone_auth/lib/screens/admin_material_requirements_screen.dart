@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/construction_service.dart';
+import '../services/cache_service.dart';
 import '../utils/black_white_theme.dart';
 
 class AdminMaterialRequirementsScreen extends StatefulWidget {
@@ -22,18 +23,34 @@ class _AdminMaterialRequirementsScreenState extends State<AdminMaterialRequireme
   }
 
   Future<void> _loadRequirements() async {
+    // Try cache first
+    final cached = await CacheService.loadMaterialRequirements();
+    if (cached != null) {
+      if (mounted) {
+        setState(() {
+          _requirements = List<Map<String, dynamic>>.from(cached);
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final result = await _constructionService.getMaterialRequirements();
       if (result['success']) {
-        setState(() {
-          _requirements = List<Map<String, dynamic>>.from(result['requirements'] ?? []);
-        });
+        final requirements = List<Map<String, dynamic>>.from(result['requirements'] ?? []);
+        await CacheService.saveMaterialRequirements(requirements);
+        if (mounted) {
+          setState(() {
+            _requirements = requirements;
+          });
+        }
       }
     } catch (e) {
       print('Error loading material requirements: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -55,6 +72,7 @@ class _AdminMaterialRequirementsScreenState extends State<AdminMaterialRequireme
           backgroundColor: Colors.green,
         ),
       );
+      await CacheService.clearMaterialRequirements();
       _loadRequirements();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

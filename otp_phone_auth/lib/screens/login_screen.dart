@@ -5,6 +5,7 @@ import '../utils/app_colors.dart';
 import '../models/user_model.dart';
 import 'registration_screen.dart';
 import 'pending_approval_screen.dart';
+import 'guest_registration_screen.dart';
 import 'supervisor_dashboard_feed.dart';
 import 'site_engineer_dashboard.dart';
 import 'accountant_dashboard.dart';
@@ -324,6 +325,49 @@ class _LoginScreenState extends State<LoginScreen>
                                       ),
                                     ),
                                   ],
+                                ),
+                                const SizedBox(height: 14),
+
+                                // Guest entry button
+                                GestureDetector(
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            const GuestRegistrationScreen()),
+                                  ),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 13),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: AppColors.deepNavy
+                                              .withValues(alpha: 0.35)),
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: AppColors.deepNavy
+                                          .withValues(alpha: 0.04),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.person_add_alt_1,
+                                            size: 18,
+                                            color: AppColors.deepNavy
+                                                .withValues(alpha: 0.8)),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Guest Entry',
+                                          style: TextStyle(
+                                            color: AppColors.deepNavy,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                               ],

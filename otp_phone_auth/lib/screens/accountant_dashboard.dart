@@ -882,7 +882,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
           if (_selectedSiteId == null && _cashBySite.isNotEmpty) ...[
             const SizedBox(height: 20),
             const Text(
-              'Confirmed Salary by Site',
+              'Confirmed Salary By Site',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -922,7 +922,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 Text(
                   siteName,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF1A1A2E),
                   ),
@@ -930,7 +930,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 ),
                 Text(
                   '$days day${days == 1 ? '' : 's'} confirmed',
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
                 ),
               ],
             ),

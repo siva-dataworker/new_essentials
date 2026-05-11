@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:convert';
 import 'dart:async';
-import 'package:http/http.dart' as http;
 import '../services/auth_service.dart';
 import '../services/construction_service.dart';
 import '../services/document_service.dart';
@@ -51,9 +49,8 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
   
   // Filter chip state (replaces tab controllers)
   String _selectedRole = 'Supervisor'; // Supervisor | Site Engineer | Architect
-  String _selectedSupervisorTab = 'Labour'; // Labour | Materials | Requests | Photos
+  String _selectedSupervisorTab = 'Labour'; // Labour | Materials
   String _selectedSiteEngineerTab = 'Photos'; // Photos | Labor | Materials | Documents
-  String _selectedPhotoTimeOfDay = 'Morning'; // Morning | Evening (for Photos tab)
   final Set<String> _expandedDates = {};
   
   // Background refresh timers for site-specific data
@@ -1046,28 +1043,28 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                 ],
               ),
             ),
-          IconButton(
-            icon: const Icon(Icons.receipt_long),
-            tooltip: 'Bills & Agreements',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AccountantBillsScreen(
-                    siteId: _selectedSite!,
-                    siteName: siteName,
-                  ),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.transparent,
-            ),
-            onPressed: _logout,
-          ),
+          // IconButton(
+          //   icon: const Icon(Icons.receipt_long),
+          //   tooltip: 'Bills & Agreements',
+          //   onPressed: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(
+          //         builder: (context) => AccountantBillsScreen(
+          //           siteId: _selectedSite!,
+          //           siteName: siteName,
+          //         ),
+          //       ),
+          //     );
+          //   },
+          // ),
+          // IconButton(
+          //   icon: const Icon(Icons.logout_rounded),
+          //   style: IconButton.styleFrom(
+          //     backgroundColor: Colors.transparent,
+          //   ),
+          //   onPressed: _logout,
+          // ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(52),
@@ -1133,7 +1130,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: ['Labour', 'Materials', 'Requests', 'Photos'].map((tab) {
+                  children: ['Labour', 'Materials'].map((tab) {
                     final selected = _selectedSupervisorTab == tab;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -1175,575 +1172,18 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
                       _getPendingRequestIds(changeProvider),
                       true,
                     )
-                  : _selectedSupervisorTab == 'Materials'
-                      ? _buildHistoryList(
-                          provider.materialEntries.where((e) {
-                            final role = (e['submitted_by_role'] as String? ?? e['user_role'] as String? ?? '').toLowerCase();
-                            return role == 'supervisor';
-                          }).toList(),
-                          _getPendingRequestIds(changeProvider),
-                          false,
-                        )
-                      : _selectedSupervisorTab == 'Requests'
-                          ? _buildRequestsList(changeProvider)
-                          : _buildSupervisorPhotosTab(provider),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildSupervisorPhotosTab(ConstructionProvider provider) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _loadSupervisorPhotos(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(color: AppColors.statusCompleted),
-                SizedBox(height: 16),
-                Text(
-                  'Loading supervisor photos...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                const SizedBox(height: 16),
-                Text('Error: ${snapshot.error}'),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => setState(() {}),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final data = snapshot.data!;
-        final photos = List<Map<String, dynamic>>.from(data['photos'] ?? []);
-
-        if (photos.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.photo_library_outlined,
-                  size: 80,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No Photos Found',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Supervisor photos will appear here',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: () => setState(() {}),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh Photos'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:const Color(0xFF1A1A2E),
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        // Filter photos by time of day
-        final filteredPhotos = photos.where((photo) {
-          final timeOfDay = (photo['time_of_day'] as String? ?? '').toLowerCase();
-          return timeOfDay == _selectedPhotoTimeOfDay.toLowerCase();
-        }).toList();
-
-        // Group photos by date
-        final Map<String, List<Map<String, dynamic>>> photosByDate = {};
-        for (var photo in filteredPhotos) {
-          final date = photo['upload_date'] ?? 'Unknown';
-          if (!photosByDate.containsKey(date)) {
-            photosByDate[date] = [];
-          }
-          photosByDate[date]!.add(photo);
-        }
-
-        // Sort dates in descending order
-        final sortedDates = photosByDate.keys.toList()
-          ..sort((a, b) => b.compareTo(a));
-
-        return Column(
-          children: [
-            // Morning / Evening tabs
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-              child: Row(
-                children: ['Morning', 'Evening'].map((time) {
-                  final selected = _selectedPhotoTimeOfDay == time;
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedPhotoTimeOfDay = time),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: selected ? const Color(0xFF1A1A2E) : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: selected ? AppColors.deepNavy : AppColors.deepNavy.withValues(alpha: 0.2),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                time == 'Morning' ? Icons.wb_sunny : Icons.nightlight_round,
-                                size: 18,
-                                color: selected ? Colors.white : AppColors.deepNavy,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                time,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                                  color: selected ? Colors.white : AppColors.deepNavy,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: filteredPhotos.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _selectedPhotoTimeOfDay == 'Morning' ? Icons.wb_sunny : Icons.nightlight_round,
-                            size: 64,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No $_selectedPhotoTimeOfDay Photos',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.deepNavy,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'No photos uploaded for $_selectedPhotoTimeOfDay',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: () async => setState(() {}),
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: sortedDates.length,
-                        itemBuilder: (context, index) {
-                          final date = sortedDates[index];
-                          final datePhotos = photosByDate[date]!;
-                          return _buildPhotoDateDropdown(date, datePhotos);
-                        },
-                      ),
+                  : _buildHistoryList(
+                      provider.materialEntries.where((e) {
+                        final role = (e['submitted_by_role'] as String? ?? e['user_role'] as String? ?? '').toLowerCase();
+                        return role == 'supervisor';
+                      }).toList(),
+                      _getPendingRequestIds(changeProvider),
+                      false,
                     ),
             ),
           ],
         );
       },
-    );
-  }
-
-  Widget _buildPhotoDateDropdown(String date, List<Map<String, dynamic>> photos) {
-    final dateKey = 'photos_$date';
-    final isExpanded = _expandedDates.contains(dateKey);
-    
-    // Format date for display
-    String formattedDate = date;
-    try {
-      final parsedDate = DateTime.parse(date);
-      formattedDate = DateFormat('EEEE, MMM dd, yyyy').format(parsedDate);
-    } catch (e) {
-      // Keep original if parsing fails
-    }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () {
-              setState(() {
-                if (isExpanded) {
-                  _expandedDates.remove(dateKey);
-                } else {
-                  _expandedDates.add(dateKey);
-                }
-              });
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.statusCompleted.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.photo_library,
-                      color: AppColors.statusCompleted,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          formattedDate,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.deepNavy,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${photos.length} ${photos.length == 1 ? 'photo' : 'photos'}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: AppColors.deepNavy,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (isExpanded) ...[
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.75,
-                ),
-                itemCount: photos.length,
-                itemBuilder: (context, index) {
-                  final photo = photos[index];
-                  return _buildSupervisorPhotoCard(photo);
-                },
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Future<Map<String, dynamic>> _loadSupervisorPhotos() async {
-    print('🔍 [PHOTOS] _loadSupervisorPhotos called');
-    print('🔍 [PHOTOS] _selectedSite = $_selectedSite');
-    
-    if (_selectedSite == null) {
-      print('❌ [PHOTOS] No site selected');
-      return {'success': false, 'photos': []};
-    }
-
-    try {
-      final token = await _authService.getToken();
-      print('🔍 [PHOTOS] Token obtained');
-      
-      final url = '${AuthService.baseUrl}/construction/supervisor-photos-for-accountant/?site_id=$_selectedSite';
-      print('🔍 [PHOTOS] Calling API: $url');
-      
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-
-      print('🔍 [PHOTOS] Response status: ${response.statusCode}');
-      print('🔍 [PHOTOS] Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        print('✅ [PHOTOS] Loaded ${data['photos']?.length ?? 0} photos');
-        return data;
-      } else {
-        print('❌ [PHOTOS] Failed with status: ${response.statusCode}');
-        throw Exception('Failed to load photos: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('❌ [PHOTOS] Error: $e');
-      throw Exception('Error loading photos: $e');
-    }
-  }
-
-  Widget _buildSupervisorPhotoCard(Map<String, dynamic> photo) {
-    final imageUrl = ConstructionService.getFullImageUrl(photo['image_url'] ?? '');
-    final uploadDate = photo['upload_date'] ?? '';
-    final description = photo['description'] ?? '';
-    final supervisorName = photo['supervisor_name'] ?? 'Unknown';
-
-    return GestureDetector(
-      onTap: () => _showPhotoDialog(photo),
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Image.network(
-                  imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
-                      ),
-                    );
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      color: Colors.grey[200],
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                              : null,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.person, size: 14, color: AppColors.textSecondary),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          supervisorName,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.deepNavy,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today, size: 12, color: AppColors.textSecondary),
-                      const SizedBox(width: 4),
-                      Text(
-                        uploadDate,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (description.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showPhotoDialog(Map<String, dynamic> photo) {
-    final imageUrl = ConstructionService.getFullImageUrl(photo['image_url'] ?? '');
-    final uploadDate = photo['upload_date'] ?? '';
-    final timeOfDay = photo['time_of_day'] ?? '';
-    final description = photo['description'] ?? '';
-    final supervisorName = photo['supervisor_name'] ?? 'Unknown';
-
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppBar(
-              title: Text('$timeOfDay Photo'),
-              backgroundColor: AppColors.statusCompleted,
-              foregroundColor: Colors.white,
-              leading: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-            Flexible(
-              child: InteractiveViewer(
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 300,
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Icon(Icons.broken_image, size: 64, color: Colors.grey),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.person, size: 16, color: AppColors.deepNavy),
-                      const SizedBox(width: 8),
-                      Text(
-                        supervisorName,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.deepNavy,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary),
-                      const SizedBox(width: 8),
-                      Text(
-                        uploadDate,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (description.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.description, size: 14, color: AppColors.textSecondary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            description,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1759,7 +1199,7 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: ['Photos', 'Labor', 'Materials', 'Documents'].map((tab) {
+                  children: [ 'Labor', 'Materials',].map((tab) {
                     final selected = _selectedSiteEngineerTab == tab;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -2400,147 +1840,6 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
     }
   }
 
-  Widget _buildRequestsList(ChangeRequestProvider changeProvider) {
-    final requests = changeProvider.myChangeRequests;
-    
-    if (requests.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.request_page_outlined,
-              size: 80,
-              color: AppColors.textSecondary,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'No Change Requests',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.deepNavy,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Change requests will appear here',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: requests.length,
-      itemBuilder: (context, index) {
-        final request = requests[index];
-        return _buildRequestCard(request);
-      },
-    );
-  }
-
-  Widget _buildRequestCard(Map<String, dynamic> request) {
-    final status = request['status'] ?? 'PENDING';
-    final entryType = request['entry_type'] ?? 'labour';
-    final requestMessage = request['request_message'] ?? 'No message';
-    
-    Color statusColor;
-    IconData statusIcon;
-    
-    switch (status) {
-      case 'APPROVED':
-        statusColor = AppColors.statusCompleted;
-        statusIcon = Icons.check_circle;
-        break;
-      case 'REJECTED':
-        statusColor = AppColors.statusOverdue;
-        statusIcon = Icons.cancel;
-        break;
-      default:
-        statusColor = AppColors.safetyOrange;
-        statusIcon = Icons.pending;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: statusColor.withValues(alpha: 0.3),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.deepNavy.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(statusIcon, color: statusColor, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                status,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: statusColor,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.deepNavy.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  entryType.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            requestMessage,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black,
-            ),
-          ),
-          if (request['created_at'] != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Requested: ${_formatDateTime(request['created_at'])}',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   Set<String> _getPendingRequestIds(ChangeRequestProvider changeProvider) {
     final pendingRequestIds = <String>{};
     for (var request in changeProvider.myChangeRequests) {
@@ -2549,16 +1848,6 @@ class _AccountantEntryScreenState extends State<AccountantEntryScreen> {
       }
     }
     return pendingRequestIds;
-  }
-
-  String _formatDateTime(String? dateTimeStr) {
-    if (dateTimeStr == null) return 'N/A';
-    try {
-      final dateTime = DateTime.parse(dateTimeStr);
-      return DateFormat('MMM d, yyyy h:mm a').format(dateTime);
-    } catch (e) {
-      return dateTimeStr;
-    }
   }
 
   Widget _buildHistoryList(List<Map<String, dynamic>> entries, Set<String> pendingRequestIds, bool isLabour) {

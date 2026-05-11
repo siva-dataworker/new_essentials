@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/construction_provider.dart';
 import '../services/construction_service.dart';
+import '../services/cache_service.dart';
 import '../utils/app_colors.dart';
 
 class SupervisorReportsScreen extends StatefulWidget {
@@ -24,6 +25,11 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
   }
 
   Future<void> _loadWorkingSites() async {
+    final cached = await CacheService.loadSupervisorReportsSites();
+    if (cached != null) {
+      setState(() { _sites = cached; _isLoading = false; });
+      return;
+    }
     setState(() {
       _isLoading = true;
       _error = null;
@@ -32,8 +38,10 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
       final result = await _constructionService.getWorkingSites();
       if (result['success'] == true) {
         final raw = result['sites'] as List<dynamic>? ?? [];
+        final sites = raw.map((s) => Map<String, dynamic>.from(s as Map)).toList();
+        await CacheService.saveSupervisorReportsSites(sites);
         setState(() {
-          _sites = raw.map((s) => Map<String, dynamic>.from(s as Map)).toList();
+          _sites = sites;
           _isLoading = false;
         });
       } else {

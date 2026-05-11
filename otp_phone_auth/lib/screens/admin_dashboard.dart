@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/construction_service.dart';
 import '../services/notification_service.dart';
@@ -57,6 +59,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _unreadCount = 0;
   bool _notificationsLoaded = false; // Cache flag
 
+  // Guest visitors state
+  List<Map<String, dynamic>> _guestVisitors = [];
+  bool _guestVisitorsLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -73,21 +79,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
   
   void _startBackgroundRefresh() {
-    // Refresh notifications every 30 seconds
+    // Refresh notifications + guest visitors every 30 seconds
     _notificationsRefreshTimer = Timer.periodic(
       const Duration(seconds: 30),
       (timer) {
-        if (_selectedIndex == 1 && mounted) {
+        if (_selectedIndex == 2 && mounted) {
           _loadNotifications(forceRefresh: true);
+          _loadGuestVisitors();
         }
       },
     );
-    
+
     // Refresh sites data every 60 seconds
     _sitesRefreshTimer = Timer.periodic(
       const Duration(seconds: 60),
       (timer) {
-        if (_selectedIndex == 0 && mounted) {
+        if (_selectedIndex == 1 && mounted) {
           // Silently refresh areas
           _loadAreas();
         }
@@ -112,11 +119,37 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
   
   void _loadData() {
-    if (_selectedIndex == 1) {
-      // Notifications tab
+    if (_selectedIndex == 2) {
+      // Notifications tab — also refresh guests
       _loadNotifications();
+      _loadGuestVisitors();
     }
-    // Add other tab data loading here
+  }
+
+  static const _kGuestKey = 'guest_visitors_local';
+
+  Future<void> _loadGuestVisitors() async {
+    if (_guestVisitorsLoading) return;
+    setState(() => _guestVisitorsLoading = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_kGuestKey);
+      if (raw != null) {
+        final list = List<Map<String, dynamic>>.from(
+            (json.decode(raw) as List)
+                .map((e) => Map<String, dynamic>.from(e as Map)));
+        if (mounted) setState(() => _guestVisitors = list);
+      }
+    } catch (e) {
+      debugPrint('Guest load error: $e');
+    }
+    if (mounted) setState(() => _guestVisitorsLoading = false);
+  }
+
+  Future<void> _clearGuestVisitors() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kGuestKey);
+    if (mounted) setState(() => _guestVisitors = []);
   }
 
   Future<void> _loadNotifications({bool forceRefresh = false}) async {
@@ -271,28 +304,28 @@ class _AdminDashboardState extends State<AdminDashboard> {
         title: Text(
           _getAppBarTitle(),
           style: const TextStyle(
-            color: const Color(0xFF1A1A2E),
+            color:  Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Color(0xFF16213E),
         elevation: 0,
-        actions: [
-          // Notification badge
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: const Color(0xFF1A1A2E)),
-            onPressed: () {
-              setState(() => _selectedIndex = 1);
-            },
-          ),
-          // Logout button
-          IconButton(
-            icon: const Icon(Icons.logout, color: const Color(0xFF1A1A2E)),
-            onPressed: _logout,
-            tooltip: 'Sign Out',
-          ),
-        ],
+        // actions: [
+        //   // Notification badge
+        //   IconButton(
+        //     icon: const Icon(Icons.notifications_outlined, color: const Color(0xFF1A1A2E)),
+        //     onPressed: () {
+        //       setState(() => _selectedIndex = 1);
+        //     },
+        //   ),
+        //   // Logout button
+        //   IconButton(
+        //     icon: const Icon(Icons.logout, color: const Color(0xFF1A1A2E)),
+        //     onPressed: _logout,
+        //     tooltip: 'Sign Out',
+        //   ),
+        // ],
       ),
       body: _buildBody(),
       bottomNavigationBar: _buildBottomNav(),
@@ -301,6 +334,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _buildBottomNav() {
     const items = [
+      _NavItem(Icons.auto_stories_outlined, Icons.auto_stories, 'Story'),
       _NavItem(Icons.location_city_outlined, Icons.location_city, 'Sites'),
       _NavItem(Icons.notifications_outlined, Icons.notifications, 'Alerts'),
       _NavItem(Icons.report_problem_outlined, Icons.report_problem, 'Issues'),
@@ -386,12 +420,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
   String _getAppBarTitle() {
     switch (_selectedIndex) {
       case 0:
-        return 'Site Management';
+        return ' Site Story';
       case 1:
-        return 'Notifications';
+        return 'Site Management';
       case 2:
-        return 'Client Issues';
+        return 'Notifications';
       case 3:
+        return 'Client Issues';
+      case 4:
         return 'Profile';
       default:
         return 'Admin Dashboard';
@@ -402,6 +438,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return IndexedStack(
       index: _selectedIndex,
       children: [
+        const _AdminStoryTab(),
         _buildSitesTab(),
         _buildNotificationsTab(),
         const AdminClientComplaintsScreen(),
@@ -520,228 +557,131 @@ class _AdminDashboardState extends State<AdminDashboard> {
     if (mounted) setState(() => _sitesLoading = false);
   }
 
+  Widget _buildGridCard({
+    required String label,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color, color.withValues(alpha: 0.82)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.35),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.22),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: Colors.white, size: 20),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSitesTab() {
-    return Column(
-      children: [
-        // Global Labour Rates card
+    return SingleChildScrollView(
+      physics: const SmoothScrollPhysics(),
+      child: Column(
+        children: [
+        // 2×2 Quick Action Grid
         Container(
+        
           color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Column(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.55,
             children: [
-              GestureDetector(
+              _buildGridCard(
+                label: 'Labour Rates',
+                subtitle: 'Set default rates',
+                icon: Icons.currency_rupee,
+                color: const Color(0xFF1A1A2E),
                 onTap: () => Navigator.push(
                   context,
-                  SmoothPageRoute(
-                      page: const AdminLabourRatesScreen()),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF1A1A2E),
-                        const Color(0xFF1A1A2E).withValues(alpha: 0.8),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.currency_rupee,
-                            color: Colors.white, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Labour Rates',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold)),
-                            Text('Set default rates for all labour types',
-                                style: TextStyle(
-                                    color: Colors.white70, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right,
-                          color: Colors.white, size: 22),
-                    ],
-                  ),
+                  SmoothPageRoute(page: const AdminLabourRatesScreen()),
                 ),
               ),
-              // Material Requirements card
-              GestureDetector(
+              _buildGridCard(
+                label: 'Material\nRequirements',
+                subtitle: 'Supervisor requests',
+                icon: Icons.inventory_2,
+                color: const Color(0xFF1E3A8A),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
                       builder: (context) => const AdminMaterialRequirementsScreen()),
                 ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF1E3A8A),
-                        const Color(0xFF1E3A8A).withValues(alpha: 0.8),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.inventory_2,
-                            color: Colors.white, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Material Requirements',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold)),
-                            Text('View supervisor material requests',
-                                style: TextStyle(
-                                    color: Colors.white70, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right,
-                          color: Colors.white, size: 22),
-                    ],
-                  ),
-                ),
               ),
-              // All Working Sites card
-              GestureDetector(
+              _buildGridCard(
+                label: 'All Working\nSites',
+                subtitle: 'Accountant updates',
+                icon: Icons.construction,
+                color: const Color(0xFF059669),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
                       builder: (context) => const AdminAllWorkingSitesScreen()),
                 ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF059669),
-                        const Color(0xFF059669).withValues(alpha: 0.8),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.construction,
-                            color: Colors.white, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('All Working Sites',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold)),
-                            Text('View sites updated by accountants',
-                                style: TextStyle(
-                                    color: Colors.white70, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right,
-                          color: Colors.white, size: 22),
-                    ],
-                  ),
-                ),
               ),
-              // Manage Materials card
-              GestureDetector(
+              _buildGridCard(
+                label: 'Manage\nMaterials',
+                subtitle: 'Add & edit materials',
+                icon: Icons.category,
+                color: const Color(0xFFD97706),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
                       builder: (context) => const AdminManageMaterialsScreen()),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFFD97706),
-                        const Color(0xFFD97706).withValues(alpha: 0.8),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.category,
-                            color: Colors.white, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Manage Materials',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold)),
-                            Text('Add materials for supervisors & engineers',
-                                style: TextStyle(
-                                    color: Colors.white70, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right,
-                          color: Colors.white, size: 22),
-                    ],
-                  ),
                 ),
               ),
             ],
@@ -817,123 +757,185 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         const Divider(height: 1),
         // Site list
-        Expanded(
-          child: _sitesLoading
-              ? const Center(
-                  child: CircularProgressIndicator(
-                      color: const Color(0xFF1A1A2E)))
-              : _selectedArea == null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.location_on_outlined,
-                              size: 60,
-                              color:
-                                  const Color(0xFF6B7280).withValues(alpha: 0.4)),
-                          const SizedBox(height: 12),
-                          Text('Select an area to view sites',
-                              style: TextStyle(
-                                  color: const Color(0xFF6B7280),
-                                  fontSize: 14)),
-                        ],
-                      ),
-                    )
-                  : _selectedStreet == null
-                      ? Center(
-                          child: Text('Select a street to view sites',
-                              style: TextStyle(
-                                  color: const Color(0xFF6B7280),
-                                  fontSize: 14)),
-                        )
-                      : _sites.isEmpty
-                          ? Center(
-                              child: Text('No sites found',
-                                  style: TextStyle(
-                                      color: const Color(0xFF6B7280),
-                                      fontSize: 14)),
-                            )
-                          : ListView.builder(
-                              physics: const SmoothScrollPhysics(),
-                              padding: const EdgeInsets.all(14),
-                              itemCount: _sites.length,
-                              itemBuilder: (context, i) {
-                                final site = _sites[i];
-                                final siteId =
-                                    site['id']?.toString() ?? '';
-                                final siteName =
-                                    site['display_name'] ?? site['site_name'] ?? 'Site ${i + 1}';
-                                return AnimatedListItem(
-                                  index: i,
-                                  child: _buildSiteManagementCard(
-                                      siteId, siteName),
-                                );
-                              },
-                            ),
-        ),
-      ],
+        if (_sitesLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: Center(
+              child: CircularProgressIndicator(color: Color(0xFF1A1A2E)),
+            ),
+          )
+        else if (_selectedArea == null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.location_on_outlined,
+                    size: 60,
+                    color: const Color(0xFF6B7280).withValues(alpha: 0.4)),
+                const SizedBox(height: 12),
+                Text('Select an area to view sites',
+                    style: TextStyle(color: const Color(0xFF6B7280), fontSize: 14)),
+              ],
+            ),
+          )
+        else if (_selectedStreet == null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            child: Text('Select a street to view sites',
+                style: TextStyle(color: const Color(0xFF6B7280), fontSize: 14)),
+          )
+        else if (_sites.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            child: Text('No sites found',
+                style: TextStyle(color: const Color(0xFF6B7280), fontSize: 14)),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+            itemCount: _sites.length,
+            itemBuilder: (context, i) {
+              return AnimatedListItem(
+                index: i,
+                child: _buildSiteManagementCard(_sites[i], i),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildSiteManagementCard(String siteId, String siteName) {
+  static const _cardColors = [
+    Color(0xFF1A1A2E),
+    Color(0xFF1E3A8A),
+    Color(0xFF059669),
+    Color(0xFFD97706),
+  ];
+
+  Widget _buildSiteManagementCard(Map<String, dynamic> site, int index) {
+    final siteId = site['id']?.toString() ?? '';
+    final siteName = site['display_name'] as String? ??
+        site['site_name'] as String? ??
+        'Site ${index + 1}';
+    final clientName = site['client_name'] as String? ?? '';
+    final area = site['area'] as String? ?? _selectedArea ?? '';
+    final street = site['street'] as String? ?? _selectedStreet ?? '';
+    final color = _cardColors[index % _cardColors.length];
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1A1A2E).withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: color.withValues(alpha: 0.18),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
         ],
-        border: Border.all(
-            color: const Color(0xFF1A1A2E).withValues(alpha: 0.08)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Site name header
+          // Gradient header (matches grid cards above)
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E).withValues(alpha: 0.04),
-              borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(14)),
+              gradient: LinearGradient(
+                colors: [color, color.withValues(alpha: 0.82)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A2E).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white.withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.apartment,
-                      color: const Color(0xFF1A1A2E), size: 18),
+                      color: Colors.white, size: 22),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        siteName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          if (clientName.isNotEmpty) ...[
+                            const Icon(Icons.person_outline,
+                                size: 12, color: Colors.white70),
+                            const SizedBox(width: 3),
+                            Flexible(
+                              child: Text(
+                                clientName,
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 11),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          if (area.isNotEmpty) ...[
+                            const Icon(Icons.location_on_outlined,
+                                size: 12, color: Colors.white70),
+                            const SizedBox(width: 3),
+                            Flexible(
+                              child: Text(
+                                street.isNotEmpty ? '$area · $street' : area,
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 11),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: Text(
-                    siteName,
+                    '#${index + 1}',
                     style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1A1A2E)),
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
           ),
-          // Action buttons
+
+          // Budget Management action row
           Padding(
             padding: const EdgeInsets.all(12),
-            child: _buildSiteActionButton(
-              icon: Icons.account_balance_wallet_outlined,
-              label: 'Budget Management',
-              color: const Color(0xFF1A1A2E),
+            child: GestureDetector(
               onTap: () => Navigator.push(
                 context,
                 SmoothPageRoute(
@@ -943,41 +945,67 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                 ),
               ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    vertical: 13, horizontal: 14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      color.withValues(alpha: 0.10),
+                      color.withValues(alpha: 0.04),
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border:
+                      Border.all(color: color.withValues(alpha: 0.20)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: Icon(
+                          Icons.account_balance_wallet_outlined,
+                          color: color,
+                          size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Budget Management',
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Allocation · Utilization · Bills',
+                            style: TextStyle(
+                              color: color.withValues(alpha: 0.65),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios,
+                        size: 14, color: color.withValues(alpha: 0.45)),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSiteActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -995,7 +1023,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     ).toList();
     
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Column(
         children: [
           // Header with actions
@@ -1042,7 +1070,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.refresh),
-                  onPressed: () => _loadNotifications(forceRefresh: true),
+                  onPressed: () {
+                    _loadNotifications(forceRefresh: true);
+                    _loadGuestVisitors();
+                  },
                   tooltip: 'Refresh',
                 ),
                 if (_unreadCount > 0)
@@ -1057,7 +1088,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ],
             ),
           ),
-          
+
           // Tab Bar
           Container(
             color: Colors.white,
@@ -1066,31 +1097,40 @@ class _AdminDashboardState extends State<AdminDashboard> {
               unselectedLabelColor: Colors.grey,
               indicatorColor: const Color(0xFF1A1A2E),
               indicatorWeight: 3,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
               tabs: [
                 Tab(
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.people, size: 20),
-                      const SizedBox(width: 8),
+                      const Icon(Icons.people, size: 18),
+                      const SizedBox(width: 6),
                       Text('Labour (${labourNotifications.length})'),
                     ],
                   ),
                 ),
                 Tab(
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.photo_camera, size: 20),
-                      const SizedBox(width: 8),
-                      Text('Photos & Material (${photosAndMaterialNotifications.length})'),
+                      const Icon(Icons.photo_camera, size: 18),
+                      const SizedBox(width: 6),
+                      Text('Photos (${photosAndMaterialNotifications.length})'),
+                    ],
+                  ),
+                ),
+                Tab(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.person_add_alt_1, size: 18),
+                      const SizedBox(width: 6),
+                      Text('Guests (${_guestVisitors.length})'),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-          
+
           // Tab Views
           Expanded(
             child: _notificationsLoading
@@ -1101,8 +1141,250 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     children: [
                       _buildNotificationsList(labourNotifications, 'labour'),
                       _buildNotificationsList(photosAndMaterialNotifications, 'photos_material'),
+                      _buildGuestVisitorsList(),
                     ],
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuestVisitorsList() {
+    if (_guestVisitorsLoading) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF1A1A2E)));
+    }
+
+    if (_guestVisitors.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _loadGuestVisitors,
+        color: const Color(0xFF1A1A2E),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: 300,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.person_add_alt_1,
+                    size: 64, color: Colors.grey.shade300),
+                const SizedBox(height: 16),
+                const Text('No guest check-ins yet',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A2E))),
+                const SizedBox(height: 8),
+                Text('Guests who check in will appear here.',
+                    style: TextStyle(
+                        fontSize: 13, color: Colors.grey.shade500)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final visitors = _guestVisitors;
+    final newCount = visitors.where((v) => v['is_new'] == true).length;
+
+    return RefreshIndicator(
+      onRefresh: _loadGuestVisitors,
+      color: const Color(0xFF1A1A2E),
+      child: Column(
+        children: [
+          // ── Header bar with new-badge and clear button ──────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            color: Colors.white,
+            child: Row(
+              children: [
+                const Icon(Icons.person_add_alt_1,
+                    size: 18, color: Color(0xFF1A1A2E)),
+                const SizedBox(width: 8),
+                Text('${visitors.length} visitor${visitors.length == 1 ? '' : 's'} today',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Color(0xFF1A1A2E))),
+                if (newCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10)),
+                    child: Text('$newCount NEW',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                ],
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _clearGuestVisitors,
+                  icon: const Icon(Icons.delete_outline, size: 16),
+                  label: const Text('Clear all'),
+                  style: TextButton.styleFrom(
+                      foregroundColor: Colors.red.shade400,
+                      textStyle: const TextStyle(fontSize: 12)),
+                ),
+              ],
+            ),
+          ),
+          // ── List ─────────────────────────────────────────────
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: visitors.length,
+              itemBuilder: (context, i) {
+                final v = visitors[i];
+          final name = v['name'] as String? ?? 'Guest';
+          final phone = v['phone'] as String? ?? '—';
+          final purpose = v['purpose'] as String? ?? '';
+          final visitTime = v['visit_time'] as String? ??
+              v['created_at'] as String? ?? '';
+          final timeStr = visitTime.length >= 16
+              ? visitTime.substring(0, 16).replaceAll('T', '  ')
+              : visitTime;
+          final ref = v['ref'] as String? ?? 'GV${(1000 + i)}';
+          final isNew = v['is_new'] == true;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF1A1A2E).withValues(alpha: 0.07),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1A1A2E), Color(0xFF3B82F6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        name.isNotEmpty ? name[0].toUpperCase() : 'G',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(name,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: Color(0xFF1A1A2E))),
+                            ),
+                            if (isNew)
+                              Container(
+                                margin: const EdgeInsets.only(right: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(8)),
+                                child: const Text('NEW',
+                                    style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white)),
+                              ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF059669).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(ref,
+                                  style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF059669))),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.phone_outlined,
+                                size: 13, color: Color(0xFF6B7280)),
+                            const SizedBox(width: 4),
+                            Text(phone,
+                                style: const TextStyle(
+                                    fontSize: 12, color: Color(0xFF6B7280))),
+                          ],
+                        ),
+                        if (purpose.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(Icons.notes_outlined,
+                                  size: 13, color: Color(0xFF6B7280)),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(purpose,
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF6B7280)),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (timeStr.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(Icons.access_time,
+                                  size: 13, color: Color(0xFF6B7280)),
+                              const SizedBox(width: 4),
+                              Text(timeStr,
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF6B7280))),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+            ),
           ),
         ],
       ),
@@ -2790,4 +3072,879 @@ class _NavItem {
   final IconData activeIcon;
   final String label;
   const _NavItem(this.icon, this.activeIcon, this.label);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN STORY TAB  – Instagram-style site stories
+// ═══════════════════════════════════════════════════════════════
+
+class _AdminStoryTab extends StatefulWidget {
+  const _AdminStoryTab();
+
+  @override
+  State<_AdminStoryTab> createState() => _AdminStoryTabState();
+}
+
+class _AdminStoryTabState extends State<_AdminStoryTab> {
+  final _service = ConstructionService();
+  static const _baseUrl = 'http://187.127.164.22';
+  static const _kViewedKey = 'story_viewed_timestamps'; // SharedPreferences key
+
+  // All photos grouped by site
+  Map<String, List<Map<String, dynamic>>> _storiesBySite = {};
+  bool _isLoading = true;
+  String? _error;
+
+  // siteId → ISO date string of the latest photo at the time admin last viewed it
+  // Persisted in SharedPreferences so it survives app restarts
+  Map<String, String> _viewedTimestamps = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadViewedTimestamps().then((_) => _load());
+  }
+
+  Future<void> _loadViewedTimestamps() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_kViewedKey);
+      if (raw != null) {
+        _viewedTimestamps = Map<String, String>.from(json.decode(raw) as Map);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveViewedTimestamp(String siteId, String latestDate) async {
+    _viewedTimestamps[siteId] = latestDate;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kViewedKey, json.encode(_viewedTimestamps));
+    } catch (_) {}
+  }
+
+  // A site is "viewed" only if the admin saw it at or after its latest photo date
+  bool _isViewed(String siteId) {
+    final lastSeen = _viewedTimestamps[siteId];
+    if (lastSeen == null) return false;
+    final photos = _storiesBySite[siteId];
+    if (photos == null || photos.isEmpty) return true;
+    final latestPhotoDate =
+        (photos.first['update_date'] ?? photos.first['upload_date']) as String? ?? '';
+    return lastSeen.compareTo(latestPhotoDate) >= 0;
+  }
+
+  Future<void> _load() async {
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      // Step 1 — get all site IDs and accountant photos in parallel
+      final baseResults = await Future.wait([
+        _service.getAllSites(),
+        _service.getAccountantPhotos(),
+      ]);
+
+      final allSites = List<Map<String, dynamic>>.from(
+          (baseResults[0] as Map)['sites'] ?? []);
+      final rawAccountant = List<Map<String, dynamic>>.from(
+          (baseResults[1] as Map)['photos'] ?? []);
+
+      // Step 2 — fetch supervisor photos for every site in parallel
+      // (backend requires site_id, so we must call once per site)
+      // Build id→site lookup for enriching supervisor photos with site name
+      final siteById = <String, Map<String, dynamic>>{
+        for (final s in allSites)
+          if ((s['id']?.toString() ?? '').isNotEmpty) s['id'].toString(): s,
+      };
+      final siteIds = siteById.keys.toList();
+
+      final supervisorResults = await Future.wait(
+        siteIds.map((id) => _service.getSupervisorPhotosForAccountant(siteId: id)),
+      );
+
+      // Step 3 — flatten and normalize supervisor photos
+      final rawSupervisor = <Map<String, dynamic>>[];
+      for (int i = 0; i < supervisorResults.length; i++) {
+        final photos = List<Map<String, dynamic>>.from(
+            supervisorResults[i]['photos'] ?? []);
+        final site = siteById[siteIds[i]] ?? {};
+        for (final p in photos) {
+          final tod = (p['time_of_day'] as String? ?? '').toLowerCase();
+          rawSupervisor.add({
+            ...p,
+            'update_date': p['update_date'] ?? p['upload_date'] ?? '',
+            'update_type': tod == 'morning' ? 'STARTED' : 'FINISHED',
+            'uploaded_by': p['supervisor_name'] ?? p['uploaded_by'] ?? 'Supervisor',
+            'full_site_name': p['full_site_name'] ?? p['site_name'] ??
+                site['display_name'] ?? site['site_name'] ?? '',
+            'site_id': p['site_id'] ?? site['id'],
+            '_source': 'supervisor',
+          });
+        }
+      }
+
+      // Step 4 — combine, sort newest-first, group by site
+      final allPhotos = [...rawSupervisor, ...rawAccountant];
+      allPhotos.sort((a, b) {
+        final da = (a['update_date'] as String?) ?? '';
+        final db = (b['update_date'] as String?) ?? '';
+        return db.compareTo(da);
+      });
+
+      final Map<String, List<Map<String, dynamic>>> grouped = {};
+      for (final p in allPhotos) {
+        final key = p['site_id']?.toString() ?? 'unknown';
+        grouped.putIfAbsent(key, () => []).add(p);
+      }
+
+      if (mounted) {
+        setState(() {
+          _storiesBySite = grouped;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
+    }
+  }
+
+  String _fullUrl(String? rel) {
+    if (rel == null || rel.isEmpty) return '';
+    return rel.startsWith('http') ? rel : '$_baseUrl$rel';
+  }
+
+  String _siteLabel(List<Map<String, dynamic>> photos) =>
+      photos.first['full_site_name'] as String? ??
+      photos.first['site_name'] as String? ??
+      'Site';
+
+  String _latestDate(List<Map<String, dynamic>> photos) {
+    final raw = (photos.first['update_date'] ?? photos.first['upload_date']) as String? ?? '';
+    return raw.length >= 10 ? raw.substring(0, 10) : raw;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF1A1A2E)));
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 56, color: Colors.red),
+            const SizedBox(height: 12),
+            Text(_error!, style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _load,
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A1A2E), foregroundColor: Colors.white),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+    if (_storiesBySite.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.auto_stories, size: 72, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            const Text('No stories yet',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1A2E))),
+            const SizedBox(height: 8),
+            Text('Supervisor site photos will appear here.',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+          ],
+        ),
+      );
+    }
+
+    final siteIds = _storiesBySite.keys.toList();
+    // Unviewed sites first
+    siteIds.sort((a, b) {
+      final av = _isViewed(a) ? 1 : 0;
+      final bv = _isViewed(b) ? 1 : 0;
+      return av.compareTo(bv);
+    });
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      color: const Color(0xFF1A1A2E),
+      child: CustomScrollView(
+        slivers: [
+          // ── Story bubbles row ─────────────────────────────────
+          SliverToBoxAdapter(
+            child: Container(
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Essential Story',
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1A2E))),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 100,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: siteIds.length,
+                      itemBuilder: (context, i) {
+                        final id = siteIds[i];
+                        final photos = _storiesBySite[id]!;
+                        final viewed = _isViewed(id);
+                        return _StoryBubble(
+                          label: _siteLabel(photos),
+                          imageUrl: _fullUrl(photos.first['image_url'] as String?),
+                          viewed: viewed,
+                          onTap: () => _openStory(id, photos),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SliverToBoxAdapter(
+            child: Divider(height: 1),
+          ),
+
+          // ── Photo grid ────────────────────────────────────────
+          SliverPadding(
+            padding: const EdgeInsets.all(12),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
+                  final id = siteIds[i];
+                  final photos = _storiesBySite[id]!;
+                  return _SiteStoryRow(
+                    siteLabel: _siteLabel(photos),
+                    latestDate: _latestDate(photos),
+                    photoCount: photos.length,
+                    photos: photos,
+                    fullUrl: _fullUrl,
+                    viewed: _isViewed(id),
+                    onTapPhoto: (startIndex) => _openStory(id, photos, startIndex: startIndex),
+                  );
+                },
+                childCount: siteIds.length,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openStory(String siteId, List<Map<String, dynamic>> photos, {int startIndex = 0}) {
+    // Record the latest photo date for this site so the highlight only returns
+    // when a newer photo is uploaded
+    final latestDate =
+        (photos.first['update_date'] ?? photos.first['upload_date']) as String? ?? '';
+    _saveViewedTimestamp(siteId, latestDate);
+    setState(() {});
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black,
+        pageBuilder: (_, __, ___) => _StoryViewer(
+          photos: photos,
+          startIndex: startIndex,
+          fullUrl: _fullUrl,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Story bubble (circle) ─────────────────────────────────────
+
+class _StoryBubble extends StatelessWidget {
+  final String label;
+  final String imageUrl;
+  final bool viewed;
+  final VoidCallback onTap;
+
+  const _StoryBubble({
+    required this.label,
+    required this.imageUrl,
+    required this.viewed,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 72,
+        margin: const EdgeInsets.only(right: 14),
+        child: Column(
+          children: [
+            // Ring
+            Container(
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: viewed
+                    ? null
+                    : const LinearGradient(
+                        colors: [Color(0xFF1A1A2E), Color(0xFF3B82F6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                color: viewed ? Colors.grey.shade300 : null,
+              ),
+              padding: const EdgeInsets.all(2.5),
+              child: Container(
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
+                padding: const EdgeInsets.all(2),
+                child: ClipOval(
+                  child: imageUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          width: 60,
+                          height: 60,
+                          placeholder: (_, __) => Container(color: const Color(0xFF1A1A2E).withValues(alpha: 0.1)),
+                          errorWidget: (_, __, ___) => const Icon(Icons.apartment, color: Color(0xFF1A1A2E), size: 28),
+                        )
+                      : const Icon(Icons.apartment, color: Color(0xFF1A1A2E), size: 28),
+                ),
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: viewed ? FontWeight.normal : FontWeight.bold,
+                color: viewed ? Colors.grey : const Color(0xFF1A1A2E),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Site story row (expandable photo strip) ───────────────────
+
+class _SiteStoryRow extends StatelessWidget {
+  final String siteLabel;
+  final String latestDate;
+  final int photoCount;
+  final List<Map<String, dynamic>> photos;
+  final String Function(String?) fullUrl;
+  final bool viewed;
+  final void Function(int startIndex) onTapPhoto;
+
+  const _SiteStoryRow({
+    required this.siteLabel,
+    required this.latestDate,
+    required this.photoCount,
+    required this.photos,
+    required this.fullUrl,
+    required this.viewed,
+    required this.onTapPhoto,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1A1A2E).withValues(alpha: 0.07),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: viewed
+                        ? null
+                        : const LinearGradient(
+                            colors: [Color(0xFF1A1A2E), Color(0xFF3B82F6)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                    color: viewed ? Colors.grey.shade300 : null,
+                  ),
+                  padding: const EdgeInsets.all(2),
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                    ),
+                    padding: const EdgeInsets.all(2),
+                    child: ClipOval(
+                      child: photos.isNotEmpty && (photos.first['image_url'] as String? ?? '').isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: fullUrl(photos.first['image_url'] as String?),
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => Container(color: Colors.grey.shade200),
+                              errorWidget: (_, __, ___) => const Icon(Icons.apartment, size: 16),
+                            )
+                          : const Icon(Icons.apartment, size: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(siteLabel,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Color(0xFF1A1A2E))),
+                      Text('$photoCount photos · $latestDate',
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => onTapPhoto(0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A2E).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text('View All',
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A1A2E))),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Horizontal photo strip
+          SizedBox(
+            height: 140,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+              itemCount: photos.length,
+              itemBuilder: (context, i) {
+                final p = photos[i];
+                final url = fullUrl(p['image_url'] as String?);
+                final isMorning = (p['update_type'] as String? ?? '') == 'STARTED' ||
+                    (p['time_of_day'] as String? ?? '').toLowerCase() == 'morning';
+                return GestureDetector(
+                  onTap: () => onTapPhoto(i),
+                  child: Container(
+                    width: 110,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey.shade100,
+                    ),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: url.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: url,
+                                  fit: BoxFit.cover,
+                                  placeholder: (_, __) => Container(color: Colors.grey.shade200),
+                                  errorWidget: (_, __, ___) => const Icon(Icons.broken_image),
+                                )
+                              : const Icon(Icons.broken_image),
+                        ),
+                        // Morning / Evening badge
+                        Positioned(
+                          top: 6,
+                          left: 6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: isMorning
+                                  ? Colors.orange.withValues(alpha: 0.9)
+                                  : Colors.indigo.withValues(alpha: 0.9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              isMorning ? '🌅 AM' : '🌆 PM',
+                              style: const TextStyle(
+                                  fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FULL-SCREEN STORY VIEWER  – Instagram-style
+// ═══════════════════════════════════════════════════════════════
+
+class _StoryViewer extends StatefulWidget {
+  final List<Map<String, dynamic>> photos;
+  final int startIndex;
+  final String Function(String?) fullUrl;
+
+  const _StoryViewer({
+    required this.photos,
+    required this.startIndex,
+    required this.fullUrl,
+  });
+
+  @override
+  State<_StoryViewer> createState() => _StoryViewerState();
+}
+
+class _StoryViewerState extends State<_StoryViewer>
+    with SingleTickerProviderStateMixin {
+  late int _currentIndex;
+  late AnimationController _progressCtrl;
+  static const _storyDuration = Duration(seconds: 5);
+
+  PageController? _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.startIndex;
+    _pageController = PageController(initialPage: _currentIndex);
+    _progressCtrl = AnimationController(vsync: this, duration: _storyDuration)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) _next();
+      });
+    _startProgress();
+  }
+
+  @override
+  void dispose() {
+    _progressCtrl.dispose();
+    _pageController?.dispose();
+    super.dispose();
+  }
+
+  void _startProgress() {
+    _progressCtrl.forward(from: 0);
+  }
+
+  void _next() {
+    if (_currentIndex < widget.photos.length - 1) {
+      _goTo(_currentIndex + 1);
+    } else {
+      Navigator.of(context).pop();
+    }
+  }
+
+  void _prev() {
+    if (_currentIndex > 0) {
+      _goTo(_currentIndex - 1);
+    } else {
+      _startProgress();
+    }
+  }
+
+  void _goTo(int index) {
+    setState(() => _currentIndex = index);
+    _pageController?.jumpToPage(index);
+    _startProgress();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final photo = widget.photos[_currentIndex];
+    final url = widget.fullUrl(photo['image_url'] as String?);
+    final updateType = (photo['update_type'] as String? ?? '');
+    final timeOfDay = (photo['time_of_day'] as String? ?? '').toLowerCase();
+    final isMorning = updateType == 'STARTED' || timeOfDay == 'morning';
+    final siteName = photo['full_site_name'] as String? ??
+        photo['site_name'] as String? ?? 'Site';
+    final uploadedBy = photo['supervisor_name'] as String? ??
+        photo['uploaded_by'] as String? ?? '';
+    final dateRaw = (photo['update_date'] ?? photo['upload_date']) as String? ?? '';
+    final dateStr = dateRaw.length >= 10 ? dateRaw.substring(0, 10) : dateRaw;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: GestureDetector(
+        onTapUp: (d) {
+          final w = MediaQuery.of(context).size.width;
+          if (d.globalPosition.dx < w / 3) {
+            _prev();
+          } else if (d.globalPosition.dx > w * 2 / 3) {
+            _next();
+          }
+        },
+        onLongPressStart: (_) => _progressCtrl.stop(),
+        onLongPressEnd: (_) => _progressCtrl.forward(),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // ── Photo ─────────────────────────────────────────
+            PageView.builder(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: widget.photos.length,
+              itemBuilder: (_, i) {
+                final u = widget.fullUrl(widget.photos[i]['image_url'] as String?);
+                return u.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: u,
+                        fit: BoxFit.contain,
+                        placeholder: (_, __) =>
+                            const Center(child: CircularProgressIndicator(color: Colors.white)),
+                        errorWidget: (_, __, ___) =>
+                            const Center(child: Icon(Icons.broken_image, color: Colors.white, size: 60)),
+                      )
+                    : const Center(child: Icon(Icons.broken_image, color: Colors.white, size: 60));
+              },
+            ),
+
+            // ── Gradient overlays ──────────────────────────────
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 160,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.7),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 160,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.75),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Progress bars ──────────────────────────────────
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              left: 12,
+              right: 12,
+              child: Row(
+                children: List.generate(widget.photos.length, (i) {
+                  return Expanded(
+                    child: Container(
+                      height: 2.5,
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: i < _currentIndex
+                            ? Container(color: Colors.white)
+                            : i == _currentIndex
+                                ? AnimatedBuilder(
+                                    animation: _progressCtrl,
+                                    builder: (_, __) => LinearProgressIndicator(
+                                      value: _progressCtrl.value,
+                                      backgroundColor: Colors.transparent,
+                                      valueColor: const AlwaysStoppedAnimation(Colors.white),
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+
+            // ── Top bar: site name + close ─────────────────────
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 20,
+              left: 12,
+              right: 12,
+              child: Row(
+                children: [
+                  ClipOval(
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      color: const Color(0xFF1A1A2E),
+                      child: const Icon(Icons.apartment, color: Colors.white, size: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(siteName,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14)),
+                        Text(
+                          '${isMorning ? '🌅 Morning' : '🌆 Evening'} · $dateStr',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8), fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Bottom info ────────────────────────────────────
+            Positioned(
+              bottom: MediaQuery.of(context).padding.bottom + 24,
+              left: 16,
+              right: 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: isMorning
+                              ? Colors.orange.withValues(alpha: 0.9)
+                              : Colors.indigo.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          isMorning ? '🌅 Morning Shot' : '🌆 Evening Shot',
+                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${_currentIndex + 1} / ${widget.photos.length}',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
+                      ),
+                    ],
+                  ),
+                  if (uploadedBy.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.person_outline, color: Colors.white70, size: 14),
+                        const SizedBox(width: 4),
+                        Text(uploadedBy,
+                            style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined, color: Colors.white70, size: 14),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(siteName,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Tap zones (left / right) ───────────────────────
+            Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: GestureDetector(
+                    onTap: _prev,
+                    behavior: HitTestBehavior.translucent,
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+                Expanded(flex: 1, child: const SizedBox.shrink()),
+                Expanded(
+                  flex: 1,
+                  child: GestureDetector(
+                    onTap: _next,
+                    behavior: HitTestBehavior.translucent,
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

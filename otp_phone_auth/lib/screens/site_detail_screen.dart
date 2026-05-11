@@ -9,6 +9,13 @@ import '../utils/time_validator.dart';
 import 'supervisor_history_screen.dart';
 import 'supervisor_photo_upload_screen.dart';
 
+enum _SiteEntryStatus {
+  none,          // no entries today — FAB fully active
+  morningOnly,   // morning done, evening pending — FAB opens evening tab
+  complete,      // both done — FAB locked (green check)
+  lockedByOther, // another supervisor entered today — FAB locked (grey lock)
+}
+
 class SiteDetailScreen extends StatefulWidget {
   final Map<String, dynamic> site;
 
@@ -166,21 +173,20 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
     );
   }
 
-  void _showLabourEntry() {
+  void _showLabourEntry({bool startAtEvening = false}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withOpacity(0.3), // Reduced opacity for less blur
+      barrierColor: Colors.black.withOpacity(0.3),
       enableDrag: true,
       isDismissible: true,
       builder: (context) => _LabourEntrySheet(
         siteId: widget.site['id'],
+        defaultToEvening: startAtEvening,
         onSuccess: () {
-          // Invalidate cache and reload
           _invalidateCache();
           _loadTodayEntries();
-          // Also invalidate history screen cache
           SupervisorHistoryScreen.invalidateCache(widget.site['id']);
         },
       ),
@@ -428,6 +434,43 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
            _selectedDate.day == now.day;
   }
 
+  _SiteEntryStatus get _todayEntryStatus {
+    if (!_isToday()) return _SiteEntryStatus.none;
+    final entries = List<Map<String, dynamic>>.from(
+        _todayEntries?['labour_entries'] ?? []);
+    if (entries.isEmpty) return _SiteEntryStatus.none;
+
+    // Requirement 2: block if any entry belongs to a different supervisor
+    if (_userId != null) {
+      final hasOther = entries.any((e) {
+        final sid = (e['supervisor_id'] ?? e['user_id'])?.toString();
+        return sid != null && sid != _userId;
+      });
+      if (hasOther) return _SiteEntryStatus.lockedByOther;
+    }
+
+    // Requirement 1: determine morning vs evening by entry_time hour
+    bool hasMorning = false;
+    bool hasEvening = false;
+    for (final e in entries) {
+      final t = (e['entry_time'] as String?) ?? '';
+      final hour = int.tryParse(t.split(':').first) ?? -1;
+      if (hour < 0) {
+        // No time info — assume morning for safety
+        hasMorning = true;
+      } else if (hour < 12) {
+        hasMorning = true;
+      } else {
+        hasEvening = true;
+      }
+    }
+
+    if (hasMorning && hasEvening) return _SiteEntryStatus.complete;
+    if (hasMorning) return _SiteEntryStatus.morningOnly;
+    // evening-only edge case: treat same as morningOnly (open morning tab)
+    return _SiteEntryStatus.none;
+  }
+
   String _formatSelectedDate() {
     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}';
@@ -673,6 +716,8 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  if (_isToday()) _buildEntryStatusBanner(),
+                  if (_isToday()) const SizedBox(height: 12),
                   if (_isLoading)
                     const Center(child: CircularProgressIndicator(color: AppColors.safetyOrange))
                   else if (_todayEntries == null || (_todayEntries!['labour_entries']?.isEmpty ?? true) && (_todayEntries!['material_entries']?.isEmpty ?? true))
@@ -688,6 +733,73 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
       ),
       floatingActionButton: _buildCentralFAB(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
+
+  Widget _buildEntryStatusBanner() {
+    final status = _todayEntryStatus;
+    switch (status) {
+      case _SiteEntryStatus.complete:
+        return _statusBanner(
+          icon: Icons.check_circle,
+          label: 'Morning & Evening submitted — Day complete',
+          color: Colors.green.shade600,
+          bgColor: Colors.green.shade50,
+        );
+      case _SiteEntryStatus.morningOnly:
+        return _statusBanner(
+          icon: Icons.wb_sunny,
+          label: 'Morning done — Tap + to add Evening entry',
+          color: Colors.orange.shade700,
+          bgColor: Colors.orange.shade50,
+        );
+      case _SiteEntryStatus.lockedByOther:
+        return _statusBanner(
+          icon: Icons.lock,
+          label: 'Locked — Another supervisor submitted today',
+          color: Colors.grey.shade700,
+          bgColor: Colors.grey.shade100,
+        );
+      default:
+        return _statusBanner(
+          icon: Icons.add_circle_outline,
+          label: 'No entries yet — Tap + to add Morning entry',
+          color: AppColors.deepNavy,
+          bgColor: AppColors.deepNavy.withValues(alpha: 0.05),
+        );
+    }
+  }
+
+  Widget _statusBanner({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color bgColor,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1122,6 +1234,100 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
   }
 
   Widget _buildCentralFAB() {
+    final status = _todayEntryStatus;
+
+    // Fully locked states
+    if (status == _SiteEntryStatus.complete || status == _SiteEntryStatus.lockedByOther) {
+      final isComplete = status == _SiteEntryStatus.complete;
+      return GestureDetector(
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+              isComplete
+                  ? 'Both morning & evening entries submitted. Day complete!'
+                  : 'Entry already submitted by another supervisor today.',
+            ),
+            backgroundColor: isComplete ? Colors.green.shade700 : Colors.grey.shade700,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ));
+        },
+        child: Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: isComplete ? Colors.green.shade600 : Colors.grey.shade500,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: (isComplete ? Colors.green : Colors.grey).withValues(alpha: 0.35),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Icon(
+            isComplete ? Icons.check_circle : Icons.lock,
+            size: 30,
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+
+    // Morning done — FAB opens evening tab directly, shows amber badge
+    if (status == _SiteEntryStatus.morningOnly) {
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: Colors.orange.shade700,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.orange.withValues(alpha: 0.4),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _showLabourEntry(startAtEvening: true),
+                borderRadius: BorderRadius.circular(32),
+                child: const Icon(Icons.add, size: 32, color: Colors.white),
+              ),
+            ),
+          ),
+          // Badge: "EVE" indicating evening still needed
+          Positioned(
+            top: -4,
+            right: -4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.red.shade600,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'EVE',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Default active state (no entries yet)
     return Container(
       width: 64,
       height: 64,
@@ -1284,8 +1490,13 @@ class _QuickActionsSheet extends StatelessWidget {
 class _LabourEntrySheet extends StatefulWidget {
   final String siteId;
   final VoidCallback onSuccess;
+  final bool defaultToEvening;
 
-  const _LabourEntrySheet({required this.siteId, required this.onSuccess});
+  const _LabourEntrySheet({
+    required this.siteId,
+    required this.onSuccess,
+    this.defaultToEvening = false,
+  });
 
   @override
   State<_LabourEntrySheet> createState() => _LabourEntrySheetState();
@@ -1324,7 +1535,11 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.defaultToEvening ? 1 : 0,
+    );
     _tabController.addListener(() {
       if (_tabController.index == 1) {
         // Load both morning data and evening history when evening tab is opened
@@ -1337,6 +1552,11 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
     _morningSelectedDateTime = DateTime.now();
     _eveningSelectedDateTime = DateTime.now();
     _fetchRates();
+    // If opening directly at evening tab, pre-load morning/evening data
+    if (widget.defaultToEvening) {
+      _loadMorningData();
+      _loadEveningHistory();
+    }
   }
 
   Future<void> _loadMorningData() async {

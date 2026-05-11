@@ -7,6 +7,7 @@ import 'dart:convert';
 import '../models/user_model.dart';
 import '../providers/construction_provider.dart';
 import '../services/construction_service.dart';
+import '../services/cache_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/common_widgets.dart';
 import '../services/auth_service.dart';
@@ -48,14 +49,19 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
   }
 
   Future<void> _loadAreas() async {
+    final cached = await CacheService.loadAreas();
+    if (cached != null) {
+      setState(() { _areas = cached; _isLoadingAreas = false; });
+      return;
+    }
     setState(() => _isLoadingAreas = true);
     try {
       final provider = context.read<ConstructionProvider>();
       final response = await provider.getAreas();
       if (response['success']) {
-        setState(() {
-          _areas = List<String>.from(response['areas']);
-        });
+        final areas = List<String>.from(response['areas']);
+        await CacheService.saveAreas(areas);
+        setState(() { _areas = areas; });
       }
     } catch (e) {
       print('Error loading areas: $e');
@@ -72,14 +78,18 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
       _streets = [];
       _sites = [];
     });
-    
+    final cached = await CacheService.loadStreets(area);
+    if (cached != null) {
+      setState(() { _streets = cached; _isLoadingStreets = false; });
+      return;
+    }
     try {
       final provider = context.read<ConstructionProvider>();
       final response = await provider.getStreets(area);
       if (response['success']) {
-        setState(() {
-          _streets = List<String>.from(response['streets']);
-        });
+        final streets = List<String>.from(response['streets']);
+        await CacheService.saveStreets(area, streets);
+        setState(() { _streets = streets; });
       }
     } catch (e) {
       print('Error loading streets: $e');
@@ -94,14 +104,18 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
       _selectedSite = null;
       _sites = [];
     });
-    
+    final cached = await CacheService.loadDropdownSites(area, street);
+    if (cached != null) {
+      setState(() { _sites = cached; _isLoadingSites = false; });
+      return;
+    }
     try {
       final provider = context.read<ConstructionProvider>();
       final response = await provider.getSitesByAreaStreet(area, street);
       if (response['success']) {
-        setState(() {
-          _sites = List<Map<String, dynamic>>.from(response['sites']);
-        });
+        final sites = List<Map<String, dynamic>>.from(response['sites']);
+        await CacheService.saveDropdownSites(area, street, sites);
+        setState(() { _sites = sites; });
       }
     } catch (e) {
       print('Error loading sites: $e');

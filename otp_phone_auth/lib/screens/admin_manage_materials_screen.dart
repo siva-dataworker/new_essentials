@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/construction_service.dart';
+import '../services/cache_service.dart';
 
 class AdminManageMaterialsScreen extends StatefulWidget {
   const AdminManageMaterialsScreen({super.key});
@@ -33,11 +34,26 @@ class _AdminManageMaterialsScreenState extends State<AdminManageMaterialsScreen>
   }
 
   Future<void> _loadMaterials() async {
+    // Try cache first
+    final cached = await CacheService.loadMaterialsList();
+    if (cached != null) {
+      if (mounted) {
+        setState(() {
+          _allMaterials = cached;
+          _filteredMaterials = cached;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
-    
+
     try {
       final materials = await _constructionService.getMaterials();
-      
+
+      await CacheService.saveMaterialsList(materials);
+
       if (mounted) {
         setState(() {
           _allMaterials = materials;
@@ -132,6 +148,7 @@ class _AdminManageMaterialsScreenState extends State<AdminManageMaterialsScreen>
               backgroundColor: Colors.green,
             ),
           );
+          await CacheService.clearMaterialsList();
           _loadMaterials(); // Reload list
         } else {
           ScaffoldMessenger.of(context).showSnackBar(

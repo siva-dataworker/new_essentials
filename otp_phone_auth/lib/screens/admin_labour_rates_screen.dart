@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/budget_management_service.dart';
+import '../services/cache_service.dart';
 import 'admin_local_labour_rates_screen.dart';
 
 class AdminLabourRatesScreen extends StatefulWidget {
@@ -27,14 +28,10 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
     _loadRates();
   }
 
-  Future<void> _loadRates() async {
-    setState(() => _isLoading = true);
-    final allRates = await _budgetService.getLabourRates('global');
-
+  void _parseAndSetRates(List<dynamic> allRates) {
     // API now returns all 12 types — admin-set rate or canonical default
     final Map<String, double?> merged = {};
     final Map<String, String?> names = {};
-
     final Map<String, double> effective = {};
     for (final r in allRates) {
       final type = r['labour_type'] as String?;
@@ -47,12 +44,33 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
         if (isAdminSet && setBy != null) names[type] = setBy;
       }
     }
+    _rates = merged;
+    _effectiveRates = effective;
+    _setByNames = names;
+  }
+
+  Future<void> _loadRates() async {
+    // Try cache first
+    final cached = await CacheService.loadLabourRates();
+    if (cached != null) {
+      final cachedRates = cached['rates'] as List<dynamic>? ?? [];
+      if (mounted) {
+        setState(() {
+          _parseAndSetRates(cachedRates);
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final allRates = await _budgetService.getLabourRates('global');
+
+    await CacheService.saveLabourRates({'rates': allRates});
 
     if (mounted) {
       setState(() {
-        _rates = merged;
-        _effectiveRates = effective;
-        _setByNames = names;
+        _parseAndSetRates(allRates);
         _isLoading = false;
       });
     }
@@ -222,6 +240,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
               backgroundColor: const Color(0xFF4CAF50),
             ),
           );
+          await CacheService.clearLabourRates();
           await _loadRates();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -424,6 +443,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
               backgroundColor: const Color(0xFF4CAF50),
             ),
           );
+          await CacheService.clearLabourRates();
           await _loadRates();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -578,6 +598,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
               backgroundColor: const Color(0xFF4CAF50),
             ),
           );
+          await CacheService.clearLabourRates();
           await _loadRates();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/construction_service.dart';
+import '../services/cache_service.dart';
 
 class AdminAllWorkingSitesScreen extends StatefulWidget {
   const AdminAllWorkingSitesScreen({super.key});
@@ -36,27 +37,45 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
   }
 
   Future<void> _loadWorkingSites() async {
-    print('🔍 [ADMIN] Loading working sites...');
-    setState(() => _isLoading = true);
-    
+    // Try cache first
+    final cached = await CacheService.loadAllWorkingSites();
+    if (cached != null && mounted) {
+      // Extract unique areas from cached data
+      final areas = cached.map((s) => s['area']?.toString() ?? '').where((a) => a.isNotEmpty).toSet().toList();
+      areas.sort();
+      setState(() {
+        _allWorkingSites = cached;
+        _availableAreas = areas;
+        _isLoading = false;
+      });
+      _applyFilters();
+      return;
+    }
+
+    if (mounted) setState(() => _isLoading = true);
+
     try {
       final result = await _constructionService.getWorkingSites();
-      
+
       print('🔍 [ADMIN] API Response: $result');
-      
+
       if (result['success'] == true && mounted) {
         final sites = List<Map<String, dynamic>>.from(result['sites'] ?? []);
         print('✅ [ADMIN] Loaded ${sites.length} working sites');
-        
+
+        await CacheService.saveAllWorkingSites(sites);
+
         // Extract unique areas and streets
         final areas = sites.map((s) => s['area']?.toString() ?? '').where((a) => a.isNotEmpty).toSet().toList();
         areas.sort();
-        
-        setState(() {
-          _allWorkingSites = sites;
-          _filteredSites = sites;
-          _availableAreas = areas;
-        });
+
+        if (mounted) {
+          setState(() {
+            _allWorkingSites = sites;
+            _availableAreas = areas;
+          });
+          _applyFilters();
+        }
       } else {
         print('❌ [ADMIN] Error: ${result['error']}');
         if (mounted) {
@@ -74,6 +93,60 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading working sites: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// Bypasses cache — called by pull-to-refresh and the refresh icon button.
+  Future<void> _refreshWorkingSites() async {
+    if (mounted) setState(() => _isLoading = true);
+
+    try {
+      final result = await _constructionService.getWorkingSites();
+
+      print('🔍 [ADMIN] Refresh API Response: $result');
+
+      if (result['success'] == true && mounted) {
+        final sites = List<Map<String, dynamic>>.from(result['sites'] ?? []);
+        print('✅ [ADMIN] Refreshed ${sites.length} working sites');
+
+        await CacheService.saveAllWorkingSites(sites);
+
+        // Extract unique areas and streets
+        final areas = sites.map((s) => s['area']?.toString() ?? '').where((a) => a.isNotEmpty).toSet().toList();
+        areas.sort();
+
+        if (mounted) {
+          setState(() {
+            _allWorkingSites = sites;
+            _availableAreas = areas;
+          });
+          _applyFilters();
+        }
+      } else {
+        print('❌ [ADMIN] Refresh Error: ${result['error']}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${result['error'] ?? 'Failed to refresh working sites'}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ [ADMIN] Refresh Exception: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error refreshing working sites: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -158,7 +231,7 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadWorkingSites,
+            onPressed: _refreshWorkingSites,
             tooltip: 'Refresh',
           ),
         ],
@@ -389,7 +462,7 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                         ),
                       )
                     : RefreshIndicator(
-                        onRefresh: _loadWorkingSites,
+                        onRefresh: _refreshWorkingSites,
                         color: const Color(0xFF1A1A2E),
                         child: ListView.separated(
                           padding: const EdgeInsets.all(16),
