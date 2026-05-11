@@ -2182,7 +2182,13 @@ class _PhotoTabsSectionState extends State<PhotoTabsSection>
   }
 
   Widget _buildPhotoCard(Map<String, dynamic> photo, {required bool isSupervisor}) {
-    final imageUrl = photo['image_url'] ?? '';
+    final rawUrl = photo['image_url'] as String? ?? '';
+    // Build full URL — relative paths need the VPS base URL prepended
+    final imageUrl = rawUrl.startsWith('http')
+        ? rawUrl
+        : rawUrl.isNotEmpty
+            ? 'http://187.127.164.22$rawUrl'
+            : '';
     final uploadDate = photo['upload_date'] ?? photo['update_date'] ?? '';
     final timeOfDay = photo['time_of_day'] ?? '';
     final updateType = photo['update_type'] ?? '';
