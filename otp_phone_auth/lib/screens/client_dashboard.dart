@@ -117,15 +117,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
           onDateFilter: _loadPhotos,
         );
       case 1:
-        return ClientMaterialsTab(
-          materialsData: _materialsData,
-          onRefresh: _loadMaterials,
-        );
-      case 2:
         return ClientDesignsTab(siteData: _siteData, onRefresh: _loadSiteData);
-      case 3:
+      case 2:
         return ClientIssuesTab(siteData: _siteData, onRefresh: _loadSiteData);
-      case 4:
+      case 3:
         return ClientProfileTab(
           userName: _userName,
           siteId: _currentSiteId,
@@ -154,10 +149,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(Icons.timeline, 'Progress', 0),
-              _buildNavItem(Icons.inventory_2, 'Materials', 1),
-              _buildNavItem(Icons.architecture, 'Designs', 2),
-              _buildNavItem(Icons.report_problem, 'Issues', 3),
-              _buildNavItem(Icons.person, 'Profile', 4),
+              _buildNavItem(Icons.architecture, 'Designs', 1),
+              _buildNavItem(Icons.report_problem, 'Issues', 2),
+              _buildNavItem(Icons.person, 'Profile', 3),
             ],
           ),
         ),
@@ -436,115 +430,157 @@ class ClientProgressTab extends StatelessWidget {
   }
 
   Widget _buildTimeline(BuildContext context) {
-    // Use photosData if available, otherwise fall back to siteData
-    final Map<String, List<dynamic>> photosByDate;
-    
+    // Collect all photos into a flat list sorted newest first
+    final List<Map<String, dynamic>> allPhotos = [];
+
     if (photosData != null && photosData!['photos_by_date'] != null) {
-      // Using new API with photos grouped by date
       final photosMap = Map<String, dynamic>.from(photosData!['photos_by_date'] as Map);
-      photosByDate = photosMap.map((key, value) => MapEntry(key, List<dynamic>.from(value as List)));
-    } else {
-      // Fallback to old structure from siteData
-      final sites = siteData?['sites'] as List? ?? [];
-      if (sites.isEmpty) {
-        return _buildEmptyState();
-      }
-      
-      final photos = sites[0]['photos'] as List? ?? [];
-      if (photos.isEmpty) {
-        return _buildEmptyState();
-      }
-      
-      // Group photos by date manually
-      photosByDate = {};
-      for (final photo in photos) {
-        final date = photo['uploaded_date'] ?? '';
-        if (!photosByDate.containsKey(date)) {
-          photosByDate[date] = [];
+      for (final entry in photosMap.entries) {
+        for (final p in (entry.value as List)) {
+          allPhotos.add({...Map<String, dynamic>.from(p as Map), 'uploaded_date': entry.key});
         }
-        photosByDate[date]!.add(photo);
+      }
+    } else {
+      final sites = siteData?['sites'] as List? ?? [];
+      if (sites.isNotEmpty) {
+        final photos = sites[0]['photos'] as List? ?? [];
+        for (final p in photos) {
+          allPhotos.add(Map<String, dynamic>.from(p as Map));
+        }
       }
     }
 
-    if (photosByDate.isEmpty) {
+    // Sort newest first
+    allPhotos.sort((a, b) {
+      final da = a['uploaded_date'] as String? ?? '';
+      final db = b['uploaded_date'] as String? ?? '';
+      return db.compareTo(da);
+    });
+
+    if (allPhotos.isEmpty) {
       return _buildEmptyState();
     }
 
-    final sortedDates = photosByDate.keys.toList()..sort((a, b) => b.compareTo(a));
-
     return Column(
-      children: sortedDates.map((date) {
-        final dayPhotos = photosByDate[date]!;
-        final morning = dayPhotos.where((p) => (p['time_of_day'] as String? ?? '').toLowerCase() == 'morning').toList();
-        final evening = dayPhotos.where((p) => (p['time_of_day'] as String? ?? '').toLowerCase() == 'evening').toList();
+      children: allPhotos.map((photo) => _buildInstaPost(context, photo)).toList(),
+    );
+  }
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.deepNavy.withOpacity(0.05),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+  Widget _buildInstaPost(BuildContext context, Map<String, dynamic> photo) {
+    final imageUrl = ConstructionService.getFullImageUrl(
+        photo['photo_url'] ?? photo['image_url'] ?? '');
+    final uploadedBy = photo['uploaded_by'] as String? ?? 'Unknown';
+    final role = photo['uploaded_by_role'] as String? ?? '';
+    final timeOfDay = (photo['time_of_day'] as String? ?? '').toLowerCase();
+    final date = photo['uploaded_date'] as String? ?? '';
+
+    final isEvening = timeOfDay == 'evening';
+    final timeLabel = isEvening ? '🌙 Evening' : '☀️ Morning';
+    final timeColor = isEvening ? Colors.indigo : Colors.orange;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 1),
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header (like Instagram post header) ──
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: AppColors.deepNavy.withValues(alpha: 0.1),
+                  child: Icon(
+                    role == 'Supervisor' ? Icons.person : Icons.engineering,
+                    size: 18,
+                    color: AppColors.deepNavy,
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.calendar_today, size: 18, color: AppColors.deepNavy),
-                    const SizedBox(width: 8),
-                    Text(
-                      _formatDate(date),
-                      style: const TextStyle(
-                        fontSize: 16,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        uploadedBy,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.deepNavy,
+                        ),
+                      ),
+                      Text(
+                        role.isNotEmpty ? role : 'Site Team',
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.grey.shade500),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: timeColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: timeColor.withValues(alpha: 0.4)),
+                  ),
+                  child: Text(
+                    timeLabel,
+                    style: TextStyle(
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.deepNavy,
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.statusCompleted,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${dayPhotos.length} ${dayPhotos.length == 1 ? 'photo' : 'photos'}',
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
+                        color: timeColor),
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildPhotoCard(context, 'Morning', morning.isNotEmpty ? morning[0] : null),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildPhotoCard(context, 'Evening', evening.isNotEmpty ? evening[0] : null),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        );
-      }).toList(),
+
+          // ── Full-width photo ──
+          GestureDetector(
+            onTap: imageUrl.isNotEmpty
+                ? () => _showFullscreenImage(context, photo)
+                : null,
+            child: imageUrl.isNotEmpty
+                ? Image.network(
+                    imageUrl,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 200,
+                      color: Colors.grey.shade100,
+                      child: const Center(
+                          child: Icon(Icons.broken_image,
+                              size: 48, color: Colors.grey)),
+                    ),
+                  )
+                : Container(
+                    height: 200,
+                    color: Colors.grey.shade100,
+                    child: const Center(
+                        child: Icon(Icons.photo_camera,
+                            size: 48, color: Colors.grey)),
+                  ),
+          ),
+
+          // ── Date caption ──
+          if (date.isNotEmpty)
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Text(
+                date,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              ),
+            ),
+
+          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+        ],
+      ),
     );
   }
 
@@ -570,97 +606,9 @@ class ClientProgressTab extends StatelessWidget {
     );
   }
 
-  Widget _buildPhotoCard(BuildContext context, String label, Map<String, dynamic>? photo) {
-    return GestureDetector(
-      onTap: photo != null ? () => _showFullscreenImage(context, photo) : null,
-      child: Container(
-        height: 180,
-        decoration: BoxDecoration(
-          color: AppColors.lightSlate,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.deepNavy.withOpacity(0.1)),
-        ),
-        child: photo != null
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.network(
-                      ConstructionService.getFullImageUrl(photo['photo_url']),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 48),
-                    ),
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          label,
-                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                    if (photo['uploaded_by_role'] != null)
-                      Positioned(
-                        bottom: 8,
-                        left: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                photo['uploaded_by_role'] == 'Supervisor' 
-                                    ? Icons.person 
-                                    : Icons.engineering,
-                                color: Colors.white,
-                                size: 12,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  '${photo['uploaded_by']} (${photo['uploaded_by_role']})',
-                                  style: const TextStyle(color: Colors.white, fontSize: 10),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              )
-            : Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.photo_camera, size: 32, color: Colors.grey[400]),
-                    const SizedBox(height: 8),
-                    Text(
-                      'No $label photo',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ),
-      ),
-    );
-  }
-
   void _showFullscreenImage(BuildContext context, Map<String, dynamic> photo) {
-    final imageUrl = ConstructionService.getFullImageUrl(photo['photo_url']);
+    final imageUrl = ConstructionService.getFullImageUrl(
+        photo['photo_url'] ?? photo['image_url'] ?? '');
     final uploadedBy = photo['uploaded_by'] as String? ?? 'Unknown';
     final role = photo['uploaded_by_role'] as String? ?? '';
     final timeOfDay = photo['time_of_day'] as String? ?? '';
@@ -1627,115 +1575,6 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
                     ],
                   ),
                 ),
-                
-                // Budget Allocation Section
-                if (widget.siteId != null) ...[
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppColors.deepNavy.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.account_balance_wallet,
-                                color: AppColors.deepNavy,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Budget Allocation',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.deepNavy,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        if (_isLoadingBudget)
-                          const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(24.0),
-                              child: CircularProgressIndicator(),
-                            ),
-                          )
-                        else if (_budgetAllocation == null)
-                          const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(24.0),
-                              child: Column(
-                                children: [
-                                  Icon(Icons.account_balance_wallet_outlined, 
-                                    size: 48, color: Colors.grey),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'No budget allocated yet',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        else ...[
-                          _buildBudgetCard(
-                            'Total Budget',
-                            _formatCurrency(_budgetAllocation!['total_budget']),
-                            Icons.account_balance_wallet,
-                            Colors.blue,
-                          ),
-                          const SizedBox(height: 12),
-                          if (_budgetAllocation!['material_budget'] != null)
-                            _buildBudgetCard(
-                              'Material Budget',
-                              _formatCurrency(_budgetAllocation!['material_budget']),
-                              Icons.inventory_2,
-                              Colors.brown,
-                            ),
-                          const SizedBox(height: 12),
-                          if (_budgetAllocation!['labour_budget'] != null)
-                            _buildBudgetCard(
-                              'Labour Budget',
-                              _formatCurrency(_budgetAllocation!['labour_budget']),
-                              Icons.people,
-                              AppColors.safetyOrange,
-                            ),
-                          const SizedBox(height: 12),
-                          if (_budgetAllocation!['other_budget'] != null)
-                            _buildBudgetCard(
-                              'Other Budget',
-                              _formatCurrency(_budgetAllocation!['other_budget']),
-                              Icons.more_horiz,
-                              Colors.purple,
-                            ),
-                          const SizedBox(height: 16),
-                          const Divider(),
-                          const SizedBox(height: 8),
-                          _buildDetailRow('Status', _budgetAllocation!['status'] ?? 'N/A'),
-                          _buildDetailRow('Allocated Date', 
-                            _budgetAllocation!['allocated_date']?.substring(0, 10) ?? 'N/A'),
-                          if (_budgetAllocation!['notes'] != null && 
-                              _budgetAllocation!['notes'].toString().isNotEmpty)
-                            _buildDetailRow('Notes', _budgetAllocation!['notes']),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
                 
                 const SizedBox(height: 24),
                 _buildLogoutButton(context),
