@@ -1384,10 +1384,8 @@ def get_supervisor_history(request):
         base_conditions = "WHERE (l.is_modified = FALSE OR l.is_modified IS NULL)"
         params = []
         
-        # Filter by user for Supervisor/Site Engineer (but not for Accountant)
-        if user_role in ['Supervisor', 'Site Engineer']:
-            base_conditions += " AND l.supervisor_id = %s"
-            params.append(user_id)
+        # All roles (Supervisor, Site Engineer, Accountant) see ALL entries for the site
+        # No user_id filter — history is shared across all supervisors/engineers
         
         # Add site filter if provided
         if site_id:
@@ -5150,10 +5148,10 @@ def submit_material_requirement(request):
         user_id = request.user['user_id']
         user_role = request.user.get('role', '')
         
-        # Only supervisors can submit material requirements
-        if user_role != 'Supervisor':
+        # Allow supervisors and site engineers to submit material requirements
+        if user_role not in ['Supervisor', 'Site Engineer']:
             return Response({
-                'error': 'Only supervisors can submit material requirements'
+                'error': 'Only supervisors and site engineers can submit material requirements'
             }, status=status.HTTP_403_FORBIDDEN)
         
         site_id = request.data.get('site_id')

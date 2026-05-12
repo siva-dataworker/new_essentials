@@ -86,7 +86,7 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
   String? _userId; // Store user ID for cache key
   String get _siteId => widget.site['id'].toString();
   String get _cacheKey =>
-      '${_userId ?? 'unknown'}_${_siteId}_${_selectedDate.toIso8601String().split('T')[0]}';
+      '${_siteId}_${_selectedDate.toIso8601String().split('T')[0]}';
 
   // Dropdown functionality
   final Set<String> _expandedDates = {};
@@ -365,6 +365,19 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('OK'),
           ),
+          if (entries.isNotEmpty)
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                _openHistory();
+              },
+              icon: const Icon(Icons.history, size: 16),
+              label: const Text('View History'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange.shade700,
+                foregroundColor: Colors.white,
+              ),
+            ),
         ],
       ),
     );
