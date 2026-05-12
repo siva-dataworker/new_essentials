@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 import '../utils/app_colors.dart';
 import 'role_selection_screen.dart';
@@ -19,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -44,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen>
     // Navigate to role selection after splash
     Timer(const Duration(milliseconds: 2000), () async {
       if (!mounted) return;
-      
+
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) => const RoleSelectionScreen(),
@@ -100,7 +101,7 @@ class _SplashScreenState extends State<SplashScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Spacer(flex: 2),
-                
+
                 // Animated Logo
                 FadeTransition(
                   opacity: _fadeAnimation,
@@ -109,43 +110,43 @@ class _SplashScreenState extends State<SplashScreen>
                     child: _buildLogo(),
                   ),
                 ),
-                
-                const SizedBox(height: 32),
-                
+
+                SizedBox(height: 32.h),
+
                 // App Name
                 FadeTransition(
                   opacity: _fadeAnimation,
-                  child: const Text(
+                  child: Text(
                     'Essential Homes',
                     style: TextStyle(
-                      fontSize: 32,
+                      fontSize: 32.sp,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       letterSpacing: 1.2,
                     ),
                   ),
                 ),
-                
-                const SizedBox(height: 16),
-                
+
+                SizedBox(height: 16.h),
+
                 // Loading Progress
                 FadeTransition(
                   opacity: _fadeAnimation,
                   child: Column(
                     children: [
-                      const Text(
+                      Text(
                         'Building the Future',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16.sp,
                           color: Colors.white70,
                           letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24.h),
                       SizedBox(
-                        width: 200,
+                        width: 200.w,
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(10.r),
                           child: const LinearProgressIndicator(
                             backgroundColor: Colors.white24,
                             valueColor: AlwaysStoppedAnimation<Color>(
@@ -158,18 +159,18 @@ class _SplashScreenState extends State<SplashScreen>
                     ],
                   ),
                 ),
-                
+
                 const Spacer(flex: 3),
-                
+
                 // Footer
                 FadeTransition(
                   opacity: _fadeAnimation,
-                  child: const Padding(
-                    padding: EdgeInsets.only(bottom: 32),
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 32.h),
                     child: Text(
                       'Version 1.0.0',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 12.sp,
                         color: Colors.white54,
                       ),
                     ),
@@ -182,26 +183,24 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
   }
-    
 
-Widget  _buildLogo(){
-return Container(
-                  width: 150,
-                  height: 150,
-                  padding: const EdgeInsets.all(16),
-                
-                  child: Image.asset(
-                    'assets/images/essential_homes_logo.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Fallback to icon if image not found
-                      return const Icon(
-                        Icons.business,
-                        size: 64,
-                        color: AppColors.deepNavy,
-                      );
-                    },
-                  ),
-                );
+  Widget _buildLogo() {
+    return Container(
+      width: 150.w,
+      height: 150.h,
+      padding: EdgeInsets.all(16.r),
+      child: Image.asset(
+        'assets/images/essential_homes_logo.png',
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback to icon if image not found
+          return Icon(
+            Icons.business,
+            size: 64.sp,
+            color: AppColors.deepNavy,
+          );
+        },
+      ),
+    );
+  }
 }
-    }

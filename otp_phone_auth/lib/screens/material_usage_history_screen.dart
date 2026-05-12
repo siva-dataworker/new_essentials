@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/material_provider.dart';
 import '../utils/app_colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class MaterialUsageHistoryScreen extends StatefulWidget {
   final String siteId;
@@ -103,8 +104,8 @@ class _MaterialUsageHistoryScreenState extends State<MaterialUsageHistoryScreen>
             const Text('Usage History'),
             Text(
               widget.materialType,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.normal,
               ),
             ),
@@ -124,19 +125,19 @@ class _MaterialUsageHistoryScreenState extends State<MaterialUsageHistoryScreen>
                 children: [
                   Icon(
                     Icons.history,
-                    size: 64,
+                    size: 64.sp,
                     color: AppColors.mediumGray,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   Text(
                     'No Usage History',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   Text(
                     'No usage records found for this material.',
                     style: TextStyle(
@@ -151,7 +152,7 @@ class _MaterialUsageHistoryScreenState extends State<MaterialUsageHistoryScreen>
           return RefreshIndicator(
             onRefresh: _loadHistory,
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               itemCount: _groupedHistory.length,
               itemBuilder: (context, index) {
                 final date = _groupedHistory.keys.elementAt(index);
@@ -164,14 +165,14 @@ class _MaterialUsageHistoryScreenState extends State<MaterialUsageHistoryScreen>
                 final unit = entries.first['unit'] ?? '';
 
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
+                  margin: EdgeInsets.only(bottom: 12.h),
                   child: Column(
                     children: [
                       // Date Header
                       InkWell(
                         onTap: () => _toggleDate(date),
                         child: Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(16.r),
                           child: Row(
                             children: [
                               // Expand/Collapse Icon
@@ -180,11 +181,11 @@ class _MaterialUsageHistoryScreenState extends State<MaterialUsageHistoryScreen>
                                 duration: const Duration(milliseconds: 200),
                                 child: Icon(
                                   Icons.arrow_forward_ios,
-                                  size: 16,
+                                  size: 16.sp,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12.w),
 
                               // Date
                               Expanded(
@@ -193,16 +194,16 @@ class _MaterialUsageHistoryScreenState extends State<MaterialUsageHistoryScreen>
                                   children: [
                                     Text(
                                       _formatDateHeader(date),
-                                      style: const TextStyle(
-                                        fontSize: 16,
+                                      style: TextStyle(
+                                        fontSize: 16.sp,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: 4.h),
                                     Text(
                                       '${entries.length} ${entries.length == 1 ? 'entry' : 'entries'}',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 12.sp,
                                         color: AppColors.textSecondary,
                                       ),
                                     ),
@@ -216,15 +217,15 @@ class _MaterialUsageHistoryScreenState extends State<MaterialUsageHistoryScreen>
                                 children: [
                                   Text(
                                     '${totalUsed.toStringAsFixed(1)} $unit',
-                                    style: const TextStyle(
-                                      fontSize: 16,
+                                    style: TextStyle(
+                                      fontSize: 16.sp,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   Text(
                                     'Total Used',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 12.sp,
                                       color: AppColors.textSecondary,
                                     ),
                                   ),
@@ -270,18 +271,18 @@ class _MaterialUsageHistoryScreenState extends State<MaterialUsageHistoryScreen>
                               }
 
                               return Container(
-                                padding: const EdgeInsets.all(16),
+                                padding: EdgeInsets.all(16.r),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     // Time
                                     if (timeStr.isNotEmpty)
-                                      Container(
-                                        width: 70,
+                                      SizedBox(
+                                        width: 70.w,
                                         child: Text(
                                           timeStr,
                                           style: TextStyle(
-                                            fontSize: 12,
+                                            fontSize: 12.sp,
                                             color: AppColors.textSecondary,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -297,10 +298,10 @@ class _MaterialUsageHistoryScreenState extends State<MaterialUsageHistoryScreen>
                                             children: [
                                               Icon(
                                                 Icons.person_outline,
-                                                size: 16,
+                                                size: 16.sp,
                                                 color: AppColors.textSecondary,
                                               ),
-                                              const SizedBox(width: 4),
+                                              SizedBox(width: 4.w),
                                               Expanded(
                                                 child: Text(
                                                   supervisorName,
@@ -312,11 +313,11 @@ class _MaterialUsageHistoryScreenState extends State<MaterialUsageHistoryScreen>
                                             ],
                                           ),
                                           if (notes != null && notes.isNotEmpty) ...[
-                                            const SizedBox(height: 4),
+                                            SizedBox(height: 4.h),
                                             Text(
                                               notes,
                                               style: TextStyle(
-                                                fontSize: 12,
+                                                fontSize: 12.sp,
                                                 color: AppColors.textSecondary,
                                               ),
                                             ),
@@ -327,13 +328,13 @@ class _MaterialUsageHistoryScreenState extends State<MaterialUsageHistoryScreen>
 
                                     // Quantity
                                     Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 12.w,
+                                        vertical: 6.h,
                                       ),
                                       decoration: BoxDecoration(
                                         color: Colors.white,
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(8.r),
                                         border: Border.all(color: AppColors.mediumGray),
                                       ),
                                       child: Text(

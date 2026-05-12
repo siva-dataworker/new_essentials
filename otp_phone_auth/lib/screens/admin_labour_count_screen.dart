@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_provider.dart';
 import '../utils/smooth_animations.dart';
@@ -37,11 +38,12 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FA),
           appBar: AppBar(
-            title: const Text(
+            title: Text(
               'Labour Count View',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
+                fontSize: 18.sp,
               ),
             ),
             backgroundColor: const Color(0xFF1A1A2E),
@@ -74,7 +76,7 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
 
   Widget _buildSiteSelector(AdminProvider adminProvider) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
@@ -85,36 +87,36 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Select Site',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14.sp,
               fontWeight: FontWeight.bold,
               color: Colors.white70,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
             ),
             child: DropdownButtonFormField<String>(
               value: _selectedSiteId,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: const BorderSide(color: Color(0xFF1A1A2E), width: 2),
                 ),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16.w,
+                  vertical: 12.h,
                 ),
               ),
               hint: const Text('Choose a site'),
@@ -139,19 +141,19 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
 
   Widget _buildLabourList(AdminProvider adminProvider) {
     final isLoadingLabour = adminProvider.isLoading('labour_${_selectedSiteId ?? ''}');
-    
+
     if (adminProvider.isLoadingSites) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFF1A1A2E)),
       );
     }
-    
+
     if (isLoadingLabour) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFF1A1A2E)),
       );
     }
-    
+
     if (_selectedSiteId == null) {
       return Center(
         child: Column(
@@ -159,14 +161,14 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
           children: [
             Icon(
               Icons.people_outline,
-              size: 80,
+              size: 80.sp,
               color: Colors.grey.withValues(alpha: 0.5),
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 16.h),
+            Text(
               'Select a site to view labour count',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 16.sp,
                 color: Colors.grey,
               ),
             ),
@@ -174,7 +176,7 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
         ),
       );
     }
-    
+
     if (_labourData.isEmpty) {
       return Center(
         child: Column(
@@ -182,14 +184,14 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
           children: [
             Icon(
               Icons.people_outline,
-              size: 80,
+              size: 80.sp,
               color: Colors.grey.withValues(alpha: 0.5),
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 16.h),
+            Text(
               'No labour data available',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 16.sp,
                 color: Colors.grey,
               ),
             ),
@@ -197,13 +199,13 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
         ),
       );
     }
-    
+
     return RefreshIndicator(
       onRefresh: () => _loadLabourData(adminProvider, _selectedSiteId!),
       color: const Color(0xFF1A1A2E),
       child: ListView.builder(
         physics: const SmoothScrollPhysics(),
-                              padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         itemCount: _labourData.length,
         itemBuilder: (context, index) {
           final entry = _labourData[index];
@@ -215,11 +217,11 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
 
   Widget _buildLabourCard(Map<String, dynamic> entry) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -231,35 +233,35 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12.r),
             decoration: BoxDecoration(
               color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8.r),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.people,
-              color: Color(0xFF4CAF50),
-              size: 28,
+              color: const Color(0xFF4CAF50),
+              size: 28.sp,
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   entry['report_date'] ?? 'N/A',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A2E),
+                    color: const Color(0xFF1A1A2E),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   'Entered by: ${entry['entered_by'] ?? 'Unknown'}',
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     color: Colors.grey,
                   ),
                 ),
@@ -267,15 +269,15 @@ class _AdminLabourCountScreenState extends State<AdminLabourCountScreen> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A2E),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(14.r),
             ),
             child: Text(
               '${entry['labour_count']} Workers',
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),

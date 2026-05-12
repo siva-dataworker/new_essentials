@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -440,9 +441,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24.r),
           constraints: const BoxConstraints(maxHeight: 600, maxWidth: 500),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -450,8 +451,8 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 32),
-                  const SizedBox(width: 12),
+                  Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 32.sp),
+                  SizedBox(width: 12.w),
                   const Expanded(
                     child: Text(
                       'Labor Entry Mismatches',
@@ -468,18 +469,18 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Text(
                 'Found $_totalMismatches mismatches between Supervisor and Site Engineer entries across all sites',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24.h),
               if (summary.isNotEmpty) ...[
-                const Text(
+                Text(
                   'Summary by Site:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 Expanded(
                   child: ListView.builder(
                     shrinkWrap: true,
@@ -487,7 +488,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                     itemBuilder: (context, index) {
                       final site = summary[index];
                       return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
+                        margin: EdgeInsets.only(bottom: 12.h),
                         child: ListTile(
                           leading: const Icon(Icons.location_on, color: Colors.orange),
                           title: Text(
@@ -498,10 +499,10 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                             '${site['total_mismatches']} mismatches on ${(site['dates_with_mismatches'] as List).length} days',
                           ),
                           trailing: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                             decoration: BoxDecoration(
                               color: Colors.red,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(12.r),
                             ),
                             child: Text(
                               '${site['total_mismatches']}',
@@ -521,18 +522,18 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   child: Text('No mismatches found'),
                 ),
               ],
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.deepNavy,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: 16.h),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
-                child: const Text('Close', style: TextStyle(fontSize: 16)),
+                child: Text('Close', style: TextStyle(fontSize: 16.sp)),
               ),
             ],
           ),
@@ -580,12 +581,12 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
           // Mismatch Warning Icon
           if (_totalMismatches > 0)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: EdgeInsets.only(right: 8.w),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                    icon: Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28.sp),
                     tooltip: 'Labor Entry Mismatches',
                     onPressed: () {
                       print('🔍 [DASHBOARD BUTTON] Warning icon clicked!');
@@ -597,7 +598,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                     top: 0,
                     child: IgnorePointer(
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: EdgeInsets.all(4.r),
                         decoration: const BoxDecoration(
                           color: Colors.red,
                           shape: BoxShape.circle,
@@ -608,9 +609,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                         ),
                         child: Text(
                           '$_totalMismatches',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: 10.sp,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
@@ -680,7 +681,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     final workingSitesCount = _workingSitesCount;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -691,9 +692,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               children: [
                 _buildRoleChip('All', _selectedLabourRole == null,
                     () => setState(() => _selectedLabourRole = null)),
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 ..._labourRoles.map((role) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: EdgeInsets.only(right: 8.w),
                       child: _buildRoleChip(
                         role,
                         _selectedLabourRole == role,
@@ -704,7 +705,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           
           // Date and Site Filters
           Row(
@@ -726,7 +727,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   },
                   icon: Icon(
                     Icons.calendar_today,
-                    size: 18,
+                    size: 18.sp,
                     color: _selectedDate != null ? AppColors.safetyOrange : AppColors.textSecondary,
                   ),
                   label: Text(
@@ -734,7 +735,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                         ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
                         : 'All Dates',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 13.sp,
                       color: _selectedDate != null ? AppColors.safetyOrange : AppColors.textSecondary,
                     ),
                   ),
@@ -747,33 +748,33 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 ),
               ),
               if (_selectedDate != null) ...[
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 IconButton(
                   onPressed: () {
                     setState(() => _selectedDate = null);
                     _fetchCashEntriesSummary(); // refresh confirmed salary (all dates)
                   },
-                  icon: const Icon(Icons.clear, size: 20),
+                  icon: Icon(Icons.clear, size: 20.sp),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
               ],
-              const SizedBox(width: 12),
-              
+              SizedBox(width: 12.w),
+
               // Site Filter Dropdown
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: _selectedSiteId,
                   decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                       borderSide: BorderSide(
                         color: _selectedSiteId != null ? AppColors.safetyOrange : AppColors.lightSlate,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                       borderSide: BorderSide(
                         color: _selectedSiteId != null ? AppColors.safetyOrange : AppColors.lightSlate,
                       ),
@@ -781,17 +782,17 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                     filled: _selectedSiteId != null,
                     fillColor: _selectedSiteId != null ? AppColors.safetyOrange.withValues(alpha: 0.1) : null,
                   ),
-                  hint: const Text('All Sites', style: TextStyle(fontSize: 13)),
+                  hint: Text('All Sites', style: TextStyle(fontSize: 13.sp)),
                   items: [
-                    const DropdownMenuItem<String>(
+                    DropdownMenuItem<String>(
                       value: null,
-                      child: Text('All Sites', style: TextStyle(fontSize: 13)),
+                      child: Text('All Sites', style: TextStyle(fontSize: 13.sp)),
                     ),
                     ..._sites.map((site) => DropdownMenuItem<String>(
                       value: site['id'].toString(),
                       child: Text(
                         '${site['customer_name']} - ${site['site_name']}',
-                        style: const TextStyle(fontSize: 13),
+                        style: TextStyle(fontSize: 13.sp),
                         overflow: TextOverflow.ellipsis,
                       ),
                     )).toList(),
@@ -806,19 +807,19 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          
+          SizedBox(height: 16.h),
+
           // Summary Cards
-          const Text(
+          Text(
             'Overview',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 20.sp,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF1A1A2E),
             ),
           ),
-          const SizedBox(height: 16),
-          
+          SizedBox(height: 16.h),
+
           Row(
             children: [
               Expanded(
@@ -829,7 +830,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   color: const Color(0xFF4CAF50),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: SummaryCard(
                   title: 'Material Entries',
@@ -840,9 +841,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               ),
             ],
           ),
-          
-          const SizedBox(height: 12),
-          
+
+          SizedBox(height: 12.h),
+
           Row(
             children: [
               Expanded(
@@ -853,7 +854,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   color: const Color(0xFF1A1A2E),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: SummaryCard(
                   title: 'Working Sites',
@@ -864,9 +865,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               ),
             ],
           ),
-          
-          const SizedBox(height: 12),
-          
+
+          SizedBox(height: 12.h),
+
           // Confirmed Total Salary Card (Full Width)
           // Shows only accountant-confirmed (cash entry) amounts
           SummaryCard(
@@ -880,20 +881,20 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
           // Per-site salary breakdown (only when no specific site is selected)
           if (_selectedSiteId == null && _cashBySite.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20.h),
+            Text(
               'Confirmed Salary By Site',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 16.sp,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF1A1A2E),
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10.h),
             ..._cashBySite.map((site) => _buildSiteSalaryRow(site)),
           ],
 
-          const SizedBox(height: 80), // Space for FAB
+          SizedBox(height: 80.h), // Space for FAB
         ],
       ),
     );
@@ -904,25 +905,25 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     final total = (site['total_cost'] as num?)?.toDouble() ?? 0.0;
     final days = site['days_count'] as int? ?? 0;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: const Color(0xFFE0E0E0)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.location_on_outlined, size: 18, color: Color(0xFFFF9800)),
-          const SizedBox(width: 10),
+          Icon(Icons.location_on_outlined, size: 18.sp, color: Color(0xFFFF9800)),
+          SizedBox(width: 10.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   siteName,
-                  style: const TextStyle(
-                    fontSize: 15,
+                  style: TextStyle(
+                    fontSize: 15.sp,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF1A1A2E),
                   ),
@@ -930,15 +931,15 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 ),
                 Text(
                   '$days day${days == 1 ? '' : 's'} confirmed',
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  style: TextStyle(fontSize: 13.sp, color: Colors.grey),
                 ),
               ],
             ),
           ),
           Text(
             '₹${_formatCurrency(total)}',
-            style: const TextStyle(
-              fontSize: 15,
+            style: TextStyle(
+              fontSize: 15.sp,
               fontWeight: FontWeight.bold,
               color: Color(0xFFFF9800),
             ),
@@ -957,10 +958,10 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
         decoration: BoxDecoration(
           color: selected ? AppColors.deepNavy : const Color(0xFFF8F9FA),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(20.r),
           border: Border.all(
             color: selected
                 ? AppColors.deepNavy : const Color(0xFF1A1A2E).withValues(alpha: 0.2),
@@ -969,7 +970,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 13.sp,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
             color: selected ? Colors.white : const Color(0xFF1A1A2E),
           ),
@@ -991,11 +992,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
     if (filtered.isEmpty) {
       return Container(
-        padding: const EdgeInsets.symmetric(vertical: 24),
+        padding: EdgeInsets.symmetric(vertical: 24.h),
         alignment: Alignment.center,
         child: Text(
           'No ${_selectedLabourRole ?? ''} labour entries found',
-          style: const TextStyle(fontSize: 14, color: const Color(0xFF6B7280)),
+          style: TextStyle(fontSize: 14.sp, color: const Color(0xFF6B7280)),
         ),
       );
     }
@@ -1059,14 +1060,14 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     final formattedDate = _formatDateForDropdown(date);
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 8.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF1A1A2E).withValues(alpha: 0.04),
-            blurRadius: 8,
+            blurRadius: 8.r,
             offset: const Offset(0, 2),
           ),
         ],
@@ -1086,43 +1087,43 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   }
                 });
               },
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: EdgeInsets.all(8.r),
                       decoration: BoxDecoration(
-                        color: isLabour 
+                        color: isLabour
                             ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
                             : const Color(0xFF1A1A2E).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Icon(
                         isLabour ? Icons.people : Icons.inventory_2,
                         color: isLabour ? const Color(0xFF4CAF50) : const Color(0xFF1A1A2E),
-                        size: 20,
+                        size: 20.sp,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             formattedDate,
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF1A1A2E),
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4.h),
                           Text(
                             '${entries.length} ${isLabour ? 'labour' : 'material'} ${entries.length == 1 ? 'entry' : 'entries'}',
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               color: const Color(0xFF6B7280),
                             ),
                           ),
@@ -1134,7 +1135,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                       duration: const Duration(milliseconds: 200),
                       child: const Icon(
                         Icons.keyboard_arrow_down,
-                        color: const Color(0xFF1A1A2E),
+                        color: Color(0xFF1A1A2E),
                       ),
                     ),
                   ],
@@ -1142,20 +1143,20 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               ),
             ),
           ),
-          
+
           // Expandable Content
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             height: isExpanded ? null : 0,
             child: isExpanded ? Container(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
               child: Column(
                 children: [
                   const Divider(height: 1),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   ...entries.map((entry) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: EdgeInsets.only(bottom: 8.h),
                     child: isLabour 
                         ? _buildCompactLabourCard(entry)
                         : _buildCompactMaterialCard(entry),
@@ -1200,10 +1201,10 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     final fullSiteName = '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim();
     
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
         color: const Color(0xFF4CAF50).withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8.r),
         border: Border.all(
           color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
           width: 1,
@@ -1217,17 +1218,17 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               children: [
                 Text(
                   entry['labour_type'] ?? 'Unknown Type',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF1A1A2E),
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2.h),
                 Text(
                   fullSiteName,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     color: const Color(0xFF6B7280),
                   ),
                 ),
@@ -1236,8 +1237,8 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
           ),
           Text(
             '${entry['labour_count'] ?? 0} workers',
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF4CAF50),
             ),
@@ -1249,12 +1250,12 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
   Widget _buildCompactMaterialCard(Map<String, dynamic> entry) {
     final fullSiteName = '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim();
-    
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A2E).withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8.r),
         border: Border.all(
           color: const Color(0xFF1A1A2E).withValues(alpha: 0.2),
           width: 1,
@@ -1268,17 +1269,17 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               children: [
                 Text(
                   entry['material_type'] ?? 'Unknown Type',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF1A1A2E),
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2.h),
                 Text(
                   fullSiteName,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     color: const Color(0xFF6B7280),
                   ),
                 ),
@@ -1287,8 +1288,8 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
           ),
           Text(
             '${entry['quantity'] ?? 0} ${entry['unit'] ?? ''}',
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF1A1A2E),
             ),
@@ -1308,15 +1309,15 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+          title: Row(
             children: [
-              Icon(Icons.edit_outlined, color: const Color(0xFF1A1A2E), size: 22),
-              SizedBox(width: 8),
+              Icon(Icons.edit_outlined, color: const Color(0xFF1A1A2E), size: 22.sp),
+              SizedBox(width: 8.w),
               Text(
                 'Edit Profile',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF1A1A2E),
                 ),
@@ -1333,17 +1334,17 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   controller: nameCtrl,
                   decoration: InputDecoration(
                     labelText: 'Full Name',
-                    prefixIcon: const Icon(Icons.person_outline, color: const Color(0xFF1A1A2E)),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF1A1A2E)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: const Color(0xFF1A1A2E), width: 2),
+                      borderRadius: BorderRadius.circular(12.r),
+                      borderSide: const BorderSide(color: Color(0xFF1A1A2E), width: 2),
                     ),
                   ),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Name is required' : null,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 // Phone field
                 TextFormField(
                   controller: phoneCtrl,
@@ -1352,11 +1353,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: InputDecoration(
                     labelText: 'Phone Number',
-                    prefixIcon: const Icon(Icons.phone_outlined, color: const Color(0xFF1A1A2E)),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.phone_outlined, color: Color(0xFF1A1A2E)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: const Color(0xFF1A1A2E), width: 2),
+                      borderRadius: BorderRadius.circular(12.r),
+                      borderSide: const BorderSide(color: Color(0xFF1A1A2E), width: 2),
                     ),
                     counterText: '',
                   ),
@@ -1372,13 +1373,13 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
           actions: [
             TextButton(
               onPressed: isSaving ? null : () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: const Color(0xFF6B7280))),
+              child: const Text('Cancel', style: TextStyle(color: Color(0xFF6B7280))),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor:const Color(0xFF1A1A2E),
+                backgroundColor: const Color(0xFF1A1A2E),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
               ),
               onPressed: isSaving
                   ? null
@@ -1411,10 +1412,10 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                       );
                     },
               child: isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
+                  ? SizedBox(
+                      width: 18.w,
+                      height: 18.h,
+                      child: const CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
                   : const Text('Save'),
@@ -1465,19 +1466,19 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         title: 'Profile',
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           children: [
             // Profile Header
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24.r),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16.r),
                 boxShadow: [
                   BoxShadow(
                     color: const Color(0xFF1A1A2E).withValues(alpha: 0.04),
-                    blurRadius: 8,
+                    blurRadius: 8.r,
                     offset: const Offset(0, 2),
                   ),
                 ],
@@ -1486,15 +1487,15 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 children: [
                   // Avatar with first letter
                   Container(
-                    width: 80,
-                    height: 80,
+                    width: 80.w,
+                    height: 80.h,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [Color(0xFF1A1A2E), Color(0xFF16213E)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                      gradient: const LinearGradient(colors: [Color(0xFF1A1A2E), Color(0xFF16213E)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
                           color: const Color(0xFF1A1A2E).withValues(alpha: 0.3),
-                          blurRadius: 10,
+                          blurRadius: 10.r,
                           offset: const Offset(0, 4),
                         ),
                       ],
@@ -1504,45 +1505,45 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                         _profileName.isNotEmpty
                             ? _profileName[0].toUpperCase()
                             : 'A',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 32,
+                          fontSize: 32.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
 
                   // Name
                   Text(
                     _profileName,
-                    style: const TextStyle(
-                      fontSize: 20,
+                    style: TextStyle(
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF1A1A2E),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   // Role
                   Text(
                     widget.user.role.displayName,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       color: const Color(0xFF6B7280),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24.h),
 
                   // Info cards
                   _buildSimpleProfileInfo('Email', widget.user.email ?? 'N/A', Icons.email_outlined),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildSimpleProfileInfo('Phone', _profilePhone.isNotEmpty ? _profilePhone : 'N/A', Icons.phone_outlined),
                 ],
               ),
             ),
-            
-            const SizedBox(height: 24),
+
+            SizedBox(height: 24.h),
             
             // Profile Options
             _buildProfileOption(
@@ -1606,31 +1607,31 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               },
             ),
             
-            const SizedBox(height: 24),
-            
+            SizedBox(height: 24.h),
+
             // Logout Button
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
                 border: Border.all(color: Colors.red.shade200),
               ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: _logout,
-                  borderRadius: BorderRadius.circular(12),
-                  child: const Row(
+                  borderRadius: BorderRadius.circular(12.r),
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.logout, color: Colors.red),
-                      SizedBox(width: 8),
+                      const Icon(Icons.logout, color: Colors.red),
+                      SizedBox(width: 8.w),
                       Text(
                         'Logout',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
                           color: Colors.red,
                         ),
@@ -1640,8 +1641,8 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 ),
               ),
             ),
-            
-            const SizedBox(height: 80), // Space for bottom navigation
+
+            SizedBox(height: 80.h), // Space for bottom navigation
           ],
         ),
       ),
@@ -1650,39 +1651,39 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
   Widget _buildSimpleProfileInfo(String title, String value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: const Color(0xFF1A1A2E).withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF1A1A2E).withValues(alpha: 0.05),
-            blurRadius: 8,
+            blurRadius: 8.r,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF1A1A2E), size: 20),
-          const SizedBox(width: 12),
+          Icon(icon, color: const Color(0xFF1A1A2E), size: 20.sp),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     color: const Color(0xFF6B7280),
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2.h),
                 Text(
                   value,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF1A1A2E),
                   ),
@@ -1702,14 +1703,14 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     required VoidCallback onTap,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF1A1A2E).withValues(alpha: 0.04),
-            blurRadius: 8,
+            blurRadius: 8.r,
             offset: const Offset(0, 2),
           ),
         ],
@@ -1718,50 +1719,50 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Icon(
                     icon,
                     color: const Color(0xFF1A1A2E),
-                    size: 20,
+                    size: 20.sp,
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF1A1A2E),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text(
                         subtitle,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14.sp,
                           color: const Color(0xFF6B7280),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.arrow_forward_ios,
-                  size: 16,
+                  size: 16.sp,
                   color: const Color(0xFF6B7280),
                 ),
               ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'phone_auth_screen.dart';
 import 'profile_form_screen.dart';
 
@@ -10,7 +11,7 @@ class HomeScreen extends StatefulWidget {
 
   const HomeScreen({
     super.key,
-    
+
     this.name,
     this.age,
     this.email,
@@ -22,7 +23,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
   Future<void> _signOut(BuildContext context) async {
     // Mock sign out
     if (context.mounted) {
@@ -62,16 +62,16 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.all(24.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Icon(
+            Icon(
               Icons.check_circle,
-              size: 80,
+              size: 80.sp,
               color: Colors.green,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
             Text(
               'Welcome, ${widget.name ?? 'User'}! 👋',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -79,23 +79,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            
+            SizedBox(height: 32.h),
+
             // Profile Card
             Card(
               elevation: 4,
               child: Padding(
-                padding: const EdgeInsets.all(20.0),
+                padding: EdgeInsets.all(20.r),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Profile Information',
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 20.sp,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -107,26 +107,26 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     const Divider(),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     _buildInfoRow(
                       Icons.person,
                       'Name',
                       widget.name ?? 'Not set',
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     _buildInfoRow(
                       Icons.phone,
                       'Phone',
                       phoneNumber,
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     _buildInfoRow(
                       Icons.cake,
                       'Age',
                       widget.age?.toString() ?? 'Not set',
                     ),
                     if (widget.email != null && widget.email!.isNotEmpty) ...[
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12.h),
                       _buildInfoRow(
                         Icons.email,
                         'Email',
@@ -134,14 +134,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                     if (widget.address != null && widget.address!.isNotEmpty) ...[
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12.h),
                       _buildInfoRow(
                         Icons.location_on,
                         'Address',
                         widget.address!,
                       ),
                     ],
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     _buildInfoRow(
                       Icons.calendar_today,
                       'Member Since',
@@ -151,26 +151,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            
+            SizedBox(height: 24.h),
+
             // Edit Profile Button
             OutlinedButton.icon(
               onPressed: _editProfile,
               icon: const Icon(Icons.edit),
               label: const Text('Edit Profile'),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 16.h),
               ),
             ),
-            const SizedBox(height: 12),
-            
+            SizedBox(height: 12.h),
+
             // Sign Out Button
             ElevatedButton.icon(
               onPressed: () => _signOut(context),
               icon: const Icon(Icons.logout),
               label: const Text('Sign Out'),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 16.h),
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
@@ -185,24 +185,24 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: Colors.blue),
-        const SizedBox(width: 12),
+        Icon(icon, size: 20.sp, color: Colors.blue),
+        SizedBox(width: 12.w),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: 12.sp,
                   color: Colors.grey,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4.h),
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.w500,
                 ),
               ),

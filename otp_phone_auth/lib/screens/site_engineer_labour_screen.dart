@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../services/construction_service.dart';
 import '../services/budget_management_service.dart';
 import '../utils/app_colors.dart';
@@ -22,22 +23,22 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
     with SingleTickerProviderStateMixin {
   final _constructionService = ConstructionService();
   final _budgetService = BudgetManagementService();
-  
+
   late TabController _tabController;
-  
+
   // Dynamic labour counts for morning and evening
   Map<String, int> _morningLabourCounts = {};
   Map<String, int> _eveningLabourCounts = {};
-  
+
   Map<String, double> _rates = {};
   bool _isLoadingRates = true;
-  
+
   // Extra cost controllers
   final _morningExtraCostController = TextEditingController();
   final _morningExtraCostNotesController = TextEditingController();
   final _eveningExtraCostController = TextEditingController();
   final _eveningExtraCostNotesController = TextEditingController();
-  
+
   // History data
   List<Map<String, dynamic>> _eveningHistoryData = [];
   bool _isLoadingEveningData = false;
@@ -67,13 +68,13 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
 
   Future<void> _fetchRates() async {
     setState(() => _isLoadingRates = true);
-    
+
     final rates = await _budgetService.getLabourRates('global');
     if (rates.isNotEmpty && mounted) {
       final Map<String, double> loaded = {};
       final Map<String, int> morningCounts = {};
       final Map<String, int> eveningCounts = {};
-      
+
       for (final r in rates) {
         final type = r['labour_type'] as String?;
         final rate = (r['daily_rate'] as num?)?.toDouble();
@@ -84,14 +85,14 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
           eveningCounts[type] = 0;
         }
       }
-      
+
       setState(() {
         _rates = loaded;
         _morningLabourCounts = morningCounts;
         _eveningLabourCounts = eveningCounts;
         _isLoadingRates = false;
       });
-      
+
       print('✅ [Site Engineer] Loaded ${loaded.length} labour types from admin');
     } else {
       setState(() => _isLoadingRates = false);
@@ -102,22 +103,22 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
     setState(() => _isLoadingEveningData = true);
     try {
       final response = await _constructionService.getHistoryByDay(siteId: widget.siteId);
-      
+
       if (response['success']) {
         final data = response['data'] as Map<String, dynamic>;
         final labourByDay = data['labour_by_day'] as Map<String, dynamic>? ?? {};
-        
+
         // Get today's date
         final today = DateTime.now();
         final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-        
+
         List<Map<String, dynamic>> todayEntries = [];
         labourByDay.forEach((day, entries) {
           if (entries is List && day == todayStr) {
             todayEntries.addAll(List<Map<String, dynamic>>.from(entries));
           }
         });
-        
+
         setState(() {
           _eveningHistoryData = todayEntries;
         });
@@ -129,7 +130,7 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
     }
   }
 
-  Map<String, int> get _currentLabourCounts => 
+  Map<String, int> get _currentLabourCounts =>
       _tabController.index == 0 ? _morningLabourCounts : _eveningLabourCounts;
 
   int get _totalCount => _currentLabourCounts.values.fold(0, (sum, count) => sum + count);
@@ -151,14 +152,14 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
         children: [
           // Header with counts
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             color: AppColors.cleanWhite,
             child: Row(
               children: [
-                const Text(
+                Text(
                   '👷 Labour Count',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 20.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.deepNavy,
                   ),
@@ -168,31 +169,31 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                       decoration: BoxDecoration(
                         gradient: AppColors.orangeGradient,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(16.r),
                       ),
                       child: Text(
                         'Workers: $_totalCount',
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4.h),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                       decoration: BoxDecoration(
                         color: Colors.green.shade700,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(16.r),
                       ),
                       child: Text(
                         '₹${_totalSalary.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
@@ -203,7 +204,7 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
               ],
             ),
           ),
-          
+
           // Tab Bar
           Container(
             color: AppColors.lightSlate,
@@ -215,14 +216,14 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
               ),
               labelColor: Colors.white,
               unselectedLabelColor: AppColors.textSecondary,
-              labelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              labelStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
               tabs: const [
                 Tab(text: '🌅 Morning'),
                 Tab(text: '🌆 Evening'),
               ],
             ),
           ),
-          
+
           // Tab Content
           Expanded(
             child: TabBarView(
@@ -240,10 +241,10 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
               onPressed: _isSubmitting ? null : _submitMorningEntry,
               backgroundColor: AppColors.safetyOrange,
               icon: _isSubmitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
+                  ? SizedBox(
+                      width: 20.w,
+                      height: 20.h,
+                      child: const CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.white,
                       ),
@@ -273,16 +274,16 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
   Widget _buildMorningTab() {
     // Show loading indicator while rates are being fetched
     if (_isLoadingRates) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
+            const CircularProgressIndicator(),
+            SizedBox(height: 16.h),
             Text(
               'Loading labour types...',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 color: AppColors.textSecondary,
               ),
             ),
@@ -290,7 +291,7 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
         ),
       );
     }
-    
+
     // Show message if no labour types are available
     if (_morningLabourCounts.isEmpty) {
       return Center(
@@ -299,23 +300,23 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
           children: [
             Icon(
               Icons.info_outline,
-              size: 64,
+              size: 64.sp,
               color: Colors.grey.shade400,
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 16.h),
+            Text(
               'No Labour Types Available',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8.h),
+            Text(
               'Admin needs to add labour types first',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 color: AppColors.textSecondary,
               ),
             ),
@@ -323,9 +324,9 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
         ),
       );
     }
-    
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -333,7 +334,7 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -348,15 +349,15 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
                   .toList(),
             ),
           ),
-          
-          const SizedBox(height: 16),
-          
+
+          SizedBox(height: 16.h),
+
           // Extra Cost Section
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
               border: Border.all(color: Colors.orange.shade200),
             ),
             child: Column(
@@ -364,19 +365,19 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
               children: [
                 Row(
                   children: [
-                    Icon(Icons.attach_money, size: 20, color: Colors.orange.shade700),
-                    const SizedBox(width: 8),
+                    Icon(Icons.attach_money, size: 20.sp, color: Colors.orange.shade700),
+                    SizedBox(width: 8.w),
                     Text(
                       'Extra Cost (Optional)',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.orange.shade900,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 TextField(
                   controller: _morningExtraCostController,
                   keyboardType: TextInputType.number,
@@ -385,12 +386,12 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       borderSide: BorderSide(color: Colors.orange.shade200),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 TextField(
                   controller: _morningExtraCostNotesController,
                   maxLines: 2,
@@ -399,7 +400,7 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       borderSide: BorderSide(color: Colors.orange.shade200),
                     ),
                   ),
@@ -414,16 +415,16 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
 
   Widget _buildEveningTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Morning entered details (read-only)
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
               color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
               border: Border.all(color: Colors.blue.shade200),
             ),
             child: Column(
@@ -432,18 +433,18 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
                 Row(
                   children: [
                     Icon(Icons.wb_sunny, color: Colors.blue.shade700),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8.w),
                     Text(
                       'Morning Entries',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.blue.shade900,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 if (_isLoadingEveningData)
                   const Center(child: CircularProgressIndicator())
                 else if (_eveningHistoryData.isEmpty)
@@ -456,8 +457,8 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
               ],
             ),
           ),
-          
-          const SizedBox(height: 80), // Space for FAB
+
+          SizedBox(height: 80.h), // Space for FAB
         ],
       ),
     );
@@ -470,7 +471,7 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
     final rowTotal = count * rate;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: Colors.grey.shade200),
@@ -478,16 +479,16 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
       ),
       child: Row(
         children: [
-          Icon(_getLabourIcon(type), color: AppColors.deepNavy, size: 24),
-          const SizedBox(width: 12),
+          Icon(_getLabourIcon(type), color: AppColors.deepNavy, size: 24.sp),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   type,
-                  style: const TextStyle(
-                    fontSize: 15,
+                  style: TextStyle(
+                    fontSize: 15.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.deepNavy,
                   ),
@@ -495,7 +496,7 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
                 Text(
                   '₹${rate.toStringAsFixed(0)}/day',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     color: Colors.grey.shade600,
                   ),
                 ),
@@ -506,16 +507,16 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
             children: [
               IconButton(
                 onPressed: () => setState(() => counts[type] = (count - 1).clamp(0, 50)),
-                icon: const Icon(Icons.remove_circle_outline, size: 28),
+                icon: Icon(Icons.remove_circle_outline, size: 28.sp),
                 color: count > 0 ? AppColors.safetyOrange : AppColors.textSecondary,
               ),
               Container(
-                width: 40,
+                width: 40.w,
                 alignment: Alignment.center,
                 child: Text(
                   '$count',
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: TextStyle(
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.deepNavy,
                   ),
@@ -523,19 +524,19 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
               ),
               IconButton(
                 onPressed: () => setState(() => counts[type] = (count + 1).clamp(0, 50)),
-                icon: const Icon(Icons.add_circle_outline, size: 28),
+                icon: Icon(Icons.add_circle_outline, size: 28.sp),
                 color: AppColors.safetyOrange,
               ),
             ],
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8.w),
           SizedBox(
-            width: 70,
+            width: 70.w,
             child: Text(
               '₹${rowTotal.toStringAsFixed(0)}',
               textAlign: TextAlign.right,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.bold,
                 color: Colors.green.shade700,
               ),
@@ -553,38 +554,38 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
     final total = count * rate;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8.r),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Row(
         children: [
-          Icon(_getLabourIcon(labourType), size: 20, color: AppColors.deepNavy),
-          const SizedBox(width: 12),
+          Icon(_getLabourIcon(labourType), size: 20.sp, color: AppColors.deepNavy),
+          SizedBox(width: 12.w),
           Expanded(
             child: Text(
               labourType,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
           Text(
             '$count workers',
-            style: const TextStyle(
-              fontSize: 13,
+            style: TextStyle(
+              fontSize: 13.sp,
               color: Colors.grey,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Text(
             '₹${total.toStringAsFixed(0)}',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14.sp,
               fontWeight: FontWeight.bold,
               color: Colors.green.shade700,
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pinput/pinput.dart';
 import '../utils/app_colors.dart';
 import 'site_selection_screen.dart';
@@ -40,7 +41,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
 
     if (mounted) {
       setState(() => _isLoading = false);
-      
+
       // Navigate to Site Selection screen
       Navigator.pushAndRemoveUntil(
         context,
@@ -73,21 +74,21 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     final defaultPinTheme = PinTheme(
-      width: 60,
-      height: 60,
-      textStyle: const TextStyle(
-        fontSize: 24,
+      width: 60.w,
+      height: 60.h,
+      textStyle: TextStyle(
+        fontSize: 24.sp,
         fontWeight: FontWeight.bold,
         color: AppColors.darkBlue,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: Colors.grey.shade300, width: 2),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
+            blurRadius: 8.r,
             offset: const Offset(0, 2),
           ),
         ],
@@ -98,11 +99,11 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: AppColors.primaryOrange, width: 2),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.primaryOrange.withOpacity(0.2),
-            blurRadius: 12,
+            blurRadius: 12.r,
             offset: const Offset(0, 4),
           ),
         ],
@@ -113,191 +114,191 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       decoration: BoxDecoration(
         color: AppColors.primaryOrange.withOpacity(0.1),
         border: Border.all(color: AppColors.primaryOrange, width: 2),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
       ),
     );
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-          child: Column(
-            children: [
-              // Back Button
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back, color: AppColors.darkBlue),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Icon
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 20,
-                                offset: Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.lock_outline,
-                            size: 80,
-                            color: AppColors.primaryOrange,
-                          ),
-                        ),
-                        const SizedBox(height: 40),
-                        
-                        // Title
-                        const Text(
-                          'Verification Code',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.darkBlue,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Enter the 6-digit code sent to',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.grey.shade600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.phoneNumber,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryOrange,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 40),
-                        
-                        // OTP Input
-                        Center(
-                          child: Pinput(
-                            controller: _otpController,
-                            length: 6,
-                            defaultPinTheme: defaultPinTheme,
-                            focusedPinTheme: focusedPinTheme,
-                            submittedPinTheme: submittedPinTheme,
-                            showCursor: true,
-                            onCompleted: (pin) => _verifyOTP(),
-                          ),
-                        ),
-                        const SizedBox(height: 40),
-                        
-                        // Verify Button
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primaryOrange.withOpacity(0.3),
-                                blurRadius: 15,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _verifyOTP,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 18),
-                              backgroundColor: AppColors.primaryOrange,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.check_circle_outline, size: 22),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Verify & Continue',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        
-                        // Resend Code
-                        TextButton(
-                          onPressed: () {
-                            // TODO: Implement resend OTP
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Resend OTP feature coming soon'),
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            'Didn\'t receive code? Resend',
-                            style: TextStyle(
-                              color: AppColors.primaryOrange,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+        child: Column(
+          children: [
+            // Back Button
+            Padding(
+              padding: EdgeInsets.all(16.r),
+              child: Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10.r,
                         ),
                       ],
                     ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: AppColors.darkBlue),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(24.r),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Icon
+                      Container(
+                        padding: EdgeInsets.all(24.r),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 20,
+                              offset: Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.lock_outline,
+                          size: 80.sp,
+                          color: AppColors.primaryOrange,
+                        ),
+                      ),
+                      SizedBox(height: 40.h),
+
+                      // Title
+                      Text(
+                        'Verification Code',
+                        style: TextStyle(
+                          fontSize: 28.sp,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkBlue,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 12.h),
+                      Text(
+                        'Enter the 6-digit code sent to',
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          color: Colors.grey.shade600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        widget.phoneNumber,
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryOrange,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 40.h),
+
+                      // OTP Input
+                      Center(
+                        child: Pinput(
+                          controller: _otpController,
+                          length: 6,
+                          defaultPinTheme: defaultPinTheme,
+                          focusedPinTheme: focusedPinTheme,
+                          submittedPinTheme: submittedPinTheme,
+                          showCursor: true,
+                          onCompleted: (pin) => _verifyOTP(),
+                        ),
+                      ),
+                      SizedBox(height: 40.h),
+
+                      // Verify Button
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primaryOrange.withOpacity(0.3),
+                              blurRadius: 15.r,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _verifyOTP,
+                          style: ElevatedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 18.h),
+                            backgroundColor: AppColors.primaryOrange,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: _isLoading
+                              ? SizedBox(
+                                  height: 24.h,
+                                  width: 24.w,
+                                  child: const CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.check_circle_outline, size: 22.sp),
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      'Verify & Continue',
+                                      style: TextStyle(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                      SizedBox(height: 24.h),
+
+                      // Resend Code
+                      TextButton(
+                        onPressed: () {
+                          // TODO: Implement resend OTP
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Resend OTP feature coming soon'),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Didn\'t receive code? Resend',
+                          style: TextStyle(
+                            color: AppColors.primaryOrange,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 
@@ -18,7 +19,7 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
   final _authService = AuthService();
   final _descriptionController = TextEditingController();
   final _imagePicker = ImagePicker();
-  
+
   File? _selectedImage;
   String _updateType = 'STARTED'; // STARTED or FINISHED
   bool _isUploading = false;
@@ -70,28 +71,28 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.cleanWhite,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(25.r)),
         ),
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24.r),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 40,
-              height: 4,
+              width: 40.w,
+              height: 4.h,
               decoration: BoxDecoration(
                 color: AppColors.textSecondary.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(2.r),
               ),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: 24.h),
+            Text(
               'Choose Photo Source',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
             _buildSourceOption(
               icon: Icons.camera_alt,
               title: 'Take Photo',
@@ -101,7 +102,7 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
                 _pickImage(ImageSource.camera);
               },
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             _buildSourceOption(
               icon: Icons.photo_library,
               title: 'Choose from Gallery',
@@ -111,7 +112,7 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
                 _pickImage(ImageSource.gallery);
               },
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
           ],
         ),
       ),
@@ -126,35 +127,35 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
   }) {
     return Material(
       color: AppColors.lightSlate,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(16.r),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           child: Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 48.w,
+                height: 48.h,
                 decoration: BoxDecoration(
                   color: AppColors.deepNavy.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
-                child: Icon(icon, color: AppColors.deepNavy, size: 24),
+                child: Icon(icon, color: AppColors.deepNavy, size: 24.sp),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.deepNavy)),
-                    const SizedBox(height: 4),
-                    Text(subtitle, style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                    Text(title, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy)),
+                    SizedBox(height: 4.h),
+                    Text(subtitle, style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary)),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.deepNavy),
+              Icon(Icons.arrow_forward_ios, size: 16.sp, color: AppColors.deepNavy),
             ],
           ),
         ),
@@ -198,7 +199,7 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
 
     try {
       final token = await _authService.getToken();
-      
+
       final request = http.MultipartRequest(
         'POST',
         Uri.parse('${AuthService.baseUrl}/construction/upload-site-photo/'),
@@ -257,55 +258,55 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
     return Scaffold(
       backgroundColor: AppColors.lightSlate,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Upload Photo',
-          style: TextStyle(color: AppColors.deepNavy, fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppColors.deepNavy, fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.cleanWhite,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.deepNavy),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Site Info
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: AppColors.cleanWhite,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16.r),
                 boxShadow: [AppColors.cardShadow],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Site',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Text(
                     widget.site['display_name'] ?? widget.site['site_name'] ?? 'Unknown Site',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Text(
                     '${widget.site['area'] ?? ''}, ${widget.site['street'] ?? ''}',
-                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
 
             // Upload Type Selection
-            const Text(
+            Text(
               'Upload Type',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
                 Expanded(
@@ -317,7 +318,7 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
                     enabled: _canUploadMorning(),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: _buildTypeOption(
                     icon: '🌆',
@@ -329,86 +330,86 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
 
             // Photo Preview
-            const Text(
+            Text(
               'Photo',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             GestureDetector(
               onTap: _showImageSourceDialog,
               child: Container(
-                height: 300,
+                height: 300.h,
                 decoration: BoxDecoration(
                   color: AppColors.cleanWhite,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                   border: Border.all(color: AppColors.deepNavy.withValues(alpha: 0.2), width: 2),
                   boxShadow: [AppColors.cardShadow],
                 ),
                 child: _selectedImage != null
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(14.r),
                         child: Image.file(_selectedImage!, fit: BoxFit.cover),
                       )
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add_photo_alternate, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.5)),
-                          const SizedBox(height: 16),
-                          const Text(
+                          Icon(Icons.add_photo_alternate, size: 64.sp, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+                          SizedBox(height: 16.h),
+                          Text(
                             'Tap to add photo',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8.h),
                           Text(
                             'Camera or Gallery',
-                            style: TextStyle(fontSize: 14, color: AppColors.textSecondary.withValues(alpha: 0.7)),
+                            style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary.withValues(alpha: 0.7)),
                           ),
                         ],
                       ),
               ),
             ),
             if (_selectedImage != null) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: _showImageSourceDialog,
-                      icon: const Icon(Icons.refresh, size: 18),
+                      icon: Icon(Icons.refresh, size: 18.sp),
                       label: const Text('Change Photo'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.deepNavy,
                         side: const BorderSide(color: AppColors.deepNavy),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   OutlinedButton(
                     onPressed: () => setState(() => _selectedImage = null),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.statusOverdue,
                       side: const BorderSide(color: AppColors.statusOverdue),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                     ),
-                    child: const Icon(Icons.delete, size: 20),
+                    child: Icon(Icons.delete, size: 20.sp),
                   ),
                 ],
               ),
             ],
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
 
             // Description
-            const Text(
+            Text(
               'Description (Optional)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             TextField(
               controller: _descriptionController,
               maxLines: 3,
@@ -417,20 +418,20 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
                 filled: true,
                 fillColor: AppColors.cleanWhite,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide(color: AppColors.deepNavy.withValues(alpha: 0.2)),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide(color: AppColors.deepNavy.withValues(alpha: 0.2)),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: const BorderSide(color: AppColors.deepNavy, width: 2),
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: 32.h),
 
             // Upload Button
             ElevatedButton(
@@ -438,19 +439,19 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.deepNavy,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                padding: EdgeInsets.symmetric(vertical: 16.h),
                 elevation: 2,
               ),
               child: _isUploading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  ? SizedBox(
+                      height: 20.h,
+                      width: 20.w,
+                      child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     )
-                  : const Text(
+                  : Text(
                       'Upload Photo',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
                     ),
             ),
           ],
@@ -467,16 +468,16 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
     required bool enabled,
   }) {
     final isSelected = _updateType == value;
-    
+
     return GestureDetector(
       onTap: enabled ? () => setState(() => _updateType = value) : null,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
           color: enabled
               ? (isSelected ? AppColors.deepNavy : AppColors.cleanWhite)
               : AppColors.lightSlate,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           border: Border.all(
             color: enabled
                 ? (isSelected ? AppColors.deepNavy : AppColors.deepNavy.withValues(alpha: 0.2))
@@ -487,23 +488,23 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
         ),
         child: Column(
           children: [
-            Text(icon, style: TextStyle(fontSize: 32, color: enabled ? null : Colors.grey)),
-            const SizedBox(height: 8),
+            Text(icon, style: TextStyle(fontSize: 32.sp, color: enabled ? null : Colors.grey)),
+            SizedBox(height: 8.h),
             Text(
               label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.bold,
                 color: enabled
                     ? (isSelected ? Colors.white : AppColors.deepNavy)
                     : AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4.h),
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 11.sp,
                 color: enabled
                     ? (isSelected ? Colors.white.withValues(alpha: 0.8) : AppColors.textSecondary)
                     : AppColors.textSecondary.withValues(alpha: 0.5),
@@ -511,8 +512,8 @@ class _SiteEngineerPhotoUploadScreenState extends State<SiteEngineerPhotoUploadS
               textAlign: TextAlign.center,
             ),
             if (!enabled) ...[
-              const SizedBox(height: 4),
-              Icon(Icons.lock, size: 16, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+              SizedBox(height: 4.h),
+              Icon(Icons.lock, size: 16.sp, color: AppColors.textSecondary.withValues(alpha: 0.5)),
             ],
           ],
         ),

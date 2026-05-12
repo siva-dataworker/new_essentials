@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../providers/site_engineer_provider.dart';
 import '../utils/app_colors.dart';
 
@@ -59,13 +60,13 @@ class _SiteEngineerProjectFilesScreenState extends State<SiteEngineerProjectFile
           icon: const Icon(Icons.arrow_back, color: AppColors.deepNavy),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Project Files',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
@@ -73,7 +74,7 @@ class _SiteEngineerProjectFilesScreenState extends State<SiteEngineerProjectFile
             Text(
               'Uploaded by Architect',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.normal,
               ),
@@ -98,32 +99,32 @@ class _SiteEngineerProjectFilesScreenState extends State<SiteEngineerProjectFile
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 120,
-                    height: 120,
+                    width: 120.w,
+                    height: 120.h,
                     decoration: BoxDecoration(
                       color: AppColors.lightSlate,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.folder_open,
-                      size: 60,
+                      size: 60.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
+                  SizedBox(height: 24.h),
+                  Text(
                     'No Project Files',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.deepNavy,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   Text(
                     'Files will appear here once uploaded',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -135,7 +136,7 @@ class _SiteEngineerProjectFilesScreenState extends State<SiteEngineerProjectFile
           return RefreshIndicator(
             onRefresh: () => provider.loadProjectFiles(forceRefresh: true),
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               itemCount: files.length,
               itemBuilder: (context, index) {
                 final file = files[index];
@@ -155,10 +156,10 @@ class _SiteEngineerProjectFilesScreenState extends State<SiteEngineerProjectFile
     final fileIcon = _getFileIcon(fileName);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.deepNavy.withValues(alpha: 0.08),
@@ -173,67 +174,67 @@ class _SiteEngineerProjectFilesScreenState extends State<SiteEngineerProjectFile
           onTap: () {
             _showFileOptions(file);
           },
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(20.r),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20.r),
             child: Row(
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 56.w,
+                  height: 56.h,
                   decoration: BoxDecoration(
                     color: AppColors.deepNavy.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(14.r),
                   ),
                   child: Center(
                     child: Text(
                       fileIcon,
-                      style: const TextStyle(fontSize: 28),
+                      style: TextStyle(fontSize: 28.sp),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         fileName,
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6.h),
                       Row(
                         children: [
                           Icon(
                             Icons.access_time,
-                            size: 14,
+                            size: 14.sp,
                             color: AppColors.textSecondary,
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4.w),
                           Text(
                             uploadedAt,
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.sp,
                               color: AppColors.textSecondary,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12.w),
                           Icon(
                             Icons.storage,
-                            size: 14,
+                            size: 14.sp,
                             color: AppColors.textSecondary,
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4.w),
                           Text(
                             _formatFileSize(fileSize),
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.sp,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -242,18 +243,18 @@ class _SiteEngineerProjectFilesScreenState extends State<SiteEngineerProjectFile
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 40.w,
+                  height: 40.h,
                   decoration: BoxDecoration(
                     color: AppColors.deepNavy,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.download,
                     color: Colors.white,
-                    size: 20,
+                    size: 20.sp,
                   ),
                 ),
               ],
@@ -269,40 +270,40 @@ class _SiteEngineerProjectFilesScreenState extends State<SiteEngineerProjectFile
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.cleanWhite,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
         ),
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24.r),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 40,
-              height: 4,
+              width: 40.w,
+              height: 4.h,
               decoration: BoxDecoration(
                 color: AppColors.textSecondary.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(2.r),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
             Text(
               file['file_name'] ?? 'File',
-              style: const TextStyle(
-                fontSize: 18,
+              style: TextStyle(
+                fontSize: 18.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
             ListTile(
               leading: Container(
-                width: 48,
-                height: 48,
+                width: 48.w,
+                height: 48.h,
                 decoration: BoxDecoration(
                   color: AppColors.deepNavy.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: const Icon(Icons.download, color: AppColors.deepNavy),
               ),
@@ -319,14 +320,14 @@ class _SiteEngineerProjectFilesScreenState extends State<SiteEngineerProjectFile
                 _downloadFile(file);
               },
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             ListTile(
               leading: Container(
-                width: 48,
-                height: 48,
+                width: 48.w,
+                height: 48.h,
                 decoration: BoxDecoration(
                   color: AppColors.deepNavy.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: const Icon(Icons.visibility, color: AppColors.deepNavy),
               ),
@@ -353,22 +354,22 @@ class _SiteEngineerProjectFilesScreenState extends State<SiteEngineerProjectFile
 
   Future<void> _downloadFile(Map<String, dynamic> file) async {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Row(
           children: [
             SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
+              width: 20.w,
+              height: 20.h,
+              child: const CircularProgressIndicator(
                 color: Colors.white,
                 strokeWidth: 2,
               ),
             ),
-            SizedBox(width: 16),
-            Text('Downloading file...'),
+            SizedBox(width: 16.w),
+            const Text('Downloading file...'),
           ],
         ),
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
       ),
     );
 

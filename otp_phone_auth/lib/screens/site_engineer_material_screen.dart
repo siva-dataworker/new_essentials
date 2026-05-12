@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../services/material_service.dart';
 import '../services/construction_service.dart';
 import '../utils/app_colors.dart';
@@ -36,7 +37,7 @@ class _SiteEngineerMaterialScreenState extends State<SiteEngineerMaterialScreen>
     try {
       // Load material balance
       final balanceResult = await _materialService.getMaterialBalance(widget.siteId);
-      
+
       // Load today's usage
       final todayUsageResult = await _materialService.getTodayMaterialUsage(widget.siteId);
 
@@ -51,7 +52,7 @@ class _SiteEngineerMaterialScreenState extends State<SiteEngineerMaterialScreen>
         final todayUsageList = List<Map<String, dynamic>>.from(
           todayUsageResult['today_usage_summary'] ?? []
         );
-        
+
         setState(() {
           _todayUsageSummary = {
             for (var item in todayUsageList)
@@ -116,10 +117,10 @@ class _SiteEngineerMaterialScreenState extends State<SiteEngineerMaterialScreen>
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Material Inventory', style: TextStyle(fontSize: 18)),
+            Text('Material Inventory', style: TextStyle(fontSize: 18.sp)),
             Text(
               widget.siteName,
-              style: TextStyle(fontSize: 12, color: AppColors.white.withOpacity(0.8)),
+              style: TextStyle(fontSize: 12.sp, color: AppColors.white.withOpacity(0.8)),
             ),
           ],
         ),
@@ -150,13 +151,13 @@ class _SiteEngineerMaterialScreenState extends State<SiteEngineerMaterialScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inventory_2_outlined, size: 80, color: AppColors.textSecondary),
-          SizedBox(height: 16),
+          Icon(Icons.inventory_2_outlined, size: 80.sp, color: AppColors.textSecondary),
+          SizedBox(height: 16.h),
           Text(
             'No materials added yet',
-            style: TextStyle(fontSize: 18, color: AppColors.textPrimary),
+            style: TextStyle(fontSize: 18.sp, color: AppColors.textPrimary),
           ),
-          SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             'Tap the button below to add materials',
             style: TextStyle(color: AppColors.textSecondary),
@@ -171,7 +172,7 @@ class _SiteEngineerMaterialScreenState extends State<SiteEngineerMaterialScreen>
       onRefresh: _loadMaterialData,
       color: AppColors.primary,
       child: ListView.builder(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         itemCount: _materialBalance.length,
         itemBuilder: (context, index) {
           final material = _materialBalance[index];
@@ -191,56 +192,56 @@ class _SiteEngineerMaterialScreenState extends State<SiteEngineerMaterialScreen>
     final todayUsed = (_todayUsageSummary[materialType] as num?)?.toDouble() ?? 0;
 
     return Card(
-      margin: EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       color: AppColors.white,
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header with material name and status
             Row(
               children: [
-                Icon(Icons.inventory_2, color: AppColors.primary, size: 24),
-                SizedBox(width: 12),
+                Icon(Icons.inventory_2, color: AppColors.primary, size: 24.sp),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Text(
                     materialType,
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
                   ),
                 ),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
                     color: _getStatusColor(status).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20.r),
                     border: Border.all(color: _getStatusColor(status)),
                   ),
                   child: Text(
                     _getStatusText(status),
                     style: TextStyle(
                       color: _getStatusColor(status),
-                      fontSize: 12,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Current Balance (Large Display)
             Container(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -251,14 +252,14 @@ class _SiteEngineerMaterialScreenState extends State<SiteEngineerMaterialScreen>
                         'Current Balance',
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 12,
+                          fontSize: 12.sp,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text(
                         '${currentBalance.toStringAsFixed(1)} $unit',
                         style: TextStyle(
-                          fontSize: 32,
+                          fontSize: 32.sp,
                           fontWeight: FontWeight.bold,
                           color: _getStatusColor(status),
                         ),
@@ -268,8 +269,8 @@ class _SiteEngineerMaterialScreenState extends State<SiteEngineerMaterialScreen>
                 ],
               ),
             ),
-            SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Stock Details
             Row(
               children: [
@@ -282,7 +283,7 @@ class _SiteEngineerMaterialScreenState extends State<SiteEngineerMaterialScreen>
                 ),
                 Container(
                   width: 1,
-                  height: 40,
+                  height: 40.h,
                   color: AppColors.divider,
                 ),
                 Expanded(
@@ -294,33 +295,33 @@ class _SiteEngineerMaterialScreenState extends State<SiteEngineerMaterialScreen>
                 ),
               ],
             ),
-            
+
             // Today's Usage (Highlighted)
             if (todayUsed > 0) ...[
-              SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Container(
-                padding: EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   border: Border.all(color: AppColors.primary.withOpacity(0.2)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.today, color: AppColors.primary, size: 20),
-                    SizedBox(width: 8),
+                    Icon(Icons.today, color: AppColors.primary, size: 20.sp),
+                    SizedBox(width: 8.w),
                     Text(
                       'Used Today: ',
                       style: TextStyle(
                         color: AppColors.textSecondary,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                       ),
                     ),
                     Text(
                       '${todayUsed.toStringAsFixed(1)} $unit',
                       style: TextStyle(
                         color: AppColors.primary,
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -328,15 +329,15 @@ class _SiteEngineerMaterialScreenState extends State<SiteEngineerMaterialScreen>
                 ),
               ),
             ],
-            
+
             // Action Buttons
-            SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => _showAddStockDialog(material),
-                    icon: Icon(Icons.add, size: 18),
+                    icon: Icon(Icons.add, size: 18.sp),
                     label: Text('Add Stock'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
@@ -344,11 +345,11 @@ class _SiteEngineerMaterialScreenState extends State<SiteEngineerMaterialScreen>
                     ),
                   ),
                 ),
-                SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => _showUsageHistory(material),
-                    icon: Icon(Icons.history, size: 18),
+                    icon: Icon(Icons.history, size: 18.sp),
                     label: Text('History'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
@@ -367,21 +368,21 @@ class _SiteEngineerMaterialScreenState extends State<SiteEngineerMaterialScreen>
   Widget _buildInfoColumn(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: AppColors.textSecondary, size: 20),
-        SizedBox(height: 4),
+        Icon(icon, color: AppColors.textSecondary, size: 20.sp),
+        SizedBox(height: 4.h),
         Text(
           label,
           style: TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 12,
+            fontSize: 12.sp,
           ),
         ),
-        SizedBox(height: 2),
+        SizedBox(height: 2.h),
         Text(
           value,
           style: TextStyle(
             color: AppColors.textPrimary,
-            fontSize: 14,
+            fontSize: 14.sp,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -465,12 +466,12 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
 
   Future<void> _loadMaterials() async {
     setState(() => _isLoadingMaterials = true);
-    
+
     try {
       // Import construction service to get materials from admin
       final constructionService = ConstructionService();
       final materials = await constructionService.getMaterials();
-      
+
       setState(() {
         _materials = materials;
         _isLoadingMaterials = false;
@@ -485,6 +486,7 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
       );
     }
   }
+
   @override
   void dispose() {
     _materialTypeController.dispose();
@@ -551,24 +553,24 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
               // Loading indicator or Material Type Dropdown
               if (_isLoadingMaterials)
                 Padding(
-                  padding: EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.r),
                   child: CircularProgressIndicator(color: AppColors.primary),
                 )
               else if (_materials.isEmpty)
                 Padding(
-                  padding: EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.r),
                   child: Column(
                     children: [
-                      Icon(Icons.warning, color: AppColors.textSecondary, size: 48),
-                      SizedBox(height: 8),
+                      Icon(Icons.warning, color: AppColors.textSecondary, size: 48.sp),
+                      SizedBox(height: 8.h),
                       Text(
                         'No materials available',
                         style: TextStyle(color: AppColors.textSecondary),
                       ),
-                      SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text(
                         'Admin needs to add materials first',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12.sp),
                       ),
                     ],
                   ),
@@ -597,9 +599,9 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
                     return null;
                   },
                 ),
-              
-              SizedBox(height: 16),
-              
+
+              SizedBox(height: 16.h),
+
               // Quantity
               TextFormField(
                 controller: _quantityController,
@@ -621,9 +623,9 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
                   return null;
                 },
               ),
-              
-              SizedBox(height: 16),
-              
+
+              SizedBox(height: 16.h),
+
               // Unit Dropdown
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(
@@ -643,9 +645,9 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
                   return null;
                 },
               ),
-              
-              SizedBox(height: 16),
-              
+
+              SizedBox(height: 16.h),
+
               // Notes
               TextFormField(
                 controller: _notesController,
@@ -672,8 +674,8 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
           ),
           child: _isSubmitting
               ? SizedBox(
-                  width: 20,
-                  height: 20,
+                  width: 20.w,
+                  height: 20.h,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     color: AppColors.white,
@@ -778,7 +780,7 @@ class _AddStockDialogState extends State<_AddStockDialog> {
               'Adding stock to: ${widget.materialType}',
               style: TextStyle(color: AppColors.textSecondary),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 16.h),
             TextFormField(
               controller: _quantityController,
               decoration: InputDecoration(
@@ -799,7 +801,7 @@ class _AddStockDialogState extends State<_AddStockDialog> {
                 return null;
               },
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 16.h),
             TextFormField(
               controller: _notesController,
               decoration: InputDecoration(
@@ -824,8 +826,8 @@ class _AddStockDialogState extends State<_AddStockDialog> {
           ),
           child: _isSubmitting
               ? SizedBox(
-                  width: 20,
-                  height: 20,
+                  width: 20.w,
+                  height: 20.h,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     color: AppColors.white,
@@ -901,10 +903,10 @@ class _MaterialUsageHistoryScreenState extends State<_MaterialUsageHistoryScreen
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Usage History', style: TextStyle(fontSize: 18)),
+            Text('Usage History', style: TextStyle(fontSize: 18.sp)),
             Text(
               widget.materialType,
-              style: TextStyle(fontSize: 12, color: AppColors.white.withOpacity(0.8)),
+              style: TextStyle(fontSize: 12.sp, color: AppColors.white.withOpacity(0.8)),
             ),
           ],
         ),
@@ -916,17 +918,17 @@ class _MaterialUsageHistoryScreenState extends State<_MaterialUsageHistoryScreen
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.history, size: 80, color: AppColors.textSecondary),
-                      SizedBox(height: 16),
+                      Icon(Icons.history, size: 80.sp, color: AppColors.textSecondary),
+                      SizedBox(height: 16.h),
                       Text(
                         'No usage history',
-                        style: TextStyle(fontSize: 18, color: AppColors.textPrimary),
+                        style: TextStyle(fontSize: 18.sp, color: AppColors.textPrimary),
                       ),
                     ],
                   ),
                 )
               : ListView.builder(
-                  padding: EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.r),
                   itemCount: _usageHistory.length,
                   itemBuilder: (context, index) {
                     final usage = _usageHistory[index];
@@ -963,24 +965,24 @@ class _MaterialUsageHistoryScreenState extends State<_MaterialUsageHistoryScreen
     }
 
     return Card(
-      margin: EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       color: AppColors.white,
       elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.person, color: AppColors.primary, size: 20),
-                SizedBox(width: 8),
+                Icon(Icons.person, color: AppColors.primary, size: 20.sp),
+                SizedBox(width: 8.w),
                 Expanded(
                   child: Text(
                     supervisorName,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
@@ -989,36 +991,36 @@ class _MaterialUsageHistoryScreenState extends State<_MaterialUsageHistoryScreen
                 Text(
                   '${quantityUsed.toStringAsFixed(1)} $unit',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Row(
               children: [
-                Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary),
-                SizedBox(width: 4),
+                Icon(Icons.calendar_today, size: 14.sp, color: AppColors.textSecondary),
+                SizedBox(width: 4.w),
                 Text(
                   formattedDate,
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12.sp),
                 ),
-                SizedBox(width: 16),
-                Icon(Icons.access_time, size: 14, color: AppColors.textSecondary),
-                SizedBox(width: 4),
+                SizedBox(width: 16.w),
+                Icon(Icons.access_time, size: 14.sp, color: AppColors.textSecondary),
+                SizedBox(width: 4.w),
                 Text(
                   formattedTime,
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12.sp),
                 ),
               ],
             ),
             if (notes.isNotEmpty) ...[
-              SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Text(
                 notes,
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14.sp),
               ),
             ],
           ],

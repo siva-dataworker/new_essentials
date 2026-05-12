@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/construction_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AssignWorkingSitesScreen extends StatefulWidget {
   const AssignWorkingSitesScreen({super.key});
@@ -10,10 +11,10 @@ class AssignWorkingSitesScreen extends StatefulWidget {
 
 class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
   final _constructionService = ConstructionService();
-  
+
   List<Map<String, dynamic>> _allSites = [];
   final Set<String> _selectedSiteIds = {};
-  
+
   bool _isLoading = false;
   bool _isSubmitting = false;
 
@@ -25,10 +26,10 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
 
   Future<void> _loadAllSites() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final result = await _constructionService.getAllSites();
-      
+
       if (result['success'] && mounted) {
         setState(() {
           _allSites = result['sites'] as List<Map<String, dynamic>>;
@@ -89,8 +90,8 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['success'] 
-              ? '✅ ${result['message']}' 
+          content: Text(result['success']
+              ? '✅ ${result['message']}'
               : '❌ ${result['error']}'),
           backgroundColor: result['success'] ? Colors.green : Colors.red,
         ),
@@ -107,9 +108,9 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Assign Working Sites',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18.sp),
         ),
         backgroundColor: const Color(0xFF1A1A2E),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -119,7 +120,7 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
           // Header Info
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
@@ -137,34 +138,34 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Select Sites to Assign',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8.h),
+                Text(
                   'Selected sites will be assigned to all supervisors',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     color: Colors.white70,
                   ),
                 ),
                 if (_selectedSiteIds.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(20.r),
                     ),
                     child: Text(
                       '${_selectedSiteIds.length} site${_selectedSiteIds.length != 1 ? 's' : ''} selected',
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: TextStyle(
+                        fontSize: 13.sp,
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
@@ -178,17 +179,17 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
           // Sites List
           Expanded(
             child: _isLoading
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(color: Color(0xFF1A1A2E)),
-                        SizedBox(height: 16),
+                        const CircularProgressIndicator(color: Color(0xFF1A1A2E)),
+                        SizedBox(height: 16.h),
                         Text(
                           'Loading sites...',
                           style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF1A1A2E),
+                            fontSize: 16.sp,
+                            color: const Color(0xFF1A1A2E),
                           ),
                         ),
                       ],
@@ -201,24 +202,24 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
                           children: [
                             Icon(
                               Icons.construction,
-                              size: 64,
+                              size: 64.sp,
                               color: const Color(0xFF6B7280).withValues(alpha: 0.4),
                             ),
-                            const SizedBox(height: 16),
-                            const Text(
+                            SizedBox(height: 16.h),
+                            Text(
                               'No sites available',
                               style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF1A1A2E),
+                                fontSize: 16.sp,
+                                color: const Color(0xFF1A1A2E),
                               ),
                             ),
                           ],
                         ),
                       )
                     : ListView.separated(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16.r),
                         itemCount: _allSites.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        separatorBuilder: (context, index) => SizedBox(height: 12.h),
                         itemBuilder: (context, index) {
                           final site = _allSites[index];
                           final siteId = site['id'].toString();
@@ -231,7 +232,7 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
 
           // Submit Button
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
@@ -244,12 +245,12 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
             ),
             child: SafeArea(
               child: Container(
-                height: 56,
+                height: 56.h,
                 decoration: BoxDecoration(
                   color: _isSubmitting || _selectedSiteIds.isEmpty
                       ? const Color(0xFF6B7280)
                       : const Color(0xFF0D1B2A),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.35),
@@ -265,14 +266,14 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
                     shadowColor: Colors.transparent,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(16.r),
                     ),
                   ),
                   child: _isSubmitting
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
+                      ? SizedBox(
+                          height: 22.h,
+                          width: 22.w,
+                          child: const CircularProgressIndicator(
                             color: Colors.white,
                             strokeWidth: 2.5,
                           ),
@@ -284,15 +285,15 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
                               _selectedSiteIds.isEmpty
                                   ? 'Select Sites to Assign'
                                   : 'Assign ${_selectedSiteIds.length} Site${_selectedSiteIds.length != 1 ? 's' : ''} to All Supervisors',
-                              style: const TextStyle(
-                                fontSize: 16,
+                              style: TextStyle(
+                                fontSize: 16.sp,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.5,
                               ),
                             ),
                             if (_selectedSiteIds.isNotEmpty) ...[
-                              const SizedBox(width: 8),
-                              const Icon(Icons.arrow_forward_rounded, size: 20),
+                              SizedBox(width: 8.w),
+                              Icon(Icons.arrow_forward_rounded, size: 20.sp),
                             ],
                           ],
                         ),
@@ -315,7 +316,7 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
     return Card(
       elevation: isSelected ? 4 : 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         side: BorderSide(
           color: isSelected ? const Color(0xFF059669) : Colors.transparent,
           width: 2,
@@ -331,44 +332,44 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
             }
           });
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           child: Row(
             children: [
               // Checkbox
               Container(
-                width: 24,
-                height: 24,
+                width: 24.w,
+                height: 24.h,
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFF059669) : Colors.transparent,
                   border: Border.all(
                     color: isSelected ? const Color(0xFF059669) : const Color(0xFF6B7280),
                     width: 2,
                   ),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(6.r),
                 ),
                 child: isSelected
-                    ? const Icon(
+                    ? Icon(
                         Icons.check,
-                        size: 16,
+                        size: 16.sp,
                         color: Colors.white,
                       )
                     : null,
               ),
-              const SizedBox(width: 16),
-              
+              SizedBox(width: 16.w),
+
               // Site Icon
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(10.r),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
-                child: const Icon(Icons.construction, color: Color(0xFF1A1A2E), size: 24),
+                child: Icon(Icons.construction, color: const Color(0xFF1A1A2E), size: 24.sp),
               ),
-              const SizedBox(width: 12),
-              
+              SizedBox(width: 12.w),
+
               // Site Info
               Expanded(
                 child: Column(
@@ -376,20 +377,20 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
                   children: [
                     Text(
                       displayName,
-                      style: const TextStyle(
-                        fontSize: 15,
+                      style: TextStyle(
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A2E),
+                        color: const Color(0xFF1A1A2E),
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6.h),
                     // Area Badge
                     if (area.isNotEmpty)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                         decoration: BoxDecoration(
                           color: const Color(0xFF1A1A2E).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(6.r),
                           border: Border.all(
                             color: const Color(0xFF1A1A2E).withValues(alpha: 0.3),
                             width: 1,
@@ -398,29 +399,29 @@ class _AssignWorkingSitesScreenState extends State<AssignWorkingSitesScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.location_city, size: 12, color: Color(0xFF1A1A2E)),
-                            const SizedBox(width: 4),
+                            Icon(Icons.location_city, size: 12.sp, color: const Color(0xFF1A1A2E)),
+                            SizedBox(width: 4.w),
                             Text(
                               area,
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: TextStyle(
+                                fontSize: 12.sp,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF1A1A2E),
+                                color: const Color(0xFF1A1A2E),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6.h),
                     // Street
                     Row(
                       children: [
-                        const Icon(Icons.route, size: 14, color: Color(0xFF6B7280)),
-                        const SizedBox(width: 4),
+                        Icon(Icons.route, size: 14.sp, color: const Color(0xFF6B7280)),
+                        SizedBox(width: 4.w),
                         Expanded(
                           child: Text(
                             street.isNotEmpty ? street : 'No street',
-                            style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                            style: TextStyle(fontSize: 13.sp, color: const Color(0xFF6B7280)),
                           ),
                         ),
                       ],

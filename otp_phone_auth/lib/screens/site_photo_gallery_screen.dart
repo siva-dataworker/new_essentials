@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class SitePhotoGalleryScreen extends StatefulWidget {
   final Map<String, dynamic> site;
@@ -28,10 +29,10 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
 
   Future<void> _loadPhotos() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.get(
         Uri.parse('${AuthService.baseUrl}/construction/site-photos/${widget.site['id']}/'),
         headers: {'Authorization': 'Bearer $token'},
@@ -77,9 +78,9 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
     return Scaffold(
       backgroundColor: AppColors.lightSlate,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Photo Gallery',
-          style: TextStyle(color: AppColors.deepNavy, fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppColors.deepNavy, fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.cleanWhite,
         elevation: 0,
@@ -97,39 +98,39 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
           // Site Info
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             color: AppColors.cleanWhite,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   widget.site['display_name'] ?? widget.site['site_name'] ?? 'Unknown Site',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   '${widget.site['area'] ?? ''}, ${widget.site['street'] ?? ''}',
-                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
                 ),
               ],
             ),
           ),
-          
+
           // Filter Chips
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
             color: AppColors.cleanWhite,
             child: Row(
               children: [
                 _buildFilterChip('ALL', 'All Photos'),
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 _buildFilterChip('STARTED', '🌅 Morning'),
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 _buildFilterChip('FINISHED', '🌆 Evening'),
               ],
             ),
           ),
-          
+
           // Photos Grid
           Expanded(
             child: _isLoading
@@ -140,7 +141,7 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
                         onRefresh: _loadPhotos,
                         color: AppColors.deepNavy,
                         child: GridView.builder(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(16.r),
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             crossAxisSpacing: 12,
@@ -159,15 +160,15 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
 
   Widget _buildFilterChip(String value, String label) {
     final isSelected = _filterType == value;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _filterType = value),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: EdgeInsets.symmetric(vertical: 10.h),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.deepNavy : AppColors.lightSlate,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
               color: isSelected ? AppColors.deepNavy : AppColors.deepNavy.withValues(alpha: 0.2),
               width: isSelected ? 2 : 1,
@@ -177,7 +178,7 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 13.sp,
               fontWeight: FontWeight.bold,
               color: isSelected ? Colors.white : AppColors.deepNavy,
             ),
@@ -193,13 +194,13 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
     final imageUrl = photo['image_url'].toString().startsWith('http')
         ? photo['image_url']
         : 'http://187.127.164.22${photo['image_url']}';
-    
+
     return GestureDetector(
       onTap: () => _openFullScreen(index),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.cleanWhite,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           boxShadow: [AppColors.cardShadow],
         ),
         child: Column(
@@ -208,7 +209,7 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
             // Photo
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
                 child: CachedNetworkImage(
                   imageUrl: imageUrl,
                   fit: BoxFit.cover,
@@ -221,15 +222,15 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
                   ),
                   errorWidget: (context, url, error) => Container(
                     color: AppColors.lightSlate,
-                    child: const Icon(Icons.broken_image, size: 48, color: AppColors.textSecondary),
+                    child: Icon(Icons.broken_image, size: 48.sp, color: AppColors.textSecondary),
                   ),
                 ),
               ),
             ),
-            
+
             // Info
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -237,14 +238,14 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
                     children: [
                       Text(
                         isMorning ? '🌅' : '🌆',
-                        style: const TextStyle(fontSize: 16),
+                        style: TextStyle(fontSize: 16.sp),
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6.w),
                       Expanded(
                         child: Text(
                           isMorning ? 'Morning' : 'Evening',
-                          style: const TextStyle(
-                            fontSize: 13,
+                          style: TextStyle(
+                            fontSize: 13.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.deepNavy,
                           ),
@@ -252,29 +253,29 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6.h),
                   Text(
                     _formatDate(photo['update_date']),
-                    style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: 11.sp, color: AppColors.textSecondary),
                   ),
                   if (photo['description'] != null && photo['description'].toString().isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6.h),
                     Text(
                       photo['description'],
-                      style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 11.sp, color: AppColors.textSecondary),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6.h),
                   Row(
                     children: [
-                      Icon(Icons.person, size: 12, color: AppColors.textSecondary),
-                      const SizedBox(width: 4),
+                      Icon(Icons.person, size: 12.sp, color: AppColors.textSecondary),
+                      SizedBox(width: 4.w),
                       Expanded(
                         child: Text(
                           photo['uploaded_by'] ?? 'Unknown',
-                          style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 10.sp, color: AppColors.textSecondary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -295,18 +296,18 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.photo_library, size: 80, color: AppColors.textSecondary.withValues(alpha: 0.5)),
-          const SizedBox(height: 16),
-          const Text(
+          Icon(Icons.photo_library, size: 80.sp, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+          SizedBox(height: 16.h),
+          Text(
             'No Photos Yet',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             _filterType == 'ALL'
                 ? 'Photos will appear here when uploaded'
                 : 'No ${_filterType == "STARTED" ? "morning" : "evening"} photos yet',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -332,7 +333,7 @@ class _SitePhotoGalleryScreenState extends State<SitePhotoGalleryScreen> {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       final photoDate = DateTime(date.year, date.month, date.day);
-      
+
       if (photoDate == today) {
         return 'Today';
       } else if (photoDate == today.subtract(const Duration(days: 1))) {
@@ -381,7 +382,7 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
   Widget build(BuildContext context) {
     final photo = widget.photos[_currentIndex];
     final isMorning = photo['update_type'] == 'STARTED';
-    
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -389,7 +390,7 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           '${_currentIndex + 1} / ${widget.photos.length}',
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+          style: TextStyle(color: Colors.white, fontSize: 16.sp),
         ),
       ),
       body: Stack(
@@ -404,7 +405,7 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
               final imageUrl = widget.photos[index]['image_url'].toString().startsWith('http')
                   ? widget.photos[index]['image_url']
                   : 'http://187.127.164.22${widget.photos[index]['image_url']}';
-              
+
               return InteractiveViewer(
                 minScale: 0.5,
                 maxScale: 4.0,
@@ -415,15 +416,15 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
                     placeholder: (context, url) => const Center(
                       child: CircularProgressIndicator(color: Colors.white),
                     ),
-                    errorWidget: (context, url, error) => const Center(
-                      child: Icon(Icons.broken_image, size: 64, color: Colors.white54),
+                    errorWidget: (context, url, error) => Center(
+                      child: Icon(Icons.broken_image, size: 64.sp, color: Colors.white54),
                     ),
                   ),
                 ),
               );
             },
           ),
-          
+
           // Photo Info Overlay
           Positioned(
             bottom: 0,
@@ -440,7 +441,7 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
                   ],
                 ),
               ),
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -449,46 +450,46 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
                     children: [
                       Text(
                         isMorning ? '🌅' : '🌆',
-                        style: const TextStyle(fontSize: 24),
+                        style: TextStyle(fontSize: 24.sp),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12.w),
                       Text(
                         isMorning ? 'Morning - Work Started' : 'Evening - Work Completed',
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today, size: 14, color: Colors.white70),
-                      const SizedBox(width: 6),
+                      Icon(Icons.calendar_today, size: 14.sp, color: Colors.white70),
+                      SizedBox(width: 6.w),
                       Text(
                         _formatDateTime(photo['created_at']),
-                        style: const TextStyle(fontSize: 13, color: Colors.white70),
+                        style: TextStyle(fontSize: 13.sp, color: Colors.white70),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   Row(
                     children: [
-                      const Icon(Icons.person, size: 14, color: Colors.white70),
-                      const SizedBox(width: 6),
+                      Icon(Icons.person, size: 14.sp, color: Colors.white70),
+                      SizedBox(width: 6.w),
                       Text(
                         '${photo['uploaded_by']} (${photo['uploaded_by_role']})',
-                        style: const TextStyle(fontSize: 13, color: Colors.white70),
+                        style: TextStyle(fontSize: 13.sp, color: Colors.white70),
                       ),
                     ],
                   ),
                   if (photo['description'] != null && photo['description'].toString().isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     Text(
                       photo['description'],
-                      style: const TextStyle(fontSize: 14, color: Colors.white),
+                      style: TextStyle(fontSize: 14.sp, color: Colors.white),
                     ),
                   ],
                 ],

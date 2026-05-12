@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../utils/app_colors.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -45,10 +46,10 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
 
   Future<void> _loadProjectFiles() async {
     setState(() => _isLoadingProjectFiles = true);
-    
+
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.get(
         Uri.parse('${AuthService.baseUrl}/construction/project-files/${widget.site['id']}/'),
         headers: {'Authorization': 'Bearer $token'},
@@ -70,10 +71,10 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
 
   Future<void> _loadExtraCosts() async {
     setState(() => _isLoadingExtraCosts = true);
-    
+
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.get(
         Uri.parse('${AuthService.baseUrl}/construction/extra-costs/${widget.site['id']}/'),
         headers: {'Authorization': 'Bearer $token'},
@@ -95,10 +96,10 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
 
   Future<void> _loadHistory() async {
     setState(() => _isLoadingHistory = true);
-    
+
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.get(
         Uri.parse('${AuthService.baseUrl}/construction/accountant/all-entries/'),
         headers: {'Authorization': 'Bearer $token'},
@@ -108,36 +109,36 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
         final data = json.decode(response.body);
         final labourEntries = List<Map<String, dynamic>>.from(data['labour_entries'] ?? []);
         final materialEntries = List<Map<String, dynamic>>.from(data['material_entries'] ?? []);
-        
+
         // Filter by current site
         final siteId = widget.site['id'].toString();
         final filteredLabour = labourEntries.where((e) => e['site_id'].toString() == siteId).toList();
         final filteredMaterial = materialEntries.where((e) => e['site_id'].toString() == siteId).toList();
-        
+
         // Combine and sort by date
         final combined = <Map<String, dynamic>>[];
-        
+
         for (var entry in filteredLabour) {
           combined.add({
             ...entry,
             'type': 'LABOUR',
           });
         }
-        
+
         for (var entry in filteredMaterial) {
           combined.add({
             ...entry,
             'type': 'MATERIAL',
           });
         }
-        
+
         // Sort by date (newest first)
         combined.sort((a, b) {
           final dateA = DateTime.tryParse(a['entry_time'] ?? a['updated_at'] ?? '') ?? DateTime(2000);
           final dateB = DateTime.tryParse(b['entry_time'] ?? b['updated_at'] ?? '') ?? DateTime(2000);
           return dateB.compareTo(dateA);
         });
-        
+
         setState(() {
           _historyEntries = combined;
           _isLoadingHistory = false;
@@ -157,9 +158,9 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
       appBar: AppBar(
         title: Text(
           widget.site['display_name'] ?? widget.site['site_name'] ?? 'Site Details',
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.deepNavy,
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -183,8 +184,8 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
         backgroundColor: AppColors.cleanWhite,
         selectedItemColor: AppColors.deepNavy,
         unselectedItemColor: AppColors.textSecondary,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
+        selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
+        unselectedLabelStyle: TextStyle(fontSize: 12.sp),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.photo_camera),
@@ -207,7 +208,7 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
       floatingActionButton: FloatingActionButton(
         onPressed: _showQuickActions,
         backgroundColor: AppColors.safetyOrange,
-        child: const Icon(Icons.add, size: 32),
+        child: Icon(Icons.add, size: 32.sp),
       ),
     );
   }
@@ -217,23 +218,23 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.cleanWhite,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(25.r)),
         ),
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24.r),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'Quick Actions',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -282,7 +283,7 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
           ],
         ),
       ),
@@ -302,7 +303,7 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Material Requirement'),
-          contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+          contentPadding: EdgeInsets.fromLTRB(24.w, 20.h, 24.w, 0),
           content: SingleChildScrollView(
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.9,
@@ -317,7 +318,7 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   Row(
                     children: [
                       Expanded(
@@ -331,7 +332,7 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12.w),
                       Expanded(
                         child: TextField(
                           controller: unitController,
@@ -344,7 +345,7 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   DropdownButtonFormField<String>(
                     value: selectedPriority,
                     decoration: const InputDecoration(
@@ -360,7 +361,7 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                       setDialogState(() => selectedPriority = value ?? 'normal');
                     },
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   TextField(
                     controller: notesController,
                     maxLines: 3,
@@ -442,28 +443,28 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 140,
-        padding: const EdgeInsets.all(20),
+        width: 140.w,
+        padding: EdgeInsets.all(20.r),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           border: Border.all(color: color.withOpacity(0.3), width: 2),
         ),
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: Colors.white, size: 32),
+              child: Icon(icon, color: Colors.white, size: 32.sp),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Text(
               label,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 16.sp,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
@@ -476,16 +477,16 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
 
   Widget _buildPhotosTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Site Info Card
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
               color: AppColors.cleanWhite,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
               boxShadow: [AppColors.cardShadow],
             ),
             child: Column(
@@ -494,33 +495,33 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                 Row(
                   children: [
                     Container(
-                      width: 48,
-                      height: 48,
+                      width: 48.w,
+                      height: 48.h,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [AppColors.deepNavy.withValues(alpha: 0.8), AppColors.deepNavy],
                         ),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
-                      child: const Icon(Icons.location_city, color: Colors.white, size: 24),
+                      child: Icon(Icons.location_city, color: Colors.white, size: 24.sp),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             widget.site['display_name'] ?? widget.site['site_name'] ?? 'Unknown',
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.bold,
                               color: AppColors.deepNavy,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4.h),
                           Text(
                             '${widget.site['area'] ?? ''}, ${widget.site['street'] ?? ''}',
-                            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
                           ),
                         ],
                       ),
@@ -530,43 +531,43 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
 
           // Upload Photo Button
           ElevatedButton.icon(
             onPressed: () => _openPhotoUpload(),
-            icon: const Icon(Icons.camera_alt, size: 20),
-            label: const Text('Upload Photo', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            icon: Icon(Icons.camera_alt, size: 20.sp),
+            label: Text('Upload Photo', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.deepNavy,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              padding: EdgeInsets.symmetric(vertical: 16.h),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
               elevation: 2,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
 
           // View Gallery Button
           OutlinedButton.icon(
             onPressed: () => _openPhotoGallery(),
-            icon: const Icon(Icons.photo_library, size: 20),
-            label: const Text('View Gallery', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            icon: Icon(Icons.photo_library, size: 20.sp),
+            label: Text('View Gallery', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.deepNavy,
               side: const BorderSide(color: AppColors.deepNavy, width: 2),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              padding: EdgeInsets.symmetric(vertical: 16.h),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
 
           // Instructions
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
               color: AppColors.statusCompleted.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
               border: Border.all(color: AppColors.statusCompleted.withValues(alpha: 0.3)),
             ),
             child: Column(
@@ -574,19 +575,19 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
               children: [
                 Row(
                   children: [
-                    Icon(Icons.info_outline, color: AppColors.statusCompleted, size: 20),
-                    const SizedBox(width: 8),
-                    const Text(
+                    Icon(Icons.info_outline, color: AppColors.statusCompleted, size: 20.sp),
+                    SizedBox(width: 8.w),
+                    Text(
                       'Photo Upload Guidelines',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 _buildGuideline('🌅', 'Morning Photo', 'Upload before 1:00 PM - Work Started'),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 _buildGuideline('🌆', 'Evening Photo', 'Upload after 1:00 PM - Work Completed'),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 _buildGuideline('📸', 'Quality', 'Clear, well-lit photos of work progress'),
               ],
             ),
@@ -600,19 +601,19 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(icon, style: const TextStyle(fontSize: 16)),
-        const SizedBox(width: 8),
+        Text(icon, style: TextStyle(fontSize: 16.sp)),
+        SizedBox(width: 8.w),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
               ),
               Text(
                 description,
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -624,32 +625,32 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
   Widget _buildComplaintsTab() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32.r),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.report_problem_outlined, size: 80, color: AppColors.textSecondary.withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
-            const Text(
+            Icon(Icons.report_problem_outlined, size: 80.sp, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+            SizedBox(height: 16.h),
+            Text(
               'Complaints',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               'View and resolve complaints raised by clients',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: AppColors.statusOverdue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: const Text(
+              child: Text(
                 'Coming Soon',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.statusOverdue),
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: AppColors.statusOverdue),
               ),
             ),
           ],
@@ -661,32 +662,32 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
   Widget _buildProjectFilesTab() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32.r),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_outlined, size: 80, color: AppColors.textSecondary.withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
-            const Text(
+            Icon(Icons.folder_outlined, size: 80.sp, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+            SizedBox(height: 16.h),
+            Text(
               'Project Files',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               'View and upload project documents and files',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: AppColors.statusOverdue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: const Text(
+              child: Text(
                 'Coming Soon',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.statusOverdue),
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: AppColors.statusOverdue),
               ),
             ),
           ],
@@ -702,22 +703,22 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
         children: [
           // Add Extra Cost Button
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             color: AppColors.cleanWhite,
             child: ElevatedButton.icon(
               onPressed: () => _showAddExtraCostDialog(),
-              icon: const Icon(Icons.add, size: 20),
-              label: const Text('Add Extra Cost', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              icon: Icon(Icons.add, size: 20.sp),
+              label: Text('Add Extra Cost', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.deepNavy,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: EdgeInsets.symmetric(vertical: 14.h),
                 minimumSize: const Size(double.infinity, 0),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
               ),
             ),
           ),
-          
+
           // Tab Bar
           Container(
             color: AppColors.cleanWhite,
@@ -726,14 +727,14 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
               unselectedLabelColor: AppColors.textSecondary,
               indicatorColor: AppColors.deepNavy,
               indicatorWeight: 3,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp),
               tabs: const [
                 Tab(text: 'Extra Costs'),
                 Tab(text: 'History'),
               ],
             ),
           ),
-          
+
           // Tab Views
           Expanded(
             child: TabBarView(
@@ -747,12 +748,12 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                             onRefresh: _loadExtraCosts,
                             color: AppColors.deepNavy,
                             child: ListView.builder(
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(16.r),
                               itemCount: _extraCosts.length,
                               itemBuilder: (context, index) => _buildExtraCostCard(_extraCosts[index]),
                             ),
                           ),
-                
+
                 // History View
                 _buildHistoryView(),
               ],
@@ -767,24 +768,24 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
     if (_isLoadingHistory) {
       return const Center(child: CircularProgressIndicator(color: AppColors.deepNavy));
     }
-    
+
     if (_historyEntries.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(32.r),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.history, size: 80, color: AppColors.textSecondary.withValues(alpha: 0.5)),
-              const SizedBox(height: 16),
-              const Text(
+              Icon(Icons.history, size: 80.sp, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+              SizedBox(height: 16.h),
+              Text(
                 'No History',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Text(
                 'Labour and material entries will appear here',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -792,12 +793,12 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
         ),
       );
     }
-    
+
     return RefreshIndicator(
       onRefresh: _loadHistory,
       color: AppColors.deepNavy,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         itemCount: _historyEntries.length,
         itemBuilder: (context, index) => _buildHistoryCard(_historyEntries[index]),
       ),
@@ -808,63 +809,63 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
     final isLabour = entry['type'] == 'LABOUR';
     final icon = isLabour ? Icons.people : Icons.inventory_2;
     final color = isLabour ? AppColors.statusCompleted : AppColors.deepNavy;
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [AppColors.cardShadow],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: Icon(icon, color: color, size: 20),
+                  child: Icon(icon, color: color, size: 20.sp),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         isLabour ? entry['labour_type'] ?? 'Labour' : entry['material_type'] ?? 'Material',
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text(
-                        isLabour 
+                        isLabour
                             ? '${entry['labour_count']} workers'
                             : '${entry['quantity']} ${entry['unit'] ?? 'units'}',
-                        style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                        style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20.r),
                     border: Border.all(color: color),
                   ),
                   child: Text(
                     isLabour ? 'LABOUR' : 'MATERIAL',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.bold,
                       color: color,
                     ),
@@ -872,35 +873,35 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                 ),
               ],
             ),
-            
+
             // Extra cost if present
             if (entry['extra_cost'] != null && entry['extra_cost'] > 0) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: AppColors.statusOverdue.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   border: Border.all(color: AppColors.statusOverdue.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.attach_money, size: 16, color: AppColors.statusOverdue),
-                    const SizedBox(width: 6),
+                    Icon(Icons.attach_money, size: 16.sp, color: AppColors.statusOverdue),
+                    SizedBox(width: 6.w),
                     Text(
                       'Extra Cost: ₹${entry['extra_cost']}',
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: TextStyle(
+                        fontSize: 13.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.statusOverdue,
                       ),
                     ),
                     if (entry['extra_cost_notes'] != null && entry['extra_cost_notes'].toString().isNotEmpty) ...[
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8.w),
                       Expanded(
                         child: Text(
                           entry['extra_cost_notes'],
-                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -910,22 +911,22 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                 ),
               ),
             ],
-            
-            const SizedBox(height: 12),
+
+            SizedBox(height: 12.h),
             Row(
               children: [
-                Icon(Icons.person, size: 14, color: AppColors.textSecondary),
-                const SizedBox(width: 4),
+                Icon(Icons.person, size: 14.sp, color: AppColors.textSecondary),
+                SizedBox(width: 4.w),
                 Text(
                   entry['supervisor_name'] ?? 'Unknown',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
                 ),
                 const Spacer(),
-                Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary),
-                const SizedBox(width: 4),
+                Icon(Icons.calendar_today, size: 14.sp, color: AppColors.textSecondary),
+                SizedBox(width: 4.w),
                 Text(
                   _formatDate(entry['entry_time'] ?? entry['updated_at']),
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -938,20 +939,20 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
   Widget _buildEmptyExtraCostState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32.r),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.attach_money, size: 80, color: AppColors.textSecondary.withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
-            const Text(
+            Icon(Icons.attach_money, size: 80.sp, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+            SizedBox(height: 16.h),
+            Text(
               'No Extra Costs',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               'Tap "Add Extra Cost" to submit additional expenses',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -964,16 +965,16 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
     final amount = cost['amount'] ?? 0;
     final status = cost['payment_status'] ?? 'PENDING';
     final statusColor = status == 'PAID' ? AppColors.statusCompleted : AppColors.statusOverdue;
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [AppColors.cardShadow],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -982,23 +983,23 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
               children: [
                 Text(
                   '₹${amount.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 20,
+                  style: TextStyle(
+                    fontSize: 20.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.deepNavy,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20.r),
                     border: Border.all(color: statusColor),
                   ),
                   child: Text(
                     status,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.bold,
                       color: statusColor,
                     ),
@@ -1007,38 +1008,38 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
               ],
             ),
             if (cost['description'] != null && cost['description'].toString().isNotEmpty) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Text(
                 cost['description'],
-                style: const TextStyle(
-                  fontSize: 15,
+                style: TextStyle(
+                  fontSize: 15.sp,
                   fontWeight: FontWeight.w600,
                   color: AppColors.deepNavy,
                 ),
               ),
             ],
             if (cost['notes'] != null && cost['notes'].toString().isNotEmpty) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Text(
                 cost['notes'],
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
               ),
             ],
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
-                Icon(Icons.person, size: 14, color: AppColors.textSecondary),
-                const SizedBox(width: 4),
+                Icon(Icons.person, size: 14.sp, color: AppColors.textSecondary),
+                SizedBox(width: 4.w),
                 Text(
                   cost['submitted_by'] ?? 'Unknown',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
                 ),
                 const Spacer(),
-                Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary),
-                const SizedBox(width: 4),
+                Icon(Icons.calendar_today, size: 14.sp, color: AppColors.textSecondary),
+                SizedBox(width: 4.w),
                 Text(
                   _formatDate(cost['uploaded_at']),
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -1058,7 +1059,7 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
           title: const Text(
             'Add Extra Cost',
             style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.deepNavy),
@@ -1068,11 +1069,11 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Amount *',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                  style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 TextField(
                   controller: amountController,
                   keyboardType: TextInputType.number,
@@ -1082,17 +1083,17 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                     filled: true,
                     fillColor: AppColors.lightSlate,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       borderSide: BorderSide.none,
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
+                SizedBox(height: 16.h),
+                Text(
                   'Description *',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                  style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 TextField(
                   controller: descriptionController,
                   decoration: InputDecoration(
@@ -1100,17 +1101,17 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                     filled: true,
                     fillColor: AppColors.lightSlate,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       borderSide: BorderSide.none,
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
+                SizedBox(height: 16.h),
+                Text(
                   'Notes (Optional)',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                  style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 TextField(
                   controller: notesController,
                   maxLines: 3,
@@ -1119,7 +1120,7 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                     filled: true,
                     fillColor: AppColors.lightSlate,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       borderSide: BorderSide.none,
                     ),
                   ),
@@ -1150,7 +1151,7 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
 
                       try {
                         final token = await _authService.getToken();
-                        
+
                         final response = await http.post(
                           Uri.parse('${AuthService.baseUrl}/construction/submit-extra-cost/'),
                           headers: {
@@ -1196,13 +1197,13 @@ class _SiteEngineerSiteDetailScreenState extends State<SiteEngineerSiteDetailScr
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.deepNavy,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
               ),
               child: isSubmitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  ? SizedBox(
+                      width: 20.w,
+                      height: 20.h,
+                      child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     )
                   : const Text('Submit', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),

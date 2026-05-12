@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
@@ -34,7 +35,7 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
   final _taxController = TextEditingController(text: '0');
   final _discountController = TextEditingController(text: '0');
   final _notesController = TextEditingController();
-  
+
   String _vendorType = 'Tiles Shop';
   String _materialType = 'Tiles';
   String _unit = 'sqft';
@@ -172,23 +173,23 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24.r),
         constraints: const BoxConstraints(maxHeight: 600),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Upload Material Bill',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
               ),
-              const SizedBox(height: 8),
-              Text(widget.siteName, style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
-              const SizedBox(height: 24),
-              
+              SizedBox(height: 8.h),
+              Text(widget.siteName, style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary)),
+              SizedBox(height: 24.h),
+
               // Bill Number
               TextField(
                 controller: _billNumberController,
@@ -198,8 +199,8 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                   prefixIcon: Icon(Icons.numbers),
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               // Bill Date
               InkWell(
                 onTap: () async {
@@ -220,8 +221,8 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                   child: Text(DateFormat('dd MMM yyyy').format(_billDate)),
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               // Vendor Name
               TextField(
                 controller: _vendorNameController,
@@ -231,8 +232,8 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                   prefixIcon: Icon(Icons.store),
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               // Vendor Type
               DropdownButtonFormField<String>(
                 value: _vendorType,
@@ -243,8 +244,8 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                 items: _vendorTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
                 onChanged: (value) => setState(() => _vendorType = value!),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               // Material Type
               DropdownButtonFormField<String>(
                 value: _materialType,
@@ -255,8 +256,8 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                 items: _materialTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
                 onChanged: (value) => setState(() => _materialType = value!),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               // Quantity and Unit
               Row(
                 children: [
@@ -272,7 +273,7 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                       onChanged: (_) => setState(() {}),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _unit,
@@ -286,8 +287,8 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               // Unit Price
               TextField(
                 controller: _unitPriceController,
@@ -299,25 +300,25 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                 ),
                 onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               // Total Amount (calculated)
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Total Amount:', style: TextStyle(fontWeight: FontWeight.w600)),
-                    Text('₹${_totalAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('₹${_totalAmount.toStringAsFixed(2)}', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               // Tax and Discount
               Row(
                 children: [
@@ -333,7 +334,7 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                       onChanged: (_) => setState(() {}),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Expanded(
                     child: TextField(
                       controller: _discountController,
@@ -348,25 +349,25 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               // Final Amount (calculated)
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Final Amount:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text('₹${_finalAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
+                    Text('Final Amount:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
+                    Text('₹${_finalAmount.toStringAsFixed(2)}', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.green)),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               // Payment Status
               DropdownButtonFormField<String>(
                 value: _paymentStatus,
@@ -377,32 +378,32 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                 items: _paymentStatuses.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                 onChanged: (value) => setState(() => _paymentStatus = value!),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               // File Picker
               OutlinedButton.icon(
                 onPressed: _pickFile,
                 icon: const Icon(Icons.attach_file),
                 label: Text(_selectedFile == null ? 'Select PDF File *' : 'PDF Selected'),
-                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 16.h)),
               ),
               if (_selectedFile != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12.r),
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                     border: Border.all(color: Colors.green.shade200),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8.w),
                       Expanded(
                         child: Text(
                           _selectedFile!.path.split('/').last,
-                          style: const TextStyle(fontSize: 12),
+                          style: TextStyle(fontSize: 12.sp),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -410,8 +411,8 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                   ),
                 ),
               ],
-              const SizedBox(height: 24),
-              
+              SizedBox(height: 24.h),
+
               // Buttons
               Row(
                 children: [
@@ -421,20 +422,20 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                       child: const Text('Cancel'),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _isUploading ? null : _upload,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.deepNavy,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: 16.h),
                       ),
                       child: _isUploading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          ? SizedBox(
+                              width: 20.w,
+                              height: 20.h,
+                              child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                             )
                           : const Text('Upload'),
                     ),
@@ -480,7 +481,7 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
   final _taxController = TextEditingController(text: '0');
   final _discountController = TextEditingController(text: '0');
   final _notesController = TextEditingController();
-  
+
   String _vendorType = 'Contractor';
   String _paymentStatus = 'PENDING';
   DateTime _billDate = DateTime.now();
@@ -488,7 +489,7 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
   bool _isUploading = false;
 
   final List<String> _vendorTypes = [
-    'Contractor', 'Electrician', 'Plumber', 'Carpenter', 'Mason', 
+    'Contractor', 'Electrician', 'Plumber', 'Carpenter', 'Mason',
     'Painter', 'Transport', 'Equipment Rental', 'Other'
   ];
 
@@ -587,23 +588,23 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24.r),
         constraints: const BoxConstraints(maxHeight: 600),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Upload Vendor Bill',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
               ),
-              const SizedBox(height: 8),
-              Text(widget.siteName, style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
-              const SizedBox(height: 24),
-              
+              SizedBox(height: 8.h),
+              Text(widget.siteName, style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary)),
+              SizedBox(height: 24.h),
+
               TextField(
                 controller: _billNumberController,
                 decoration: const InputDecoration(
@@ -612,8 +613,8 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
                   prefixIcon: Icon(Icons.numbers),
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               InkWell(
                 onTap: () async {
                   final date = await showDatePicker(
@@ -633,8 +634,8 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
                   child: Text(DateFormat('dd MMM yyyy').format(_billDate)),
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               TextField(
                 controller: _vendorNameController,
                 decoration: const InputDecoration(
@@ -643,8 +644,8 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
                   prefixIcon: Icon(Icons.business),
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               DropdownButtonFormField<String>(
                 value: _vendorType,
                 decoration: const InputDecoration(
@@ -654,8 +655,8 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
                 items: _vendorTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
                 onChanged: (value) => setState(() => _vendorType = value!),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               TextField(
                 controller: _serviceTypeController,
                 decoration: const InputDecoration(
@@ -664,8 +665,8 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
                   hintText: 'e.g., Electrical Wiring, Plumbing Work',
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               TextField(
                 controller: _serviceDescController,
                 decoration: const InputDecoration(
@@ -674,8 +675,8 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
                 ),
                 maxLines: 2,
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               TextField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
@@ -686,8 +687,8 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
                 ),
                 onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               Row(
                 children: [
                   Expanded(
@@ -702,7 +703,7 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
                       onChanged: (_) => setState(() {}),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Expanded(
                     child: TextField(
                       controller: _discountController,
@@ -717,47 +718,47 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Final Amount:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text('₹${_finalAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
+                    Text('Final Amount:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
+                    Text('₹${_finalAmount.toStringAsFixed(2)}', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.green)),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               OutlinedButton.icon(
                 onPressed: _pickFile,
                 icon: const Icon(Icons.attach_file),
                 label: Text(_selectedFile == null ? 'Select PDF File *' : 'PDF Selected'),
-                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 16.h)),
               ),
               if (_selectedFile != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12.r),
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                     border: Border.all(color: Colors.green.shade200),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8.w),
                       Expanded(
                         child: Text(
                           _selectedFile!.path.split('/').last,
-                          style: const TextStyle(fontSize: 12),
+                          style: TextStyle(fontSize: 12.sp),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -765,8 +766,8 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
                   ),
                 ),
               ],
-              const SizedBox(height: 24),
-              
+              SizedBox(height: 24.h),
+
               Row(
                 children: [
                   Expanded(
@@ -775,20 +776,20 @@ class _VendorBillUploadDialogState extends State<VendorBillUploadDialog> {
                       child: const Text('Cancel'),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _isUploading ? null : _upload,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.deepNavy,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: 16.h),
                       ),
                       child: _isUploading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          ? SizedBox(
+                              width: 20.w,
+                              height: 20.h,
+                              child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                             )
                           : const Text('Upload'),
                     ),
@@ -832,7 +833,7 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
   final _descriptionController = TextEditingController();
   final _contractValueController = TextEditingController();
   final _notesController = TextEditingController();
-  
+
   String _agreementType = 'Site Agreement';
   String _partyType = 'Customer';
   DateTime _agreementDate = DateTime.now();
@@ -842,7 +843,7 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
   bool _isUploading = false;
 
   final List<String> _agreementTypes = [
-    'Site Agreement', 'Contractor Agreement', 'Vendor Agreement', 
+    'Site Agreement', 'Contractor Agreement', 'Vendor Agreement',
     'Lease Agreement', 'Purchase Agreement', 'Other'
   ];
 
@@ -932,23 +933,23 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24.r),
         constraints: const BoxConstraints(maxHeight: 600),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Upload Site Agreement',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
               ),
-              const SizedBox(height: 8),
-              Text(widget.siteName, style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
-              const SizedBox(height: 24),
-              
+              SizedBox(height: 8.h),
+              Text(widget.siteName, style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary)),
+              SizedBox(height: 24.h),
+
               DropdownButtonFormField<String>(
                 value: _agreementType,
                 decoration: const InputDecoration(
@@ -958,8 +959,8 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
                 items: _agreementTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
                 onChanged: (value) => setState(() => _agreementType = value!),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               TextField(
                 controller: _agreementNumberController,
                 decoration: const InputDecoration(
@@ -968,8 +969,8 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
                   hintText: 'Optional',
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               InkWell(
                 onTap: () async {
                   final date = await showDatePicker(
@@ -989,8 +990,8 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
                   child: Text(DateFormat('dd MMM yyyy').format(_agreementDate)),
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               TextField(
                 controller: _partyNameController,
                 decoration: const InputDecoration(
@@ -999,8 +1000,8 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
                   hintText: 'Customer/Contractor/Vendor name',
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               DropdownButtonFormField<String>(
                 value: _partyType,
                 decoration: const InputDecoration(
@@ -1010,8 +1011,8 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
                 items: _partyTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
                 onChanged: (value) => setState(() => _partyType = value!),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               TextField(
                 controller: _titleController,
                 autofocus: true,
@@ -1021,8 +1022,8 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
                   hintText: 'e.g., Construction Agreement for Residential Building',
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               TextField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(
@@ -1031,8 +1032,8 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
                 ),
                 maxLines: 3,
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               TextField(
                 controller: _contractValueController,
                 keyboardType: TextInputType.number,
@@ -1043,8 +1044,8 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
                   hintText: 'Optional',
                 ),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               Row(
                 children: [
                   Expanded(
@@ -1067,7 +1068,7 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Expanded(
                     child: InkWell(
                       onTap: () async {
@@ -1090,31 +1091,31 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               OutlinedButton.icon(
                 onPressed: _pickFile,
                 icon: const Icon(Icons.attach_file),
                 label: Text(_selectedFile == null ? 'Select PDF File *' : 'PDF Selected'),
-                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 16.h)),
               ),
               if (_selectedFile != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12.r),
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                     border: Border.all(color: Colors.green.shade200),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8.w),
                       Expanded(
                         child: Text(
                           _selectedFile!.path.split('/').last,
-                          style: const TextStyle(fontSize: 12),
+                          style: TextStyle(fontSize: 12.sp),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -1122,8 +1123,8 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
                   ),
                 ),
               ],
-              const SizedBox(height: 24),
-              
+              SizedBox(height: 24.h),
+
               Row(
                 children: [
                   Expanded(
@@ -1132,20 +1133,20 @@ class _SiteAgreementUploadDialogState extends State<SiteAgreementUploadDialog> {
                       child: const Text('Cancel'),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _isUploading ? null : _upload,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.deepNavy,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: 16.h),
                       ),
                       child: _isUploading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          ? SizedBox(
+                              width: 20.w,
+                              height: 20.h,
+                              child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                             )
                           : const Text('Upload'),
                     ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -253,11 +254,11 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Manage Users',
           style: TextStyle(
-            color: Color(0xFF1A1A2E),
-            fontSize: 24,
+            color: const Color(0xFF1A1A2E),
+            fontSize: 24.sp,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -276,18 +277,18 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
                 children: [
                   const Text('New Users'),
                   if (_pendingUsers.isNotEmpty) ...[
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8.w),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
                       decoration: BoxDecoration(
                         color: Colors.red,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
                       child: Text(
                         '${_pendingUsers.length}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -324,7 +325,7 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
                 )
               : ListView.builder(
                   physics: const SmoothScrollPhysics(),
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(16.r),
                   itemCount: _pendingUsers.length,
                   itemBuilder: (context, index) {
                     final user = _pendingUsers[index];
@@ -351,7 +352,7 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
                 )
               : ListView.builder(
                   physics: const SmoothScrollPhysics(),
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(16.r),
                   itemCount: _allUsers.length,
                   itemBuilder: (context, index) {
                     final user = _allUsers[index];
@@ -374,8 +375,8 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 120,
-            height: 120,
+            width: 120.w,
+            height: 120.h,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
@@ -384,23 +385,23 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
               ),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 60, color: Colors.white),
+            child: Icon(icon, size: 60.sp, color: Colors.white),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 24,
+            style: TextStyle(
+              fontSize: 24.sp,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A2E),
+              color: const Color(0xFF1A1A2E),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Text(
             subtitle,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Color(0xFF6B7280),
+            style: TextStyle(
+              fontSize: 16.sp,
+              color: const Color(0xFF6B7280),
             ),
           ),
         ],
@@ -417,10 +418,10 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
     final role = user['role'] ?? 'N/A';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -434,20 +435,20 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
+            padding: EdgeInsets.all(16.r),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
                 colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: 50.w,
+                  height: 50.h,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.3),
                     shape: BoxShape.circle,
@@ -455,24 +456,24 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
                   child: Center(
                     child: Text(
                       fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: 24.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         fullName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: 18.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -480,23 +481,23 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
                         '@$username',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 14,
+                          fontSize: 14.sp,
                         ),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20.r),
                   ),
                   child: Text(
                     role,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -506,43 +507,43 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
           ),
           // Body
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             child: Column(
               children: [
                 _buildInfoRow(Icons.email_outlined, email),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 _buildInfoRow(Icons.phone_outlined, phone),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 // Action buttons
                 Row(
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () => _approveUser(userId, username),
-                        icon: const Icon(Icons.check_circle, size: 20),
+                        icon: Icon(Icons.check_circle, size: 20.sp),
                         label: const Text('Approve'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF4CAF50),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12.r),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _rejectUser(userId, username),
-                        icon: const Icon(Icons.cancel, size: 20),
+                        icon: Icon(Icons.cancel, size: 20.sp),
                         label: const Text('Reject'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
                           side: const BorderSide(color: Colors.red),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12.r),
                           ),
                         ),
                       ),
@@ -566,10 +567,10 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
     final isActive = user['is_active'] ?? false;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -579,12 +580,12 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
         ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
+        contentPadding: EdgeInsets.all(16.r),
         leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
+          width: 50.w,
+          height: 50.h,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
               colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -594,9 +595,9 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
           child: Center(
             child: Text(
               fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 20,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -604,21 +605,21 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
         ),
         title: Text(
           fullName,
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: 16.sp,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1A1A2E),
+            color: const Color(0xFF1A1A2E),
           ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
-            Text('@$username', style: const TextStyle(fontSize: 13)),
-            const SizedBox(height: 2),
-            Text(email, style: const TextStyle(fontSize: 12)),
-            const SizedBox(height: 2),
-            Text(phone, style: const TextStyle(fontSize: 12)),
+            SizedBox(height: 4.h),
+            Text('@$username', style: TextStyle(fontSize: 13.sp)),
+            SizedBox(height: 2.h),
+            Text(email, style: TextStyle(fontSize: 12.sp)),
+            SizedBox(height: 2.h),
+            Text(phone, style: TextStyle(fontSize: 12.sp)),
           ],
         ),
         trailing: Column(
@@ -626,31 +627,31 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
               decoration: BoxDecoration(
                 color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
               ),
               child: Text(
                 role,
-                style: const TextStyle(
-                  fontSize: 11,
+                style: TextStyle(
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF4CAF50),
+                  color: const Color(0xFF4CAF50),
                 ),
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4.h),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
               decoration: BoxDecoration(
                 color: isActive ? Colors.green : Colors.grey,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(6.r),
               ),
               child: Text(
                 isActive ? 'Active' : 'Inactive',
-                style: const TextStyle(
-                  fontSize: 10,
+                style: TextStyle(
+                  fontSize: 10.sp,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),

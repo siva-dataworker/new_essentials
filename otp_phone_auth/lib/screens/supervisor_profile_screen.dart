@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../models/user_model.dart';
 import '../utils/app_colors.dart';
 import '../services/backend_service.dart';
@@ -197,7 +198,7 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24.r),
           child: Form(
             key: _formKey,
             child: Column(
@@ -206,8 +207,8 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
                 // Profile Icon
                 Center(
                   child: Container(
-                    width: 100,
-                    height: 100,
+                    width: 100.w,
+                    height: 100.h,
                     decoration: BoxDecoration(
                       color: AppColors.safetyOrange,
                       shape: BoxShape.circle,
@@ -219,21 +220,21 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.person_rounded,
-                      size: 50,
+                      size: 50.sp,
                       color: Colors.white,
                     ),
                   ),
                 ),
-                
-                const SizedBox(height: 32),
-                
+
+                SizedBox(height: 32.h),
+
                 // Name Field (Editable)
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.deepNavy.withValues(alpha: 0.05),
@@ -244,12 +245,12 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
                   ),
                   child: TextFormField(
                     controller: _nameController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Name',
                       hintText: 'Enter your name',
                       prefixIcon: Icon(Icons.person_outline),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                        borderRadius: BorderRadius.all(Radius.circular(12.r)),
                       ),
                     ),
                     validator: (value) {
@@ -264,13 +265,13 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
                   ),
                 ),
                 
-                const SizedBox(height: 20),
-                
+                SizedBox(height: 20.h),
+
                 // Phone Number (Editable)
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.deepNavy.withValues(alpha: 0.05),
@@ -283,12 +284,12 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
                     maxLength: 10,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Phone Number',
                       hintText: 'Enter your phone number',
                       prefixIcon: Icon(Icons.phone_outlined),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                        borderRadius: BorderRadius.all(Radius.circular(12.r)),
                       ),
                     ),
                     validator: (value) {
@@ -305,33 +306,33 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
                   ),
                 ),
                 
-                const SizedBox(height: 24),
-                
+                SizedBox(height: 24.h),
+
                 // Password Section Header
-                const Text(
+                Text(
                   'Set Password (Optional)',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Text(
                   'Create a strong password for additional security',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 13.sp,
                     color: Colors.grey.shade600,
                   ),
                 ),
-                
-                const SizedBox(height: 16),
-                
+
+                SizedBox(height: 16.h),
+
                 // Password Field
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.deepNavy.withValues(alpha: 0.05),
@@ -357,21 +358,21 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
                           });
                         },
                       ),
-                      border: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12.r)),
                       ),
                     ),
                     validator: _validatePassword,
                   ),
                 ),
-                
-                const SizedBox(height: 16),
-                
+
+                SizedBox(height: 16.h),
+
                 // Confirm Password Field
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.deepNavy.withValues(alpha: 0.05),
@@ -397,8 +398,8 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
                           });
                         },
                       ),
-                      border: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12.r)),
                       ),
                     ),
                     validator: (value) {
@@ -415,14 +416,14 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
                   ),
                 ),
                 
-                const SizedBox(height: 12),
-                
+                SizedBox(height: 12.h),
+
                 // Password Requirements
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12.r),
                   decoration: BoxDecoration(
                     color: AppColors.deepNavy.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,12 +431,12 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
                       Text(
                         'Password must contain:',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           fontWeight: FontWeight.w600,
                           color: Colors.grey.shade700,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6.h),
                       _buildRequirement('At least 8 characters'),
                       _buildRequirement('1 uppercase letter (A-Z)'),
                       _buildRequirement('1 lowercase letter (a-z)'),
@@ -445,48 +446,48 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
                   ),
                 ),
                 
-                const SizedBox(height: 32),
-                
+                SizedBox(height: 32.h),
+
                 // Save Button
                 SizedBox(
-                  height: 54,
+                  height: 54.h,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _saveProfile,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.safetyOrange,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
                       elevation: 0,
                     ),
                     child: _isLoading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
+                        ? SizedBox(
+                            height: 24.h,
+                            width: 24.w,
                             child: CircularProgressIndicator(
                               color: Colors.white,
                               strokeWidth: 2,
                             ),
                           )
-                        : const Text(
+                        : Text(
                             'Save Changes',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                   ),
                 ),
-                
-                const SizedBox(height: 16),
-                
+
+                SizedBox(height: 16.h),
+
                 // Role Badge
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.r),
                   decoration: BoxDecoration(
                     color: AppColors.safetyOrange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                     border: Border.all(
                       color: AppColors.safetyOrange.withValues(alpha: 0.3),
                     ),
@@ -494,32 +495,32 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(8.r),
                         decoration: BoxDecoration(
                           color: AppColors.safetyOrange,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(8.r),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.construction_rounded,
                           color: Colors.white,
-                          size: 20,
+                          size: 20.sp,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      const Column(
+                      SizedBox(width: 12.w),
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Role',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.sp,
                               color: AppColors.textSecondary,
                             ),
                           ),
                           Text(
                             'Supervisor',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimary,
                             ),
@@ -539,19 +540,19 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
   
   Widget _buildRequirement(String text) {
     return Padding(
-      padding: const EdgeInsets.only(top: 4),
+      padding: EdgeInsets.only(top: 4.h),
       child: Row(
         children: [
           Icon(
             Icons.check_circle_outline,
-            size: 14,
+            size: 14.sp,
             color: Colors.grey.shade600,
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: 6.w),
           Text(
             text,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 11.sp,
               color: Colors.grey.shade600,
             ),
           ),

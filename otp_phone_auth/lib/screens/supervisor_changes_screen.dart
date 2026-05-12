@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../providers/change_request_provider.dart';
 import '../utils/app_colors.dart';
 
@@ -46,11 +47,11 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
         return Scaffold(
           backgroundColor: AppColors.lightSlate,
           appBar: AppBar(
-            title: const Text(
+            title: Text(
               'Modified Entries',
               style: TextStyle(
                 color: AppColors.deepNavy,
-                fontSize: 20,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -81,23 +82,23 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
         children: [
           Icon(
             Icons.edit_off,
-            size: 80,
+            size: 80.sp,
             color: AppColors.textSecondary.withValues(alpha: 0.5),
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: 16.h),
+          Text(
             'No Modified Entries',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.deepNavy,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             'Entries modified by accountant will appear here',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
@@ -116,7 +117,7 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       itemCount: groupedEntries.length,
       itemBuilder: (context, index) {
         final date = groupedEntries.keys.elementAt(index);
@@ -126,11 +127,11 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.symmetric(vertical: 12.h),
               child: Text(
                 date,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.deepNavy,
                 ),
@@ -151,10 +152,10 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
 
   Widget _buildLabourCard(Map<String, dynamic> entry) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: AppColors.statusOverdue.withValues(alpha: 0.5),
           width: 2,
@@ -168,26 +169,26 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Modified badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
               decoration: BoxDecoration(
                 color: AppColors.statusOverdue.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.edit, size: 14, color: AppColors.statusOverdue),
-                  SizedBox(width: 4),
+                  Icon(Icons.edit, size: 14.sp, color: AppColors.statusOverdue),
+                  SizedBox(width: 4.w),
                   Text(
                     'MODIFIED',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.statusOverdue,
                       letterSpacing: 0.5,
@@ -196,34 +197,34 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             // Modified by
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: AppColors.deepNavy.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
-                  child: const Icon(Icons.person, size: 18, color: AppColors.deepNavy),
+                  child: Icon(Icons.person, size: 18.sp, color: AppColors.deepNavy),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Modified by',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
                       Text(
                         entry['modified_by_name'] ?? 'Accountant',
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
@@ -233,17 +234,17 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             // Site info
             Text(
               entry['site_name'] ?? 'Unknown Site',
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             // Labour details
             Row(
               children: [
@@ -254,7 +255,7 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
                     AppColors.deepNavy,
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 Expanded(
                   child: _buildInfoChip(
                     Icons.groups,
@@ -265,35 +266,35 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
               ],
             ),
             if (entry['modification_reason'] != null && entry['modification_reason'].toString().isNotEmpty) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: AppColors.lightSlate,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.info_outline, size: 16, color: AppColors.deepNavy),
-                        SizedBox(width: 6),
+                        Icon(Icons.info_outline, size: 16.sp, color: AppColors.deepNavy),
+                        SizedBox(width: 6.w),
                         Text(
                           'Reason for Change',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.deepNavy,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6.h),
                     Text(
                       entry['modification_reason'],
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -309,10 +310,10 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
 
   Widget _buildMaterialCard(Map<String, dynamic> entry) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: AppColors.statusOverdue.withValues(alpha: 0.5),
           width: 2,
@@ -326,26 +327,26 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Modified badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
               decoration: BoxDecoration(
                 color: AppColors.statusOverdue.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.edit, size: 14, color: AppColors.statusOverdue),
-                  SizedBox(width: 4),
+                  Icon(Icons.edit, size: 14.sp, color: AppColors.statusOverdue),
+                  SizedBox(width: 4.w),
                   Text(
                     'MODIFIED',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.statusOverdue,
                       letterSpacing: 0.5,
@@ -354,34 +355,34 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             // Modified by
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: AppColors.deepNavy.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
-                  child: const Icon(Icons.person, size: 18, color: AppColors.deepNavy),
+                  child: Icon(Icons.person, size: 18.sp, color: AppColors.deepNavy),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Modified by',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
                       Text(
                         entry['modified_by_name'] ?? 'Accountant',
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
@@ -391,17 +392,17 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             // Site info
             Text(
               entry['site_name'] ?? 'Unknown Site',
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             // Material details
             Row(
               children: [
@@ -412,7 +413,7 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
                     AppColors.deepNavy,
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 Expanded(
                   child: _buildInfoChip(
                     Icons.straighten,
@@ -423,35 +424,35 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
               ],
             ),
             if (entry['modification_reason'] != null && entry['modification_reason'].toString().isNotEmpty) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: AppColors.lightSlate,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.info_outline, size: 16, color: AppColors.deepNavy),
-                        SizedBox(width: 6),
+                        Icon(Icons.info_outline, size: 16.sp, color: AppColors.deepNavy),
+                        SizedBox(width: 6.w),
                         Text(
                           'Reason for Change',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.deepNavy,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6.h),
                     Text(
                       entry['modification_reason'],
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -467,21 +468,21 @@ class _SupervisorChangesScreenState extends State<SupervisorChangesScreen> {
 
   Widget _buildInfoChip(IconData icon, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(10.r),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
+          Icon(icon, size: 14.sp, color: color),
+          SizedBox(width: 6.w),
           Flexible(
             child: Text(
               text,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
                 color: color,
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../providers/construction_provider.dart';
 import '../providers/change_request_provider.dart';
 import '../utils/app_colors.dart';
@@ -158,32 +159,32 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'expand_all',
                 child: Row(
                   children: [
-                    Icon(Icons.expand_more, size: 20, color: AppColors.deepNavy),
-                    SizedBox(width: 12),
+                    Icon(Icons.expand_more, size: 20.sp, color: AppColors.deepNavy),
+                    SizedBox(width: 12.w),
                     Text('Expand All Days'),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'collapse_all',
                 child: Row(
                   children: [
-                    Icon(Icons.expand_less, size: 20, color: AppColors.deepNavy),
-                    SizedBox(width: 12),
+                    Icon(Icons.expand_less, size: 20.sp, color: AppColors.deepNavy),
+                    SizedBox(width: 12.w),
                     Text('Collapse All Days'),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'refresh',
                 child: Row(
                   children: [
-                    Icon(Icons.refresh, size: 20, color: AppColors.deepNavy),
-                    SizedBox(width: 12),
+                    Icon(Icons.refresh, size: 20.sp, color: AppColors.deepNavy),
+                    SizedBox(width: 12.w),
                     Text('Refresh Data'),
                   ],
                 ),
@@ -285,7 +286,7 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
     print('📅 [HISTORY] Sorted dates: $sortedDates');
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       itemCount: sortedDates.length,
       itemBuilder: (context, index) {
         final date = sortedDates[index];
@@ -302,10 +303,10 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
     final formattedDate = _formatDate(date);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.deepNavy.withValues(alpha: 0.06),
@@ -329,12 +330,12 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
                   }
                 });
               },
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
                   color: isExpanded ? AppColors.deepNavy.withValues(alpha: 0.05) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                   border: Border.all(
                     color: isExpanded ? AppColors.deepNavy.withValues(alpha: 0.2) : Colors.transparent,
                     width: 1,
@@ -344,20 +345,20 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
                   children: [
                     // Calendar Icon
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: EdgeInsets.all(10.r),
                       decoration: BoxDecoration(
                         gradient: isExpanded ? AppColors.navyGradient : null,
                         color: isExpanded ? null : AppColors.deepNavy.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(10.r),
                       ),
                       child: Icon(
                         Icons.calendar_today,
                         color: isExpanded ? Colors.white : AppColors.deepNavy,
-                        size: 20,
+                        size: 20.sp,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    
+                    SizedBox(width: 16.w),
+
                     // Date and Entry Count
                     Expanded(
                       child: Column(
@@ -366,43 +367,43 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
                           Text(
                             formattedDate,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.bold,
                               color: isExpanded ? AppColors.deepNavy : AppColors.deepNavy,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4.h),
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                                 decoration: BoxDecoration(
-                                  color: isLabour 
+                                  color: isLabour
                                       ? AppColors.safetyOrange.withValues(alpha: 0.1)
                                       : AppColors.statusCompleted.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(8.r),
                                 ),
                                 child: Text(
                                   '$totalEntries ${isLabour ? 'labour' : 'material'} ${totalEntries == 1 ? 'entry' : 'entries'}',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 12.sp,
                                     fontWeight: FontWeight.w600,
                                     color: isLabour ? AppColors.safetyOrange : AppColors.statusCompleted,
                                   ),
                                 ),
                               ),
                               if (isExpanded) ...[
-                                const SizedBox(width: 8),
+                                SizedBox(width: 8.w),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
                                   decoration: BoxDecoration(
                                     color: AppColors.deepNavy.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: BorderRadius.circular(6.r),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'EXPANDED',
                                     style: TextStyle(
-                                      fontSize: 10,
+                                      fontSize: 10.sp,
                                       fontWeight: FontWeight.bold,
                                       color: AppColors.deepNavy,
                                     ),
@@ -414,15 +415,15 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
                         ],
                       ),
                     ),
-                    
+
                     // Dropdown Arrow
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: EdgeInsets.all(8.r),
                       decoration: BoxDecoration(
-                        color: isExpanded 
+                        color: isExpanded
                             ? AppColors.deepNavy.withValues(alpha: 0.1)
                             : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: AnimatedRotation(
                         turns: isExpanded ? 0.5 : 0.0,
@@ -430,7 +431,7 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
                         child: Icon(
                           Icons.keyboard_arrow_down,
                           color: AppColors.deepNavy,
-                          size: 24,
+                          size: 24.sp,
                         ),
                       ),
                     ),
@@ -453,7 +454,7 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
                   color: AppColors.deepNavy.withValues(alpha: 0.1),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.r),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -462,21 +463,21 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
                         children: [
                           Icon(
                             isLabour ? Icons.people : Icons.inventory_2,
-                            size: 16,
+                            size: 16.sp,
                             color: AppColors.textSecondary,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8.w),
                           Text(
                             '${isLabour ? 'Labour' : 'Material'} Entries for $formattedDate',
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textSecondary,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12.h),
                       
                       // Entry Details
                       ...entries.map((entry) {
@@ -498,11 +499,11 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
     final hasPendingRequest = pendingRequestIds.contains(entryId);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(14.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
           color: hasPendingRequest 
               ? AppColors.safetyOrange.withValues(alpha: 0.3) 
@@ -524,20 +525,20 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(8.r),
                 decoration: BoxDecoration(
-                  color: isLabour 
+                  color: isLabour
                       ? AppColors.safetyOrange.withValues(alpha: 0.1)
                       : AppColors.statusCompleted.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Icon(
                   isLabour ? Icons.people : Icons.inventory_2,
-                  size: 18,
+                  size: 18.sp,
                   color: isLabour ? AppColors.safetyOrange : AppColors.statusCompleted,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,15 +550,15 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
               ),
               // Time Display
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 decoration: BoxDecoration(
                   color: AppColors.deepNavy.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(6.r),
                 ),
                 child: Text(
                   _formatTime(entry['entry_time'] ?? entry['updated_at']),
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.deepNavy,
                   ),
@@ -568,35 +569,35 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
           
           // Request Change Button
           if (widget.showRequestButton) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: hasPendingRequest ? null : () => _showRequestChangeDialog(entry, isLabour),
                 icon: Icon(
                   hasPendingRequest ? Icons.pending : Icons.edit_note,
-                  size: 16,
+                  size: 16.sp,
                 ),
                 label: Text(
                   hasPendingRequest ? 'Change Pending' : 'Request Change',
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: hasPendingRequest 
-                      ? AppColors.textSecondary 
+                  foregroundColor: hasPendingRequest
+                      ? AppColors.textSecondary
                       : AppColors.primaryPurple,
                   side: BorderSide(
-                    color: hasPendingRequest 
+                    color: hasPendingRequest
                         ? AppColors.textSecondary.withValues(alpha: 0.3)
                         : AppColors.primaryPurple.withValues(alpha: 0.3),
                     width: 1,
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: EdgeInsets.symmetric(vertical: 8.h),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
                 ),
               ),
@@ -623,15 +624,15 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
           ),
           if (hasPendingRequest)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
               decoration: BoxDecoration(
                 color: AppColors.safetyOrange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
               ),
-              child: const Text(
+              child: Text(
                 'Change Pending',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.w600,
                   color: AppColors.safetyOrange,
                 ),
@@ -639,7 +640,7 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
             ),
         ],
       ),
-      const SizedBox(height: 8),
+      SizedBox(height: 8.h),
       _buildDetailRow(Icons.people, 'Workers', entry['labour_count']?.toString() ?? '0'),
       _buildDetailRow(Icons.access_time, 'Time', _formatTime(entry['entry_time'])),
       _buildDetailRow(Icons.location_on, 'Site', '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim()),
@@ -675,15 +676,15 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
           ),
           if (hasPendingRequest)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
               decoration: BoxDecoration(
                 color: AppColors.safetyOrange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
               ),
-              child: const Text(
+              child: Text(
                 'Change Pending',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.w600,
                   color: AppColors.safetyOrange,
                 ),
@@ -691,7 +692,7 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
             ),
         ],
       ),
-      const SizedBox(height: 8),
+      SizedBox(height: 8.h),
       _buildDetailRow(Icons.inventory_2, 'Quantity', '${entry['quantity'] ?? '0'} ${entry['unit'] ?? ''}'),
       _buildDetailRow(Icons.currency_rupee, 'Rate', '₹${entry['rate_per_unit'] ?? '0'}'),
       _buildDetailRow(Icons.calculate, 'Total', '₹${entry['total_amount'] ?? '0'}'),
@@ -707,10 +708,10 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
   Widget _buildRateBadge({required int count, required double dailyRate, double? totalCost}) {
     final total = totalCost ?? dailyRate * count;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: AppColors.statusCompleted.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8.r),
         border: Border.all(
           color: AppColors.statusCompleted.withValues(alpha: 0.25),
         ),
@@ -718,12 +719,12 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.currency_rupee, size: 14, color: AppColors.statusCompleted),
-          const SizedBox(width: 4),
+          Icon(Icons.currency_rupee, size: 14.sp, color: AppColors.statusCompleted),
+          SizedBox(width: 4.w),
           Text(
             '₹${dailyRate.toStringAsFixed(0)}/day × $count = ₹${total.toStringAsFixed(0)}',
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: 12.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.statusCompleted,
             ),
@@ -735,15 +736,15 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
 
   Widget _buildDetailRow(IconData icon, String label, String? value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: EdgeInsets.only(bottom: 6.h),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppColors.textSecondary),
-          const SizedBox(width: 8),
+          Icon(icon, size: 16.sp, color: AppColors.textSecondary),
+          SizedBox(width: 8.w),
           Text(
             '$label: ',
-            style: const TextStyle(
-              fontSize: 13,
+            style: TextStyle(
+              fontSize: 13.sp,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
@@ -751,8 +752,8 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
           Expanded(
             child: Text(
               value ?? 'N/A',
-              style: const TextStyle(
-                fontSize: 13,
+              style: TextStyle(
+                fontSize: 13.sp,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -769,14 +770,14 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
         children: [
           Icon(
             icon,
-            size: 80,
+            size: 80.sp,
             color: AppColors.textSecondary.withValues(alpha: 0.3),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Text(
             message,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 16.sp,
               color: AppColors.textSecondary.withValues(alpha: 0.7),
             ),
           ),
@@ -829,8 +830,8 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
         builder: (context, setState) => AlertDialog(
           title: Text(
             'Request Change',
-            style: const TextStyle(
-              fontSize: 18,
+            style: TextStyle(
+              fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.primaryPurple,
             ),
@@ -842,22 +843,22 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
               children: [
                 Text(
                   'Entry Type: ${isLabour ? 'Labour' : 'Material'}',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 16),
-                
+                SizedBox(height: 16.h),
+
                 Text(
                   'Reason for change request:',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 TextField(
                   controller: requestMessageController,
                   maxLines: 4,
@@ -866,9 +867,9 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
                   decoration: InputDecoration(
                     hintText: 'Explain why you need this change...',
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
-                    contentPadding: const EdgeInsets.all(12),
+                    contentPadding: EdgeInsets.all(12.r),
                   ),
                 ),
               ],
@@ -944,9 +945,9 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
                 foregroundColor: Colors.white,
               ),
               child: isSubmitting 
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
+                  ? SizedBox(
+                      width: 16.w,
+                      height: 16.h,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.white,
@@ -966,22 +967,22 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 13,
+          style: TextStyle(
+            fontSize: 13.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.primaryPurple,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4.h),
         TextField(
           controller: controller,
           keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
           maxLines: maxLines,
           decoration: InputDecoration(
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8.r),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
             isDense: true,
           ),
         ),

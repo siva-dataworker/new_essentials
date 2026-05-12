@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../utils/app_colors.dart';
 import '../providers/theme_provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Common UI components with consistent theming
 class CommonWidgets {
-  
+
   /// Standard App Bar with consistent theming
   static AppBar buildAppBar(
     BuildContext context, {
@@ -27,7 +28,7 @@ class CommonWidgets {
       foregroundColor: foregroundColor,
     );
   }
-  
+
   /// Standard Card with consistent theming
   static Widget buildCard(
     BuildContext context, {
@@ -47,7 +48,7 @@ class CommonWidgets {
       borderRadius: borderRadius,
     );
   }
-  
+
   /// Standard Primary Button
   static Widget buildPrimaryButton(
     BuildContext context, {
@@ -69,7 +70,7 @@ class CommonWidgets {
       padding: padding,
     );
   }
-  
+
   /// Standard Secondary Button
   static Widget buildSecondaryButton(
     BuildContext context, {
@@ -91,7 +92,7 @@ class CommonWidgets {
       padding: padding,
     );
   }
-  
+
   /// Standard Input Field
   static Widget buildInputField(
     BuildContext context, {
@@ -119,7 +120,7 @@ class CommonWidgets {
       enabled: enabled,
     );
   }
-  
+
   /// Standard Loading Indicator
   static Widget buildLoadingIndicator(
     BuildContext context, {
@@ -131,7 +132,7 @@ class CommonWidgets {
       color: color,
     );
   }
-  
+
   /// Standard Empty State
   static Widget buildEmptyState(
     BuildContext context, {
@@ -147,7 +148,7 @@ class CommonWidgets {
       onAction: onAction,
     );
   }
-  
+
   /// Standard Error State
   static Widget buildErrorState(
     BuildContext context, {
@@ -161,7 +162,7 @@ class CommonWidgets {
       onAction: onAction,
     );
   }
-  
+
   /// Standard Bottom Navigation Bar
   static Widget buildBottomNavigationBar(
     BuildContext context, {
@@ -181,7 +182,7 @@ class CommonWidgets {
       unselectedItemColor: unselectedItemColor,
     );
   }
-  
+
   /// Standard Floating Action Button
   static Widget buildFloatingActionButton(
     BuildContext context, {
@@ -199,22 +200,22 @@ class CommonWidgets {
       tooltip: tooltip,
     );
   }
-  
+
   /// Show Success Snackbar
   static void showSuccessSnackBar(BuildContext context, String message) {
     context.read<ThemeProvider>().showSuccessSnackBar(context, message);
   }
-  
+
   /// Show Error Snackbar
   static void showErrorSnackBar(BuildContext context, String message) {
     context.read<ThemeProvider>().showErrorSnackBar(context, message);
   }
-  
+
   /// Show Warning Snackbar
   static void showWarningSnackBar(BuildContext context, String message) {
     context.read<ThemeProvider>().showWarningSnackBar(context, message);
   }
-  
+
   /// Show Custom Snackbar
   static void showSnackBar(
     BuildContext context, {
@@ -259,10 +260,10 @@ class SummaryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
             BoxShadow(
               color: AppColors.deepNavy.withValues(alpha: 0.06),
@@ -277,29 +278,29 @@ class SummaryCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: Icon(icon, color: color, size: 20),
+                  child: Icon(icon, color: color, size: 20.sp),
                 ),
                 const Spacer(),
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 24.sp,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
@@ -339,11 +340,11 @@ class EntryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(16),
+        margin: EdgeInsets.only(bottom: 8.h),
+        padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
           boxShadow: [
             BoxShadow(
               color: AppColors.deepNavy.withValues(alpha: 0.04),
@@ -357,35 +358,35 @@ class EntryCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: iconColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Icon(
                     icon,
                     color: iconColor,
-                    size: 20,
+                    size: 20.sp,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text(
                         subtitle,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -399,7 +400,7 @@ class EntryCard extends StatelessWidget {
                       Text(
                         value!,
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 20.sp,
                           fontWeight: FontWeight.bold,
                           color: iconColor,
                         ),
@@ -407,8 +408,8 @@ class EntryCard extends StatelessWidget {
                       if (unit != null)
                         Text(
                           unit!,
-                          style: const TextStyle(
-                            fontSize: 12,
+                          style: TextStyle(
+                            fontSize: 12.sp,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -417,7 +418,7 @@ class EntryCard extends StatelessWidget {
               ],
             ),
             if (actions != null && actions!.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Row(
                 children: actions!,
               ),
@@ -445,15 +446,15 @@ class StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: backgroundColor ?? color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8.r),
       ),
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: 12.sp,
           fontWeight: FontWeight.w600,
           color: color,
         ),
@@ -480,15 +481,15 @@ class DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: EdgeInsets.only(bottom: 6.h),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: iconColor ?? AppColors.textSecondary),
-          const SizedBox(width: 8),
+          Icon(icon, size: 16.sp, color: iconColor ?? AppColors.textSecondary),
+          SizedBox(width: 8.w),
           Text(
             '$label: ',
-            style: const TextStyle(
-              fontSize: 13,
+            style: TextStyle(
+              fontSize: 13.sp,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
@@ -496,8 +497,8 @@ class DetailRow extends StatelessWidget {
           Expanded(
             child: Text(
               value ?? 'N/A',
-              style: const TextStyle(
-                fontSize: 13,
+              style: TextStyle(
+                fontSize: 13.sp,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -524,17 +525,17 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: 8.h),
       child: Row(
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 20, color: AppColors.deepNavy),
-            const SizedBox(width: 8),
+            Icon(icon, size: 20.sp, color: AppColors.deepNavy),
+            SizedBox(width: 8.w),
           ],
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 18,
+            style: TextStyle(
+              fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.deepNavy,
             ),

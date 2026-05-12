@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 import '../services/construction_service.dart';
 import '../services/cache_service.dart';
@@ -152,34 +153,34 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                       // Filter bar with dropdown
                       Container(
                         color: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                         child: Row(
                           children: [
-                            const Icon(Icons.filter_list, color: const Color(0xFF1A1A2E), size: 20),
-                            const SizedBox(width: 8),
-                            const Text(
+                            Icon(Icons.filter_list, color: const Color(0xFF1A1A2E), size: 20.sp),
+                            SizedBox(width: 8.w),
+                            Text(
                               'Filter:',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF1A1A2E),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12.w),
                             Expanded(
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                padding: EdgeInsets.symmetric(horizontal: 12.w),
                                 decoration: BoxDecoration(
                                   border: Border.all(color: Colors.grey.shade300),
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(8.r),
                                 ),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<String>(
                                     value: _selectedStatus ?? 'ALL',
                                     isExpanded: true,
-                                    icon: const Icon(Icons.arrow_drop_down, color: const Color(0xFF1A1A2E)),
-                                    style: const TextStyle(
-                                      fontSize: 14,
+                                    icon: Icon(Icons.arrow_drop_down, color: const Color(0xFF1A1A2E)),
+                                    style: TextStyle(
+                                      fontSize: 14.sp,
                                       color: const Color(0xFF1A1A2E),
                                     ),
                                     onChanged: (value) {
@@ -206,7 +207,7 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                       Expanded(
                         child: ListView.builder(
                           physics: const SmoothScrollPhysics(),
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(16.r),
                           itemCount: _complaints.length,
                           itemBuilder: (context, index) {
                             final complaint = _complaints[index];
@@ -225,18 +226,18 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
+          Icon(Icons.chat_bubble_outline, size: 64.sp, color: Colors.grey[300]),
+          SizedBox(height: 16.h),
           Text(
-            _selectedStatus != null 
+            _selectedStatus != null
                 ? 'No ${_selectedStatus!.toLowerCase()} complaints'
                 : 'No client complaints yet',
-            style: const TextStyle(fontSize: 16, color: Colors.grey),
+            style: TextStyle(fontSize: 16.sp, color: Colors.grey),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             'Client complaints will appear here',
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            style: TextStyle(fontSize: 14.sp, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -258,10 +259,10 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
     return GestureDetector(
       onTap: () => _showComplaintDialog(complaint),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+        margin: EdgeInsets.only(bottom: 16.h),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(20.r),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.06),
@@ -275,38 +276,38 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
           children: [
             // Header with title and priority
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
+              padding: EdgeInsets.all(16.r),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
                   colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
                     child: Text(
                       priority,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 11,
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -314,49 +315,49 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                 ],
               ),
             ),
-            
+
             // Body
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Client info
                   Row(
                     children: [
-                      Icon(Icons.person, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
+                      Icon(Icons.person, size: 16.sp, color: Colors.grey[600]),
+                      SizedBox(width: 4.w),
                       Text(
                         'Client: ',
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 13.sp, color: Colors.grey[600]),
                       ),
                       Text(
                         clientName,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF1A1A2E),
                         ),
                       ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 8),
-                  
+
+                  SizedBox(height: 8.h),
+
                   // Site info
                   Row(
                     children: [
-                      Icon(Icons.location_city, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
+                      Icon(Icons.location_city, size: 16.sp, color: Colors.grey[600]),
+                      SizedBox(width: 4.w),
                       Text(
                         'Site: ',
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 13.sp, color: Colors.grey[600]),
                       ),
                       Expanded(
                         child: Text(
                           siteName,
-                          style: const TextStyle(
-                            fontSize: 13,
+                          style: TextStyle(
+                            fontSize: 13.sp,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF1A1A2E),
                           ),
@@ -365,87 +366,87 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                       ),
                     ],
                   ),
-                  
+
                   if (customerName.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.h),
                     Row(
                       children: [
-                        Icon(Icons.business, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
+                        Icon(Icons.business, size: 16.sp, color: Colors.grey[600]),
+                        SizedBox(width: 4.w),
                         Text(
                           'Customer: ',
-                          style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                          style: TextStyle(fontSize: 13.sp, color: Colors.grey[600]),
                         ),
                         Text(
                           customerName,
-                          style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                          style: TextStyle(fontSize: 13.sp, color: Colors.grey[700]),
                         ),
                       ],
                     ),
                   ],
-                  
+
                   if (description.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     Text(
                       description,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                      style: TextStyle(fontSize: 14.sp, color: Colors.grey[700]),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                  
-                  const SizedBox(height: 12),
-                  
+
+                  SizedBox(height: 12.h),
+
                   // Status and message count
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                         decoration: BoxDecoration(
                           color: _getStatusColor(status).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(4.r),
                         ),
                         child: Text(
                           status.replaceAll('_', ' '),
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.sp,
                             fontWeight: FontWeight.bold,
                             color: _getStatusColor(status),
                           ),
                         ),
                       ),
                       const Spacer(),
-                      Icon(Icons.chat_bubble_outline, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
+                      Icon(Icons.chat_bubble_outline, size: 16.sp, color: Colors.grey[600]),
+                      SizedBox(width: 4.w),
                       Text(
                         '$messageCount ${messageCount == 1 ? 'message' : 'messages'}',
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 13.sp, color: Colors.grey[600]),
                       ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 8),
-                  
+
+                  SizedBox(height: 8.h),
+
                   // Created date and tap hint
                   Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
+                      Icon(Icons.calendar_today, size: 14.sp, color: Colors.grey[600]),
+                      SizedBox(width: 4.w),
                       Text(
                         'Reported: ${_formatDateTime(createdAt)}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
                       ),
                       const Spacer(),
                       Text(
                         'Tap for details',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           color: const Color(0xFF1A1A2E),
                           fontStyle: FontStyle.italic,
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_ios, size: 12, color: const Color(0xFF1A1A2E)),
+                      SizedBox(width: 4.w),
+                      Icon(Icons.arrow_forward_ios, size: 12.sp, color: const Color(0xFF1A1A2E)),
                     ],
                   ),
                 ],
@@ -480,24 +481,24 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 18,
+                style: TextStyle(
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF1A1A2E),
                 ),
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
               decoration: BoxDecoration(
                 color: _getPriorityColor(priority),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
               ),
               child: Text(
                 priority,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 11,
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -511,40 +512,40 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
             children: [
               // Client info
               _buildDetailRow(Icons.person, 'Client', '$clientName ($clientUsername)'),
-              const SizedBox(height: 12),
-              
+              SizedBox(height: 12.h),
+
               // Site info
               _buildDetailRow(Icons.location_city, 'Site', siteName),
-              const SizedBox(height: 12),
-              
+              SizedBox(height: 12.h),
+
               if (customerName.isNotEmpty) ...[
                 _buildDetailRow(Icons.business, 'Customer', customerName),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
               ],
-              
+
               // Status
               Row(
                 children: [
-                  Icon(Icons.info_outline, size: 18, color: Colors.grey[600]),
-                  const SizedBox(width: 8),
+                  Icon(Icons.info_outline, size: 18.sp, color: Colors.grey[600]),
+                  SizedBox(width: 8.w),
                   Text(
                     'Status: ',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey[700],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                     decoration: BoxDecoration(
                       color: _getStatusColor(status).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(4.r),
                     ),
                     child: Text(
                       status.replaceAll('_', ' '),
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 12.sp,
                         fontWeight: FontWeight.bold,
                         color: _getStatusColor(status),
                       ),
@@ -552,59 +553,59 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              
+              SizedBox(height: 12.h),
+
               // Message count
               _buildDetailRow(Icons.chat_bubble_outline, 'Messages', '$messageCount'),
-              const SizedBox(height: 12),
-              
+              SizedBox(height: 12.h),
+
               // Created date
               _buildDetailRow(Icons.calendar_today, 'Reported', _formatDateTime(createdAt)),
-              
+
               if (resolvedAt != null) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 _buildDetailRow(Icons.check_circle, 'Resolved', _formatDateTime(resolvedAt)),
               ],
-              
-              const SizedBox(height: 16),
+
+              SizedBox(height: 16.h),
               const Divider(),
-              const SizedBox(height: 8),
-              
+              SizedBox(height: 8.h),
+
               // Description
               Text(
                 'Description:',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.bold,
                   color: Colors.grey[700],
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Text(
                 description,
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: 14.sp,
                   color: const Color(0xFF1A1A2E),
                 ),
               ),
-              
+
               if (resolutionNotes.isNotEmpty) ...[
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 const Divider(),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Text(
                   'Resolution Notes:',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
                     color: Colors.grey[700],
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Text(
                   resolutionNotes,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     color: Colors.grey[700],
                   ),
                 ),
@@ -626,12 +627,12 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
-        const SizedBox(width: 8),
+        Icon(icon, size: 18.sp, color: Colors.grey[600]),
+        SizedBox(width: 8.w),
         Text(
           '$label: ',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 14.sp,
             fontWeight: FontWeight.bold,
             color: Colors.grey[700],
           ),
@@ -639,8 +640,8 @@ class _AdminClientComplaintsScreenState extends State<AdminClientComplaintsScree
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               color: const Color(0xFF1A1A2E),
             ),
           ),

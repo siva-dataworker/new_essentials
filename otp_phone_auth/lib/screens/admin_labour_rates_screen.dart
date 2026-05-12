@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../services/budget_management_service.dart';
 import '../services/cache_service.dart';
 import 'admin_local_labour_rates_screen.dart';
@@ -85,23 +86,23 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8.r),
               decoration: BoxDecoration(
                 color: const Color(0xFF1A1A2E).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.r),
               ),
-              child: const Icon(Icons.add_circle,
-                  color: const Color(0xFF1A1A2E), size: 20),
+              child: Icon(Icons.add_circle,
+                  color: const Color(0xFF1A1A2E), size: 20.sp),
             ),
-            const SizedBox(width: 10),
-            const Expanded(
+            SizedBox(width: 10.w),
+            Expanded(
               child: Text('Add New Labour Type',
                   style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF1A1A2E))),
             ),
@@ -118,15 +119,15 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                   textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
                     labelText: 'Labour Type Name',
-                    prefixIcon: const Icon(Icons.engineering,
-                        color: const Color(0xFF1A1A2E), size: 18),
+                    prefixIcon: Icon(Icons.engineering,
+                        color: const Color(0xFF1A1A2E), size: 18.sp),
                     hintText: 'e.g., Welder, Driver',
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12.r)),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       borderSide: const BorderSide(
-                          color: const Color(0xFF1A1A2E), width: 2),
+                          color: Color(0xFF1A1A2E), width: 2),
                     ),
                   ),
                   autofocus: true,
@@ -141,22 +142,22 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 TextFormField(
                   controller: rateCtrl,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: InputDecoration(
                     labelText: 'Daily Rate (₹)',
-                    prefixIcon: const Icon(Icons.currency_rupee,
-                        color: const Color(0xFF1A1A2E), size: 18),
+                    prefixIcon: Icon(Icons.currency_rupee,
+                        color: const Color(0xFF1A1A2E), size: 18.sp),
                     hintText: 'Enter daily rate',
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12.r)),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       borderSide: const BorderSide(
-                          color: const Color(0xFF1A1A2E), width: 2),
+                          color: Color(0xFF1A1A2E), width: 2),
                     ),
                   ),
                   validator: (v) {
@@ -170,19 +171,19 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 TextFormField(
                   controller: notesCtrl,
                   decoration: InputDecoration(
                     labelText: 'Notes (optional)',
-                    prefixIcon: const Icon(Icons.note_outlined,
-                        color: const Color(0xFF6B7280), size: 18),
+                    prefixIcon: Icon(Icons.note_outlined,
+                        color: const Color(0xFF6B7280), size: 18.sp),
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12.r)),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       borderSide: const BorderSide(
-                          color: const Color(0xFF1A1A2E), width: 2),
+                          color: Color(0xFF1A1A2E), width: 2),
                     ),
                   ),
                   maxLines: 2,
@@ -194,7 +195,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel',
+            child: Text('Cancel',
                 style: TextStyle(color: const Color(0xFF6B7280))),
           ),
           ElevatedButton(
@@ -202,7 +203,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
               backgroundColor: const Color(0xFF1A1A2E),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10.r)),
             ),
             onPressed: () {
               if (formKey.currentState!.validate()) {
@@ -280,25 +281,25 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
       await showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
           title: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(8.r),
                 decoration: BoxDecoration(
                   color: Colors.orange.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
-                child: const Icon(Icons.lock_outline,
-                    color: Colors.orange, size: 20),
+                child: Icon(Icons.lock_outline,
+                    color: Colors.orange, size: 20.sp),
               ),
-              const SizedBox(width: 10),
-              const Expanded(
+              SizedBox(width: 10.w),
+              Expanded(
                 child: Text('Cannot Delete',
                     style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A2E))),
+                        color: const Color(0xFF1A1A2E))),
               ),
             ],
           ),
@@ -308,26 +309,26 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
             children: [
               Text(
                 '"$labourType" is a system default labour type and cannot be deleted.',
-                style: const TextStyle(fontSize: 14),
+                style: TextStyle(fontSize: 14.sp),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A1A2E).withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   border: Border.all(
                       color: const Color(0xFF1A1A2E).withValues(alpha: 0.1)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(Icons.info_outline,
-                        color: Color(0xFF1A1A2E), size: 18),
-                    SizedBox(width: 8),
+                        color: const Color(0xFF1A1A2E), size: 18.sp),
+                    SizedBox(width: 8.w),
                     Expanded(
                       child: Text(
                         'System defaults are protected to maintain data integrity.',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                        style: TextStyle(fontSize: 12.sp, color: const Color(0xFF6B7280)),
                       ),
                     ),
                   ],
@@ -341,7 +342,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                 backgroundColor: const Color(0xFF1A1A2E),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10.r)),
               ),
               onPressed: () => Navigator.pop(ctx),
               child: const Text('OK'),
@@ -356,25 +357,25 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8.r),
               decoration: BoxDecoration(
                 color: Colors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.r),
               ),
-              child: const Icon(Icons.delete_forever,
-                  color: Colors.red, size: 20),
+              child: Icon(Icons.delete_forever,
+                  color: Colors.red, size: 20.sp),
             ),
-            const SizedBox(width: 10),
-            const Expanded(
+            SizedBox(width: 10.w),
+            Expanded(
               child: Text('Delete Labour Type',
                   style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A2E))),
+                      color: const Color(0xFF1A1A2E))),
             ),
           ],
         ),
@@ -384,24 +385,24 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
           children: [
             Text(
               'Are you sure you want to delete "$labourType"?',
-              style: const TextStyle(fontSize: 14),
+              style: TextStyle(fontSize: 14.sp),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
                 color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
                 border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.warning_amber, color: Colors.orange, size: 18),
-                  SizedBox(width: 8),
+                  Icon(Icons.warning_amber, color: Colors.orange, size: 18.sp),
+                  SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
                       'This will remove the labour type from all screens.',
-                      style: TextStyle(fontSize: 12, color: Colors.orange),
+                      style: TextStyle(fontSize: 12.sp, color: Colors.orange),
                     ),
                   ),
                 ],
@@ -412,15 +413,15 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel',
-                style: TextStyle(color: Color(0xFF6B7280))),
+            child: Text('Cancel',
+                style: TextStyle(color: const Color(0xFF6B7280))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10.r)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete'),
@@ -476,31 +477,31 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8.r),
               decoration: BoxDecoration(
                 color: const Color(0xFF1A1A2E).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.r),
               ),
-              child: const Icon(Icons.currency_rupee,
-                  color: const Color(0xFF1A1A2E), size: 20),
+              child: Icon(Icons.currency_rupee,
+                  color: const Color(0xFF1A1A2E), size: 20.sp),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Set Daily Rate',
+                  Text('Set Daily Rate',
                       style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF1A1A2E))),
                   Text(labourType,
-                      style: const TextStyle(
-                          fontSize: 12, color: const Color(0xFF6B7280))),
+                      style: TextStyle(
+                          fontSize: 12.sp, color: const Color(0xFF6B7280))),
                 ],
               ),
             ),
@@ -517,17 +518,17 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   labelText: 'Daily Rate (₹)',
-                  prefixIcon: const Icon(Icons.currency_rupee,
-                      color: const Color(0xFF1A1A2E), size: 18),
+                  prefixIcon: Icon(Icons.currency_rupee,
+                      color: const Color(0xFF1A1A2E), size: 18.sp),
                   helperText: effectiveRate != null
                       ? 'Current: ₹${effectiveRate.toStringAsFixed(0)}/day'
                       : null,
                   border:
-                      OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                     borderSide:
-                        const BorderSide(color: const Color(0xFF1A1A2E), width: 2),
+                        const BorderSide(color: Color(0xFF1A1A2E), width: 2),
                   ),
                 ),
                 autofocus: true,
@@ -538,19 +539,19 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               TextFormField(
                 controller: notesCtrl,
                 decoration: InputDecoration(
                   labelText: 'Notes (optional)',
-                  prefixIcon: const Icon(Icons.note_outlined,
-                      color: const Color(0xFF6B7280), size: 18),
+                  prefixIcon: Icon(Icons.note_outlined,
+                      color: const Color(0xFF6B7280), size: 18.sp),
                   border:
-                      OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                     borderSide:
-                        const BorderSide(color: const Color(0xFF1A1A2E), width: 2),
+                        const BorderSide(color: Color(0xFF1A1A2E), width: 2),
                   ),
                 ),
               ),
@@ -560,7 +561,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel',
+            child: Text('Cancel',
                 style: TextStyle(color: const Color(0xFF6B7280))),
           ),
           ElevatedButton(
@@ -568,7 +569,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
               backgroundColor: const Color(0xFF1A1A2E),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10.r)),
             ),
             onPressed: () {
               if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
@@ -642,12 +643,12 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
-            const SizedBox(width: 8),
-            const Text('Labour Rates',
+            SizedBox(width: 8.w),
+            Text('Labour Rates',
                 style: TextStyle(
-                    color: Color(0xFF1A1A2E),
+                    color: const Color(0xFF1A1A2E),
                     fontWeight: FontWeight.bold,
-                    fontSize: 18)),
+                    fontSize: 18.sp)),
           ],
         ),
         backgroundColor: Colors.white,
@@ -682,28 +683,28 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
               onRefresh: _loadRates,
               color: const Color(0xFF1A1A2E),
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 children: [
                   // Info card
                   Container(
-                    padding: const EdgeInsets.all(14),
-                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: EdgeInsets.all(14.r),
+                    margin: EdgeInsets.only(bottom: 16.h),
                     decoration: BoxDecoration(
                       color: const Color(0xFF1A1A2E).withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       border: Border.all(
                           color: const Color(0xFF1A1A2E).withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.info_outline,
-                            color: const Color(0xFF1A1A2E), size: 18),
-                        const SizedBox(width: 10),
+                        Icon(Icons.info_outline,
+                            color: const Color(0xFF1A1A2E), size: 18.sp),
+                        SizedBox(width: 10.w),
                         Expanded(
                           child: Text(
                             'Tap any row to set an admin rate. Updated rates will be shown to supervisors and site engineers.',
                             style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 12.sp,
                                 color: const Color(0xFF1A1A2E)
                                     .withValues(alpha: 0.9)),
                           ),
@@ -744,11 +745,11 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
     return GestureDetector(
       onTap: () => _editRate(labourType),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(16),
+        margin: EdgeInsets.only(bottom: 10.h),
+        padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(14.r),
           border: Border.all(
             color: hasAdminRate
                 ? const Color(0xFF1A1A2E).withValues(alpha: 0.3)
@@ -767,22 +768,22 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
           children: [
             // Icon
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8.r),
               decoration: BoxDecoration(
                 color: hasAdminRate
                     ? const Color(0xFF1A1A2E).withValues(alpha: 0.1)
                     : const Color(0xFF1A1A2E).withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.r),
               ),
               child: Icon(
                 Icons.engineering,
                 color: hasAdminRate
                     ? const Color(0xFF1A1A2E)
                     : const Color(0xFF6B7280),
-                size: 20,
+                size: 20.sp,
               ),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: 14.w),
 
             // Info
             Expanded(
@@ -793,42 +794,42 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                     children: [
                       Text(
                         labourType,
-                        style: const TextStyle(
-                            fontSize: 15,
+                        style: TextStyle(
+                            fontSize: 15.sp,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A1A2E)),
+                            color: const Color(0xFF1A1A2E)),
                       ),
                       if (!isCanonical)
                         Container(
-                          margin: const EdgeInsets.only(left: 6),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                          margin: EdgeInsets.only(left: 6.w),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6.w,
+                            vertical: 2.h,
                           ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF059669).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(4.r),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Custom',
                             style: TextStyle(
-                              fontSize: 9,
-                              color: Color(0xFF059669),
+                              fontSize: 9.sp,
+                              color: const Color(0xFF059669),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 3),
+                  SizedBox(height: 3.h),
                   if (hasAdminRate && setBy != null)
                     Text('Set by $setBy',
-                        style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF6B7280)))
-                  else
-                    const Text('Canonical default',
                         style: TextStyle(
-                            fontSize: 11, color: Color(0xFF6B7280))),
+                            fontSize: 11.sp, color: const Color(0xFF6B7280)))
+                  else
+                    Text('Canonical default',
+                        style: TextStyle(
+                            fontSize: 11.sp, color: const Color(0xFF6B7280))),
                 ],
               ),
             ),
@@ -839,19 +840,19 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
               children: [
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
                     color: hasAdminRate
                         ? const Color(0xFF1A1A2E)
                         : const Color(0xFF1A1A2E).withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20.r),
                   ),
                   child: Text(
                     effectiveRate != null
                         ? '₹${effectiveRate.toStringAsFixed(0)}/day'
                         : '--',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 13.sp,
                       fontWeight: FontWeight.bold,
                       color: hasAdminRate
                           ? Colors.white
@@ -859,11 +860,11 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   hasAdminRate ? 'Admin set' : 'Default',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 10.sp,
                     color: hasAdminRate
                         ? const Color(0xFF1A1A2E)
                         : const Color(0xFF6B7280),
@@ -872,8 +873,8 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
               ],
             ),
 
-            const SizedBox(width: 8),
-            
+            SizedBox(width: 8.w),
+
             // Actions
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -882,23 +883,23 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
                 GestureDetector(
                   onTap: () => _editRate(labourType),
                   child: Container(
-                    padding: const EdgeInsets.all(6),
-                    child: const Icon(
+                    padding: EdgeInsets.all(6.r),
+                    child: Icon(
                       Icons.edit_outlined,
-                      size: 18,
-                      color: Color(0xFF6B7280),
+                      size: 18.sp,
+                      color: const Color(0xFF6B7280),
                     ),
                   ),
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: 4.w),
                 // Delete icon (for all types)
                 GestureDetector(
                   onTap: () => _deleteLabourType(labourType),
                   child: Container(
-                    padding: const EdgeInsets.all(6),
+                    padding: EdgeInsets.all(6.r),
                     child: Icon(
                       isCanonical ? Icons.lock_outline : Icons.delete_sweep_outlined,
-                      size: 18,
+                      size: 18.sp,
                       color: isCanonical ? Colors.orange : Colors.red,
                     ),
                   ),

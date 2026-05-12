@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_provider.dart';
 import '../utils/smooth_animations.dart';
@@ -60,15 +61,16 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
         final isLoading = adminProvider.isLoading('comparison');
-        
+
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FA),
           appBar: AppBar(
-            title: const Text(
+            title: Text(
               'Site Comparison',
               style: TextStyle(
-                color: Color(0xFF1A1A2E),
+                color: const Color(0xFF1A1A2E),
                 fontWeight: FontWeight.bold,
+                fontSize: 18.sp,
               ),
             ),
             backgroundColor: Colors.white,
@@ -87,7 +89,7 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
             children: [
               // Site selectors
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 color: Colors.white,
                 child: Column(
                   children: [
@@ -97,35 +99,35 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Site 1',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 12.sp,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1A1A2E),
+                                  color: const Color(0xFF1A1A2E),
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8.h),
                               DropdownButtonFormField<String>(
                                 value: _site1Id,
                                 decoration: InputDecoration(
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(12.r),
                                   ),
                                   filled: true,
                                   fillColor: const Color(0xFFF8F9FA),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12.w,
+                                    vertical: 8.h,
                                   ),
                                 ),
-                                hint: const Text('Select', style: TextStyle(fontSize: 13)),
+                                hint: Text('Select', style: TextStyle(fontSize: 13.sp)),
                                 items: adminProvider.sites.map((site) {
                                   return DropdownMenuItem<String>(
                                     value: site['id'].toString(),
                                     child: Text(
                                       site['site_name'] ?? 'Unnamed Site',
-                                      style: const TextStyle(fontSize: 13),
+                                      style: TextStyle(fontSize: 13.sp),
                                     ),
                                   );
                                 }).toList(),
@@ -136,43 +138,43 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
                             ],
                           ),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Icon(Icons.compare_arrows, color: Color(0xFF1A1A2E)),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8.w),
+                          child: const Icon(Icons.compare_arrows, color: Color(0xFF1A1A2E)),
                         ),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Site 2',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 12.sp,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1A1A2E),
+                                  color: const Color(0xFF1A1A2E),
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8.h),
                               DropdownButtonFormField<String>(
                                 value: _site2Id,
                                 decoration: InputDecoration(
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(12.r),
                                   ),
                                   filled: true,
                                   fillColor: const Color(0xFFF8F9FA),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12.w,
+                                    vertical: 8.h,
                                   ),
                                 ),
-                                hint: const Text('Select', style: TextStyle(fontSize: 13)),
+                                hint: Text('Select', style: TextStyle(fontSize: 13.sp)),
                                 items: adminProvider.sites.map((site) {
                                   return DropdownMenuItem<String>(
                                     value: site['id'].toString(),
                                     child: Text(
                                       site['site_name'] ?? 'Unnamed Site',
-                                      style: const TextStyle(fontSize: 13),
+                                      style: TextStyle(fontSize: 13.sp),
                                     ),
                                   );
                                 }).toList(),
@@ -185,29 +187,29 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     ElevatedButton(
                       onPressed: isLoading ? null : () => _compareSites(adminProvider),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1A1A2E),
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 32.w),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12.r),
                         ),
                       ),
                       child: isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
+                          ? SizedBox(
+                              height: 20.h,
+                              width: 20.w,
+                              child: const CircularProgressIndicator(
                                 color: Colors.white,
                                 strokeWidth: 2,
                               ),
                             )
-                          : const Text(
+                          : Text(
                               'Compare',
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: 15.sp,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -216,7 +218,7 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
                   ],
                 ),
               ),
-              
+
               // Comparison results
               Expanded(
                 child: _comparisonData == null
@@ -226,15 +228,15 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
                           children: [
                             Icon(
                               Icons.compare_arrows,
-                              size: 80,
+                              size: 80.sp,
                               color: const Color(0xFF6B7280).withValues(alpha: 0.5),
                             ),
-                            const SizedBox(height: 16),
-                            const Text(
+                            SizedBox(height: 16.h),
+                            Text(
                               'Select two sites to compare',
                               style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF6B7280),
+                                fontSize: 16.sp,
+                                color: const Color(0xFF6B7280),
                               ),
                             ),
                           ],
@@ -245,7 +247,7 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
                         color: const Color(0xFF1A1A2E),
                         child: SingleChildScrollView(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(16.r),
                           child: Column(
                             children: [
                               _buildComparisonCard(
@@ -298,64 +300,64 @@ class _AdminSiteComparisonScreenState extends State<AdminSiteComparisonScreen> {
 
   Widget _buildComparisonCard(String label, String value1, String value2, IconData icon) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Icon(icon, color: const Color(0xFF1A1A2E), size: 20),
-              const SizedBox(width: 8),
+              Icon(icon, color: const Color(0xFF1A1A2E), size: 20.sp),
+              SizedBox(width: 8.w),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A2E),
+                  color: const Color(0xFF1A1A2E),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Row(
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12.r),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8F9FA),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Text(
                     value1,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 15,
+                    style: TextStyle(
+                      fontSize: 15.sp,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A2E),
+                      color: const Color(0xFF1A1A2E),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12.r),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8F9FA),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Text(
                     value2,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 15,
+                    style: TextStyle(
+                      fontSize: 15.sp,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A2E),
+                      color: const Color(0xFF1A1A2E),
                     ),
                   ),
                 ),

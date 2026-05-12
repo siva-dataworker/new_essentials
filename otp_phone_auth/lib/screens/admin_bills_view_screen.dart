@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_provider.dart';
 import '../utils/smooth_animations.dart';
@@ -37,11 +38,12 @@ class _AdminBillsViewScreenState extends State<AdminBillsViewScreen> {
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FA),
           appBar: AppBar(
-            title: const Text(
+            title: Text(
               'Bills Viewing',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
+                fontSize: 18.sp,
               ),
             ),
             backgroundColor: const Color(0xFF1A1A2E),
@@ -74,7 +76,7 @@ class _AdminBillsViewScreenState extends State<AdminBillsViewScreen> {
 
   Widget _buildSiteSelector(AdminProvider adminProvider) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
@@ -85,36 +87,36 @@ class _AdminBillsViewScreenState extends State<AdminBillsViewScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Select Site',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14.sp,
               fontWeight: FontWeight.bold,
               color: Colors.white70,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
             ),
             child: DropdownButtonFormField<String>(
               value: _selectedSiteId,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: const BorderSide(color: Color(0xFF1A1A2E), width: 2),
                 ),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16.w,
+                  vertical: 12.h,
                 ),
               ),
               hint: const Text('Choose a site'),
@@ -139,19 +141,19 @@ class _AdminBillsViewScreenState extends State<AdminBillsViewScreen> {
 
   Widget _buildBillsList(AdminProvider adminProvider) {
     final isLoadingBills = adminProvider.isLoading('bills_${_selectedSiteId ?? ''}');
-    
+
     if (adminProvider.isLoadingSites) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFF1A1A2E)),
       );
     }
-    
+
     if (isLoadingBills) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFF1A1A2E)),
       );
     }
-    
+
     if (_selectedSiteId == null) {
       return Center(
         child: Column(
@@ -159,14 +161,14 @@ class _AdminBillsViewScreenState extends State<AdminBillsViewScreen> {
           children: [
             Icon(
               Icons.receipt_long_outlined,
-              size: 80,
+              size: 80.sp,
               color: Colors.grey.withValues(alpha: 0.5),
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 16.h),
+            Text(
               'Select a site to view bills',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 16.sp,
                 color: Colors.grey,
               ),
             ),
@@ -174,7 +176,7 @@ class _AdminBillsViewScreenState extends State<AdminBillsViewScreen> {
         ),
       );
     }
-    
+
     if (_bills.isEmpty) {
       return Center(
         child: Column(
@@ -182,14 +184,14 @@ class _AdminBillsViewScreenState extends State<AdminBillsViewScreen> {
           children: [
             Icon(
               Icons.receipt_long_outlined,
-              size: 80,
+              size: 80.sp,
               color: Colors.grey.withValues(alpha: 0.5),
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 16.h),
+            Text(
               'No bills available',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 16.sp,
                 color: Colors.grey,
               ),
             ),
@@ -197,13 +199,13 @@ class _AdminBillsViewScreenState extends State<AdminBillsViewScreen> {
         ),
       );
     }
-    
+
     return RefreshIndicator(
       onRefresh: () => _loadBills(adminProvider, _selectedSiteId!),
       color: const Color(0xFF1A1A2E),
       child: ListView.builder(
         physics: const SmoothScrollPhysics(),
-                              padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         itemCount: _bills.length,
         itemBuilder: (context, index) {
           final bill = _bills[index];
@@ -217,11 +219,11 @@ class _AdminBillsViewScreenState extends State<AdminBillsViewScreen> {
     final isVerified = bill['verified'] == true;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -236,35 +238,35 @@ class _AdminBillsViewScreenState extends State<AdminBillsViewScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(10.r),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A1A2E).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.receipt,
-                  color: Color(0xFF1A1A2E),
-                  size: 24,
+                  color: const Color(0xFF1A1A2E),
+                  size: 24.sp,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       bill['material_name'] ?? 'N/A',
-                      style: const TextStyle(
-                        fontSize: 15,
+                      style: TextStyle(
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A2E),
+                        color: const Color(0xFF1A1A2E),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4.h),
                     Text(
                       bill['report_date'] ?? 'N/A',
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: TextStyle(
+                        fontSize: 12.sp,
                         color: Colors.grey,
                       ),
                     ),
@@ -272,26 +274,26 @@ class _AdminBillsViewScreenState extends State<AdminBillsViewScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                 decoration: BoxDecoration(
                   color: isVerified
                       ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
                       : Colors.orange.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       isVerified ? Icons.check_circle : Icons.pending,
-                      size: 14,
+                      size: 14.sp,
                       color: isVerified ? const Color(0xFF4CAF50) : const Color(0xFF1A1A2E),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4.w),
                     Text(
                       isVerified ? 'Verified' : 'Pending',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.bold,
                         color: isVerified ? const Color(0xFF4CAF50) : const Color(0xFF1A1A2E),
                       ),
@@ -301,27 +303,27 @@ class _AdminBillsViewScreenState extends State<AdminBillsViewScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Amount',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       color: Colors.grey,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2.h),
                   Text(
                     '₹${bill['bill_amount'] ?? '0.00'}',
-                    style: const TextStyle(
-                      fontSize: 18,
+                    style: TextStyle(
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A2E),
+                      color: const Color(0xFF1A1A2E),
                     ),
                   ),
                 ],
@@ -329,20 +331,20 @@ class _AdminBillsViewScreenState extends State<AdminBillsViewScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text(
+                  Text(
                     'Uploaded by',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       color: Colors.grey,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2.h),
                   Text(
                     bill['uploaded_by'] ?? 'Unknown',
-                    style: const TextStyle(
-                      fontSize: 13,
+                    style: TextStyle(
+                      fontSize: 13.sp,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A2E),
+                      color: const Color(0xFF1A1A2E),
                     ),
                   ),
                 ],

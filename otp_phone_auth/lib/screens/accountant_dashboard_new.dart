@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:excel/excel.dart' as excel;
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../models/user_model.dart';
 import '../providers/construction_provider.dart';
 import '../services/auth_service.dart';
@@ -26,7 +27,7 @@ class AccountantDashboardNew extends StatefulWidget {
 class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
   final _authService = AuthService();
   int _currentBottomIndex = 1; // Start with Dashboard (center icon)
-  
+
   // Data variables
   List<Map<String, dynamic>> _labourEntries = [];
   List<Map<String, dynamic>> _materialEntries = [];
@@ -48,26 +49,26 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
 
     try {
       final provider = context.read<ConstructionProvider>();
-      
+
       // Force fresh data load
       await provider.loadAccountantData(forceRefresh: true);
-      
+
       // Get the data
       _labourEntries = List<Map<String, dynamic>>.from(provider.accountantLabourEntries);
       _materialEntries = List<Map<String, dynamic>>.from(provider.accountantMaterialEntries);
-      
+
       print('✅ [ACCOUNTANT NEW] Loaded ${_labourEntries.length} labour entries');
       print('✅ [ACCOUNTANT NEW] Loaded ${_materialEntries.length} material entries');
-      
+
       // Debug: Check for Lakshmi data
-      final lakshmiLabour = _labourEntries.where((entry) => 
+      final lakshmiLabour = _labourEntries.where((entry) =>
         entry['customer_name']?.toString().toLowerCase().contains('lakshmi') == true).toList();
       print('📋 [ACCOUNTANT NEW] Lakshmi labour entries: ${lakshmiLabour.length}');
-      
+
       if (lakshmiLabour.isNotEmpty) {
         print('📝 [ACCOUNTANT NEW] Sample Lakshmi: ${lakshmiLabour[0]['customer_name']} ${lakshmiLabour[0]['site_name']}');
       }
-      
+
     } catch (e) {
       print('❌ [ACCOUNTANT NEW] Error loading data: $e');
       _error = e.toString();
@@ -84,7 +85,7 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: const Text(
           'Sign Out',
           style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.deepNavy),
@@ -102,7 +103,7 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.statusOverdue,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
             child: const Text(
               'Sign Out',
@@ -156,9 +157,9 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
       appBar: AppBar(
         title: Text(
           'Dashboard - ${widget.user.fullName}',
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.deepNavy,
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -179,17 +180,17 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
         onRefresh: _loadAccountantData,
         color: AppColors.deepNavy,
         child: _isLoading
-            ? const Center(
+            ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(color: AppColors.deepNavy),
-                    SizedBox(height: 16),
+                    const CircularProgressIndicator(color: AppColors.deepNavy),
+                    SizedBox(height: 16.h),
                     Text(
                       'Loading accountant data...',
                       style: TextStyle(
                         color: AppColors.textSecondary,
-                        fontSize: 16,
+                        fontSize: 16.sp,
                       ),
                     ),
                   ],
@@ -202,19 +203,19 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
                       children: [
                         Icon(
                           Icons.error_outline,
-                          size: 64,
+                          size: 64.sp,
                           color: AppColors.statusOverdue,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16.h),
                         Text(
                           'Error loading data',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.statusOverdue,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8.h),
                         Text(
                           _error!,
                           textAlign: TextAlign.center,
@@ -222,7 +223,7 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16.h),
                         ElevatedButton(
                           onPressed: _loadAccountantData,
                           style: ElevatedButton.styleFrom(
@@ -251,7 +252,7 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
     final totalLabourEntries = _labourEntries.length;
     final totalMaterialEntries = _materialEntries.length;
     final totalWorkers = _labourEntries.fold<int>(0, (sum, entry) => sum + (entry['labour_count'] as int? ?? 0));
-    
+
     // Get unique sites
     final uniqueSites = <String>{};
     for (var entry in _labourEntries + _materialEntries) {
@@ -272,21 +273,21 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Summary Cards
-          const Text(
+          Text(
             'Overview',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 20.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.deepNavy,
             ),
           ),
-          const SizedBox(height: 16),
-          
+          SizedBox(height: 16.h),
+
           Row(
             children: [
               Expanded(
@@ -297,7 +298,7 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
                   AppColors.statusCompleted,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: _buildSummaryCard(
                   'Material Entries',
@@ -308,9 +309,9 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
               ),
             ],
           ),
-          
-          const SizedBox(height: 12),
-          
+
+          SizedBox(height: 12.h),
+
           Row(
             children: [
               Expanded(
@@ -321,7 +322,7 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
                   AppColors.safetyOrange,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: _buildSummaryCard(
                   'Active Sites',
@@ -333,73 +334,73 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
             ],
           ),
 
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
 
           // Recent Labour Entries
-          const Text(
+          Text(
             'Recent Labour Entries',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.deepNavy,
             ),
           ),
-          const SizedBox(height: 12),
-          
+          SizedBox(height: 12.h),
+
           if (_labourEntries.isEmpty)
             _buildEmptyState('No labour entries found', Icons.people_outline)
           else
             ..._labourEntries.take(5).map((entry) => _buildLabourEntryCard(entry)).toList(),
 
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
 
           // Recent Material Entries
-          const Text(
+          Text(
             'Recent Material Entries',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.deepNavy,
             ),
           ),
-          const SizedBox(height: 12),
-          
+          SizedBox(height: 12.h),
+
           if (_materialEntries.isEmpty)
             _buildEmptyState('No material entries found', Icons.inventory_2_outlined)
           else
             ..._materialEntries.take(5).map((entry) => _buildMaterialEntryCard(entry)).toList(),
 
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
 
           // Sites Summary
-          const Text(
+          Text(
             'Sites Summary',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.deepNavy,
             ),
           ),
-          const SizedBox(height: 12),
-          
+          SizedBox(height: 12.h),
+
           _buildSitesSummaryCard(uniqueSites.toList()),
 
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
 
           // Supervisors Summary
-          const Text(
+          Text(
             'Supervisors Summary',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.deepNavy,
             ),
           ),
-          const SizedBox(height: 12),
-          
+          SizedBox(height: 12.h),
+
           _buildSupervisorsSummaryCard(uniqueSupervisors.toList()),
 
-          const SizedBox(height: 80), // Space for FAB
+          SizedBox(height: 80.h), // Space for FAB
         ],
       ),
     );
@@ -407,10 +408,10 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
 
   Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.deepNavy.withValues(alpha: 0.06),
@@ -425,29 +426,29 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(8.r),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: color, size: 20.sp),
               ),
               const Spacer(),
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: 24.sp,
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
@@ -459,13 +460,13 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
 
   Widget _buildLabourEntryCard(Map<String, dynamic> entry) {
     final fullSiteName = '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim();
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.deepNavy.withValues(alpha: 0.04),
@@ -477,10 +478,10 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(8.r),
             decoration: BoxDecoration(
               color: AppColors.statusCompleted.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8.r),
             ),
             child: const Icon(
               Icons.people,
@@ -488,32 +489,32 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
               size: 20,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   entry['labour_type'] ?? 'Unknown Type',
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.deepNavy,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   fullSiteName,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2.h),
                 Text(
                   'Supervisor: ${entry['supervisor_name'] ?? 'Unknown'}',
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -525,16 +526,16 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
             children: [
               Text(
                 '${entry['labour_count'] ?? 0}',
-                style: const TextStyle(
-                  fontSize: 20,
+                style: TextStyle(
+                  fontSize: 20.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.statusCompleted,
                 ),
               ),
-              const Text(
+              Text(
                 'Workers',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -547,13 +548,13 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
 
   Widget _buildMaterialEntryCard(Map<String, dynamic> entry) {
     final fullSiteName = '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim();
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.deepNavy.withValues(alpha: 0.04),
@@ -565,10 +566,10 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(8.r),
             decoration: BoxDecoration(
               color: AppColors.deepNavy.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8.r),
             ),
             child: const Icon(
               Icons.inventory_2,
@@ -576,32 +577,32 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
               size: 20,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   entry['material_type'] ?? 'Unknown Type',
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.deepNavy,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   fullSiteName,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2.h),
                 Text(
                   'Supervisor: ${entry['supervisor_name'] ?? 'Unknown'}',
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -613,16 +614,16 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
             children: [
               Text(
                 '${entry['quantity'] ?? 0}',
-                style: const TextStyle(
-                  fontSize: 20,
+                style: TextStyle(
+                  fontSize: 20.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.deepNavy,
                 ),
               ),
               Text(
                 entry['unit'] ?? '',
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: 12.sp,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -635,10 +636,10 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
 
   Widget _buildSitesSummaryCard(List<String> sites) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.deepNavy.withValues(alpha: 0.04),
@@ -653,29 +654,29 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
           Row(
             children: [
               const Icon(Icons.location_city, color: AppColors.primaryPurple),
-              const SizedBox(width: 8),
+              SizedBox(width: 8.w),
               Text(
                 '${sites.length} Active Sites',
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.deepNavy,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           ...sites.take(5).map((site) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
+            padding: EdgeInsets.only(bottom: 4.h),
             child: Row(
               children: [
-                const Icon(Icons.circle, size: 6, color: AppColors.textSecondary),
-                const SizedBox(width: 8),
+                Icon(Icons.circle, size: 6.sp, color: AppColors.textSecondary),
+                SizedBox(width: 8.w),
                 Expanded(
                   child: Text(
                     site,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -685,11 +686,11 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
           )).toList(),
           if (sites.length > 5)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: EdgeInsets.only(top: 8.h),
               child: Text(
                 'and ${sites.length - 5} more sites...',
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: 12.sp,
                   color: AppColors.textSecondary,
                   fontStyle: FontStyle.italic,
                 ),
@@ -702,10 +703,10 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
 
   Widget _buildSupervisorsSummaryCard(List<String> supervisors) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.deepNavy.withValues(alpha: 0.04),
@@ -720,29 +721,29 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
           Row(
             children: [
               const Icon(Icons.supervisor_account, color: AppColors.safetyOrange),
-              const SizedBox(width: 8),
+              SizedBox(width: 8.w),
               Text(
                 '${supervisors.length} Active Supervisors',
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.deepNavy,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           ...supervisors.map((supervisor) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
+            padding: EdgeInsets.only(bottom: 4.h),
             child: Row(
               children: [
-                const Icon(Icons.circle, size: 6, color: AppColors.textSecondary),
-                const SizedBox(width: 8),
+                Icon(Icons.circle, size: 6.sp, color: AppColors.textSecondary),
+                SizedBox(width: 8.w),
                 Expanded(
                   child: Text(
                     supervisor,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -757,10 +758,10 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
 
   Widget _buildEmptyState(String message, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(32.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.deepNavy.withValues(alpha: 0.04),
@@ -774,14 +775,14 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
           children: [
             Icon(
               icon,
-              size: 48,
+              size: 48.sp,
               color: AppColors.textSecondary.withValues(alpha: 0.5),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Text(
               message,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 16.sp,
                 color: AppColors.textSecondary.withValues(alpha: 0.7),
               ),
             ),
@@ -795,11 +796,11 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
     return Scaffold(
       backgroundColor: AppColors.lightSlate,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Export Data',
           style: TextStyle(
             color: AppColors.deepNavy,
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -810,28 +811,28 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.file_download,
-              size: 64,
+              size: 64.sp,
               color: AppColors.deepNavy,
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 16.h),
+            Text(
               'Export to Excel',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               'Export ${_labourEntries.length + _materialEntries.length} entries',
               style: const TextStyle(
                 color: AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
             ElevatedButton.icon(
               onPressed: _isLoading ? null : _exportToExcel,
               icon: const Icon(Icons.download),
@@ -839,9 +840,9 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.deepNavy,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 16.h),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
               ),
             ),
@@ -854,7 +855,7 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
   Future<void> _exportToExcel() async {
     try {
       final excelFile = excel.Excel.createExcel();
-      
+
       // Labour sheet
       final labourSheet = excelFile['Labour Entries'];
       labourSheet.appendRow([
@@ -867,7 +868,7 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
         excel.TextCellValue('Labour Type'),
         excel.TextCellValue('Count'),
       ]);
-      
+
       for (var entry in _labourEntries) {
         labourSheet.appendRow([
           excel.TextCellValue(entry['entry_date'] ?? ''),
@@ -880,7 +881,7 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
           excel.IntCellValue(entry['labour_count'] ?? 0),
         ]);
       }
-      
+
       // Material sheet
       final materialSheet = excelFile['Material Entries'];
       materialSheet.appendRow([
@@ -894,7 +895,7 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
         excel.TextCellValue('Quantity'),
         excel.TextCellValue('Unit'),
       ]);
-      
+
       for (var entry in _materialEntries) {
         materialSheet.appendRow([
           excel.TextCellValue(entry['entry_date'] ?? ''),
@@ -908,15 +909,15 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
           excel.TextCellValue(entry['unit'] ?? ''),
         ]);
       }
-      
+
       // Save file
       final directory = await getApplicationDocumentsDirectory();
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final filePath = '${directory.path}/construction_data_$timestamp.xlsx';
-      
+
       final file = File(filePath);
       await file.writeAsBytes(excelFile.encode()!);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -967,8 +968,8 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
         backgroundColor: AppColors.cleanWhite,
         selectedItemColor: AppColors.deepNavy,
         unselectedItemColor: AppColors.textSecondary,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-        unselectedLabelStyle: const TextStyle(fontSize: 11),
+        selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
+        unselectedLabelStyle: TextStyle(fontSize: 11.sp),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.add_circle_outline),

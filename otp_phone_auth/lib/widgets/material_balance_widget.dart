@@ -4,6 +4,7 @@ import '../providers/material_provider.dart';
 import '../utils/app_colors.dart';
 import 'material_usage_dialog.dart';
 import '../screens/material_usage_history_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class MaterialBalanceWidget extends StatefulWidget {
   final String siteId;
@@ -35,7 +36,7 @@ class _MaterialBalanceWidgetState extends State<MaterialBalanceWidget> {
 
   Future<void> _showUsageDialog() async {
     final provider = Provider.of<MaterialProvider>(context, listen: false);
-    
+
     if (provider.materialBalance.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -99,36 +100,36 @@ class _MaterialBalanceWidgetState extends State<MaterialBalanceWidget> {
     return Consumer<MaterialProvider>(
       builder: (context, provider, child) {
         if (provider.isLoadingBalance) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(32.0),
-              child: CircularProgressIndicator(),
+              padding: EdgeInsets.all(32.r),
+              child: const CircularProgressIndicator(),
             ),
           );
         }
 
         if (provider.materialBalance.isEmpty) {
           return Card(
-            margin: const EdgeInsets.all(16),
+            margin: EdgeInsets.all(16.r),
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24.r),
               child: Column(
                 children: [
                   Icon(
                     Icons.inventory_2_outlined,
-                    size: 64,
+                    size: 64.sp,
                     color: AppColors.mediumGray,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   Text(
                     'No Material Inventory',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   Text(
                     'No materials have been added to this site yet.',
                     textAlign: TextAlign.center,
@@ -147,16 +148,16 @@ class _MaterialBalanceWidgetState extends State<MaterialBalanceWidget> {
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               child: Row(
                 children: [
                   Icon(Icons.inventory_2, color: AppColors.textPrimary),
-                  const SizedBox(width: 8),
-                  const Expanded(
+                  SizedBox(width: 8.w),
+                  Expanded(
                     child: Text(
                       'Material Inventory',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -164,14 +165,14 @@ class _MaterialBalanceWidgetState extends State<MaterialBalanceWidget> {
                   if (widget.canRecordUsage)
                     ElevatedButton.icon(
                       onPressed: _showUsageDialog,
-                      icon: const Icon(Icons.remove_circle_outline, size: 18),
+                      icon: Icon(Icons.remove_circle_outline, size: 18.sp),
                       label: const Text('Use Material'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 8.h,
                         ),
                       ),
                     ),
@@ -196,12 +197,12 @@ class _MaterialBalanceWidgetState extends State<MaterialBalanceWidget> {
                 final statusText = _getStatusText(status);
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                   child: InkWell(
                     onTap: () => _viewHistory(materialType),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16.r),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -211,34 +212,34 @@ class _MaterialBalanceWidgetState extends State<MaterialBalanceWidget> {
                               Expanded(
                                 child: Text(
                                   materialType,
-                                  style: const TextStyle(
-                                    fontSize: 16,
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 4,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 12.w,
+                                  vertical: 4.h,
                                 ),
                                 decoration: BoxDecoration(
                                   color: statusColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(12.r),
                                   border: Border.all(color: statusColor),
                                 ),
                                 child: Text(
                                   statusText,
                                   style: TextStyle(
                                     color: statusColor,
-                                    fontSize: 12,
+                                    fontSize: 12.sp,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12.h),
 
                           // Current Balance (Large)
                           Row(
@@ -246,16 +247,16 @@ class _MaterialBalanceWidgetState extends State<MaterialBalanceWidget> {
                               Text(
                                 currentBalance.toStringAsFixed(1),
                                 style: TextStyle(
-                                  fontSize: 32,
+                                  fontSize: 32.sp,
                                   fontWeight: FontWeight.bold,
                                   color: statusColor,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8.w),
                               Text(
                                 unit,
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 18.sp,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
@@ -263,20 +264,20 @@ class _MaterialBalanceWidgetState extends State<MaterialBalanceWidget> {
                               Text(
                                 'remaining',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 14.sp,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12.h),
 
                           // Stock Details
                           Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: EdgeInsets.all(12.r),
                             decoration: BoxDecoration(
                               color: AppColors.lightGray,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(8.r),
                             ),
                             child: Row(
                               children: [
@@ -287,15 +288,15 @@ class _MaterialBalanceWidgetState extends State<MaterialBalanceWidget> {
                                       Text(
                                         'Initial Stock',
                                         style: TextStyle(
-                                          fontSize: 12,
+                                          fontSize: 12.sp,
                                           color: AppColors.textSecondary,
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
+                                      SizedBox(height: 4.h),
                                       Text(
                                         '${initialStock.toStringAsFixed(1)} $unit',
-                                        style: const TextStyle(
-                                          fontSize: 14,
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -303,8 +304,8 @@ class _MaterialBalanceWidgetState extends State<MaterialBalanceWidget> {
                                   ),
                                 ),
                                 Container(
-                                  width: 1,
-                                  height: 40,
+                                  width: 1.w,
+                                  height: 40.h,
                                   color: AppColors.mediumGray,
                                 ),
                                 Expanded(
@@ -314,15 +315,15 @@ class _MaterialBalanceWidgetState extends State<MaterialBalanceWidget> {
                                       Text(
                                         'Total Used',
                                         style: TextStyle(
-                                          fontSize: 12,
+                                          fontSize: 12.sp,
                                           color: AppColors.textSecondary,
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
+                                      SizedBox(height: 4.h),
                                       Text(
                                         '${totalUsed.toStringAsFixed(1)} $unit',
-                                        style: const TextStyle(
-                                          fontSize: 14,
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -332,7 +333,7 @@ class _MaterialBalanceWidgetState extends State<MaterialBalanceWidget> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8.h),
 
                           // View History Link
                           InkWell(
@@ -347,10 +348,10 @@ class _MaterialBalanceWidgetState extends State<MaterialBalanceWidget> {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                const SizedBox(width: 4),
+                                SizedBox(width: 4.w),
                                 Icon(
                                   Icons.arrow_forward,
-                                  size: 16,
+                                  size: 16.sp,
                                   color: AppColors.primary,
                                 ),
                               ],

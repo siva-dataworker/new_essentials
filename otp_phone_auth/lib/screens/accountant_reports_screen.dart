@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/construction_provider.dart';
@@ -269,11 +270,11 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
         return Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
-            title: const Text(
+            title: Text(
               'Reports',
               style: TextStyle(
                 color: AppColors.deepNavy,
-                fontSize: 20,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -307,19 +308,19 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
               // ── Date picker bar ──────────────────────────────
               Container(
                 color: AppColors.cleanWhite,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Select Date',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.h),
                     Row(
                       children: [
                         // Prev day (only when a date is selected)
@@ -329,37 +330,37 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
                           onTap: () => setState(() => _selectedDate =
                               _selectedDate!.subtract(const Duration(days: 1))),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8.w),
                         // Date display — tap to open picker
                         Expanded(
                           child: GestureDetector(
                             onTap: _pickDate,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                              padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
                               decoration: BoxDecoration(
                                 color: AppColors.deepNavy,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(12.r),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.calendar_today, color: Colors.white, size: 18),
-                                  const SizedBox(width: 10),
+                                  Icon(Icons.calendar_today, color: Colors.white, size: 18.sp),
+                                  SizedBox(width: 10.w),
                                   Text(
                                     _selectedDate != null
                                         ? _friendlyDate(_selectedDate!)
                                         : 'All Dates',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 15,
+                                      fontSize: 15.sp,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   if (_selectedDate != null) ...[
-                                    const SizedBox(width: 8),
+                                    SizedBox(width: 8.w),
                                     GestureDetector(
                                       onTap: () => setState(() => _selectedDate = null),
-                                      child: const Icon(Icons.close, color: Colors.white70, size: 16),
+                                      child: Icon(Icons.close, color: Colors.white70, size: 16.sp),
                                     ),
                                   ],
                                 ],
@@ -367,7 +368,7 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8.w),
                         // Next day (disabled if today or no date selected)
                         _ArrowBtn(
                           icon: Icons.chevron_right,
@@ -388,21 +389,21 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
               // ── Role filter chips ─────────────────────────────
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Divider(height: 1, color: Colors.white),
-                    const SizedBox(height: 10),
-                    const Text(
+                    SizedBox(height: 10.h),
+                    Text(
                       'Filter by Role',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.h),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -413,9 +414,9 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
                             selected: _selectedRole == null,
                             onTap: () => setState(() => _selectedRole = null),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8.w),
                           ..._roles.map((role) => Padding(
-                                padding: const EdgeInsets.only(right: 8),
+                                padding: EdgeInsets.only(right: 8.w),
                                 child: _RoleChip(
                                   label: role,
                                   selected: _selectedRole == role,
@@ -465,45 +466,45 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
                   
                   return Container(
                     color: Colors.white,
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Divider(height: 1, color: Colors.white),
-                        const SizedBox(height: 10),
-                        const Text(
+                        SizedBox(height: 10.h),
+                        Text(
                           'Filter by Site',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 13.sp,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8.h),
                         DropdownButtonFormField<String?>(
                           value: _selectedSiteId,
                           decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.location_on, color: AppColors.deepNavy, size: 20),
+                            prefixIcon: Icon(Icons.location_on, color: AppColors.deepNavy, size: 20.sp),
                             filled: true,
                             fillColor: AppColors.lightSlate,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(12.r),
                               borderSide: BorderSide.none,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(12.r),
                               borderSide: BorderSide(
                                 color: AppColors.deepNavy.withValues(alpha: 0.1),
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(12.r),
                               borderSide: const BorderSide(
                                 color: AppColors.deepNavy,
                                 width: 2,
                               ),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                           ),
                           isExpanded: true,
                           items: [

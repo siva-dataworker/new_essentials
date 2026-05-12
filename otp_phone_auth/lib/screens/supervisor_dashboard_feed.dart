@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/construction_service.dart';
@@ -25,35 +26,35 @@ class SupervisorDashboardFeed extends StatefulWidget {
 class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
   final _authService = AuthService();
   final _constructionService = ConstructionService();
-  
+
   Map<String, dynamic>? _currentUser;
   int _selectedIndex = 0;
-  
+
   // Dropdown state
   String? _selectedArea;
   String? _selectedStreet;
   String? _selectedSite;
-  
+
   // Data lists
   List<String> _areas = [];
   List<String> _streets = [];
   List<Map<String, dynamic>> _sites = [];
-  
+
   // Working sites
   List<Map<String, dynamic>> _workingSites = [];
   bool _isLoadingWorkingSites = false;
   bool _workingSitesExpanded = false;
-  
+
   // Today's sites with data
   List<Map<String, dynamic>> _todaySitesWithData = [];
   bool _isLoadingTodaySites = false;
-  
+
   // Total counts
   int _totalAreas = 0;
   int _totalStreets = 0;
   int _totalSites = 0;
   bool _isLoadingTotals = false;
-  
+
   // Loading states
   bool _isLoadingAreas = false;
   bool _isLoadingStreets = false;
@@ -184,14 +185,14 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
       _streets = [];
       _sites = [];
     });
-    
+
     try {
       final provider = context.read<ConstructionProvider>();
-      
+
       // Use provider's cached method
       await provider.loadStreetsForArea(area);
       final streets = provider.getStreetsForArea(area);
-      
+
       setState(() {
         _streets = streets;
       });
@@ -220,7 +221,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
       _selectedSite = null;
       _sites = [];
     });
-    
+
     try {
       final provider = context.read<ConstructionProvider>();
       final response = await provider.getSitesByAreaStreet(area, street);
@@ -254,7 +255,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
       _streets = [];
       _sites = [];
     });
-    
+
     if (area != null) {
       _loadStreets(area);
     }
@@ -266,7 +267,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
       _selectedSite = null;
       _sites = [];
     });
-    
+
     if (street != null && _selectedArea != null) {
       _loadSites(_selectedArea!, street);
     }
@@ -274,7 +275,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
 
   void _onSiteChanged(String? siteId) {
     setState(() => _selectedSite = siteId);
-    
+
     if (siteId != null) {
       // Find the selected site and navigate to detail screen
       final site = _sites.firstWhere((s) => s['id'] == siteId);
@@ -318,15 +319,15 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
           title: Row(
             children: [
               Container(
-                width: 45,
-                height: 45,
+                width: 45.w,
+                height: 45.h,
                 decoration: BoxDecoration(
                   gradient: BWColors.bwGradient,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
                       color: BWColors.primary.withOpacity(0.3),
-                      blurRadius: 8,
+                      blurRadius: 8.r,
                       offset: const Offset(0, 2),
                     ),
                   ],
@@ -334,15 +335,15 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                 child: Center(
                   child: Text(
                     (_currentUser?['full_name'] ?? 'S').substring(0, 1).toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                      fontSize: 20.sp,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,29 +351,29 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                   children: [
                     Text(
                       _currentUser?['full_name'] ?? 'Supervisor',
-                      style: const TextStyle(
-                        fontSize: 17,
+                      style: TextStyle(
+                        fontSize: 17.sp,
                         fontWeight: FontWeight.bold,
                         color: BWColors.primary,
                         letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2.h),
                     Row(
                       children: [
                         Container(
-                          width: 8,
-                          height: 8,
+                          width: 8.w,
+                          height: 8.h,
                           decoration: const BoxDecoration(
                             color: BWColors.primary,
                             shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6.w),
                         Text(
                           'Active Now',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.sp,
                             color: BWColors.secondaryText,
                             fontWeight: FontWeight.w500,
                           ),
@@ -384,44 +385,25 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
               ),
             ],
           ),
-          // actions: [
-          //   IconButton(
-          //     icon: const Icon(Icons.work_outline, color: BWColors.primary, size: 24),
-          //     onPressed: () {
-          //       Navigator.push(
-          //         context,
-          //         MaterialPageRoute(
-          //           builder: (context) => const WorkingSitesScreen(),
-          //         ),
-          //       );
-          //     },
-          //     tooltip: 'Working Sites',
-          //   ),
-          //   IconButton(
-          //     icon: const Icon(Icons.logout_rounded, color: BWColors.primary, size: 24),
-          //     onPressed: _logout,
-          //   ),
-          //   const SizedBox(width: 8),
-          // ],
         ),
-        
+
         // Dashboard Stats Section
         SliverToBoxAdapter(
           child: Container(
             color: BWColors.card,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Supervisor Dashboard Overview',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
                     color: BWColors.primary,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 Row(
                   children: [
                     Expanded(
@@ -432,7 +414,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                         color: BWColors.primary,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: SummaryCard(
                         title: 'Available Sites',
@@ -443,35 +425,35 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 // Working Sites Dropdown
                 _buildWorkingSitesDropdown(),
               ],
             ),
           ),
         ),
-        
+
         // Welcome Section
         SliverToBoxAdapter(
           child: Container(
             color: BWColors.card,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Select Site Location',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 20.sp,
                     fontWeight: FontWeight.bold,
                     color: BWColors.primary,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Text(
                   'Choose area, street, and site to view details',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     color: BWColors.secondaryText,
                   ),
                 ),
@@ -479,19 +461,19 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
             ),
           ),
         ),
-        
+
         // Dropdown Selection Section
         SliverToBoxAdapter(
           child: Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(20),
+            margin: EdgeInsets.all(16.r),
+            padding: EdgeInsets.all(20.r),
             decoration: BoxDecoration(
               color: BWColors.card,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(20.r),
               boxShadow: [
                 BoxShadow(
                   color: BWColors.primary.withOpacity(0.08),
-                  blurRadius: 20,
+                  blurRadius: 20.r,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -509,9 +491,9 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                   isLoading: _isLoadingAreas,
                   hint: 'Select an area',
                 ),
-                
-                const SizedBox(height: 20),
-                
+
+                SizedBox(height: 20.h),
+
                 // Street Dropdown
                 _buildDropdownSection(
                   title: 'Street',
@@ -523,31 +505,31 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                   hint: 'Select a street',
                   enabled: _selectedArea != null,
                 ),
-                
-                const SizedBox(height: 20),
-                
+
+                SizedBox(height: 20.h),
+
                 // Site Dropdown
                 _buildSiteDropdownSection(),
               ],
             ),
           ),
         ),
-        
+
         // Sites List Section (Enhanced)
         if (_sites.isNotEmpty && _selectedStreet != null)
           SliverToBoxAdapter(
             child: Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              margin: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Available Sites',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 18.sp,
                           fontWeight: FontWeight.bold,
                           color: BWColors.primary,
                         ),
@@ -555,21 +537,21 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                       Text(
                         '${_sites.length} sites',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           color: BWColors.secondaryText,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   ..._sites.take(5).map((site) => _buildSimpleSiteCard(site)),
                   if (_sites.length > 5)
                     Container(
-                      margin: const EdgeInsets.only(top: 8),
+                      margin: EdgeInsets.only(top: 8.h),
                       child: Text(
                         'And ${_sites.length - 5} more sites...',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           color: BWColors.secondaryText,
                           fontStyle: FontStyle.italic,
                         ),
@@ -579,20 +561,20 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
               ),
             ),
           ),
-        
+
         // Selected Site Info
         if (_selectedSite != null)
           SliverToBoxAdapter(
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(20),
+              margin: EdgeInsets.symmetric(horizontal: 16.w),
+              padding: EdgeInsets.all(20.r),
               decoration: BoxDecoration(
                 gradient: BWColors.bwGradient,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(20.r),
                 boxShadow: [
                   BoxShadow(
                     color: BWColors.primary.withOpacity(0.3),
-                    blurRadius: 20,
+                    blurRadius: 20.r,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -600,15 +582,15 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
               child: _buildSelectedSiteInfo(),
             ),
           ),
-        
+
         // Instructions
         SliverToBoxAdapter(
           child: Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
+            margin: EdgeInsets.all(16.r),
+            padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
               color: BWColors.surface,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
               border: Border.all(
                 color: BWColors.primary.withOpacity(0.2),
                 width: 1,
@@ -619,14 +601,14 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                 Icon(
                   Icons.info_outline,
                   color: BWColors.primary,
-                  size: 20,
+                  size: 20.sp,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Text(
                     'Select area first, then street, and finally the site to view details and manage construction activities.',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 13.sp,
                       color: BWColors.secondaryText,
                       height: 1.4,
                     ),
@@ -636,8 +618,8 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
             ),
           ),
         ),
-        
-        const SliverToBoxAdapter(child: SizedBox(height: 100)),
+
+        SliverToBoxAdapter(child: SizedBox(height: 100.h)),
       ],
     );
   }
@@ -656,7 +638,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
         ),
         SliverToBoxAdapter(
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -667,23 +649,23 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                   icon: Icons.location_city,
                   color: BWColors.primary,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 SummaryCard(
                   title: 'Total Streets',
                   value: _totalStreets.toString(),
                   icon: Icons.route,
                   color: BWColors.muted,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 SummaryCard(
                   title: 'Total Sites',
                   value: _totalSites.toString(),
                   icon: Icons.business,
                   color: BWColors.primary,
                 ),
-                
-                const SizedBox(height: 32),
-                
+
+                SizedBox(height: 32.h),
+
                 // Today's Working Sites Dropdown
                 _buildExpandableSection(
                   title: "Today's Working Sites",
@@ -695,9 +677,9 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                   children: _workingSites.map((site) => _buildSiteListItem(site)).toList(),
                   onRefresh: _loadWorkingSites,
                 ),
-                
-                const SizedBox(height: 16),
-                
+
+                SizedBox(height: 16.h),
+
                 // Today's Sites with Entered Data Dropdown
                 _buildExpandableSection(
                   title: "Today's Entered Data",
@@ -730,21 +712,21 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
       ),
       child: ExpansionTile(
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(8.r),
           decoration: BoxDecoration(
             color: BWColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(8.r),
           ),
-          child: Icon(icon, color: BWColors.primary, size: 24),
+          child: Icon(icon, color: BWColors.primary, size: 24.sp),
         ),
         title: Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: 16.sp,
             fontWeight: FontWeight.bold,
             color: BWColors.primary,
           ),
@@ -752,7 +734,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
         subtitle: Text(
           '$count ${count == 1 ? 'site' : 'sites'}',
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 13.sp,
             color: BWColors.secondaryText,
           ),
         ),
@@ -760,14 +742,14 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (isLoading)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+              SizedBox(
+                width: 20.w,
+                height: 20.h,
+                child: const CircularProgressIndicator(strokeWidth: 2),
               )
             else
               IconButton(
-                icon: const Icon(Icons.refresh, size: 20),
+                icon: Icon(Icons.refresh, size: 20.sp),
                 onPressed: onRefresh,
                 tooltip: 'Refresh',
               ),
@@ -776,22 +758,22 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
         ),
         children: [
           if (isLoading)
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(child: CircularProgressIndicator()),
+            Padding(
+              padding: EdgeInsets.all(24.r),
+              child: const Center(child: CircularProgressIndicator()),
             )
           else if (isEmpty)
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24.r),
               child: Center(
                 child: Column(
                   children: [
-                    Icon(Icons.inbox_outlined, size: 48, color: BWColors.muted),
-                    const SizedBox(height: 12),
+                    Icon(Icons.inbox_outlined, size: 48.sp, color: BWColors.muted),
+                    SizedBox(height: 12.h),
                     Text(
                       emptyMessage,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         color: BWColors.secondaryText,
                       ),
                     ),
@@ -810,26 +792,26 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: BWColors.primary.withOpacity(0.1),
-        child: Icon(Icons.location_on, color: BWColors.primary, size: 20),
+        child: Icon(Icons.location_on, color: BWColors.primary, size: 20.sp),
       ),
       title: Text(
         site['site_name'] ?? 'Unknown Site',
-        style: const TextStyle(
-          fontSize: 14,
+        style: TextStyle(
+          fontSize: 14.sp,
           fontWeight: FontWeight.w600,
         ),
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 4),
+          SizedBox(height: 4.h),
           // Area Badge
           if (site['area'] != null && site['area'].toString().isNotEmpty)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
               decoration: BoxDecoration(
                 color: BWColors.primary.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(4.r),
                 border: Border.all(
                   color: BWColors.primary.withOpacity(0.3),
                   width: 1,
@@ -838,12 +820,12 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.location_city, size: 10, color: BWColors.primary),
-                  const SizedBox(width: 3),
+                  Icon(Icons.location_city, size: 10.sp, color: BWColors.primary),
+                  SizedBox(width: 3.w),
                   Text(
                     site['area'],
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: TextStyle(
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.w600,
                       color: BWColors.primary,
                     ),
@@ -851,16 +833,16 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                 ],
               ),
             ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4.h),
           // Street
           Row(
             children: [
-              const Icon(Icons.route, size: 12, color: BWColors.muted),
-              const SizedBox(width: 4),
+              Icon(Icons.route, size: 12.sp, color: BWColors.muted),
+              SizedBox(width: 4.w),
               Text(
                 site['street'] ?? 'N/A',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   color: BWColors.secondaryText,
                 ),
               ),
@@ -868,7 +850,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
           ),
         ],
       ),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: BWColors.muted),
+      trailing: Icon(Icons.arrow_forward_ios, size: 16.sp, color: BWColors.muted),
       onTap: () {
         Navigator.push(
           context,
@@ -884,30 +866,30 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
     final hasLabour = site['has_labour'] == true;
     final hasMaterial = site['has_material'] == true;
     final hasPhotos = site['has_photos'] == true;
-    
+
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: Colors.green.withOpacity(0.1),
-        child: const Icon(Icons.check_circle, color: Colors.green, size: 20),
+        child: Icon(Icons.check_circle, color: Colors.green, size: 20.sp),
       ),
       title: Text(
         site['site_name'] ?? 'Unknown Site',
-        style: const TextStyle(
-          fontSize: 14,
+        style: TextStyle(
+          fontSize: 14.sp,
           fontWeight: FontWeight.w600,
         ),
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 4),
+          SizedBox(height: 4.h),
           // Area Badge
           if (site['area'] != null && site['area'].toString().isNotEmpty)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
               decoration: BoxDecoration(
                 color: BWColors.primary.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(4.r),
                 border: Border.all(
                   color: BWColors.primary.withOpacity(0.3),
                   width: 1,
@@ -916,12 +898,12 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.location_city, size: 10, color: BWColors.primary),
-                  const SizedBox(width: 3),
+                  Icon(Icons.location_city, size: 10.sp, color: BWColors.primary),
+                  SizedBox(width: 3.w),
                   Text(
                     site['area'],
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: TextStyle(
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.w600,
                       color: BWColors.primary,
                     ),
@@ -929,22 +911,22 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                 ],
               ),
             ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4.h),
           // Street
           Row(
             children: [
-              const Icon(Icons.route, size: 12, color: BWColors.muted),
-              const SizedBox(width: 4),
+              Icon(Icons.route, size: 12.sp, color: BWColors.muted),
+              SizedBox(width: 4.w),
               Text(
                 site['street'] ?? 'N/A',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   color: BWColors.secondaryText,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6.h),
           Wrap(
             spacing: 8,
             children: [
@@ -958,7 +940,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
           ),
         ],
       ),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: BWColors.muted),
+      trailing: Icon(Icons.arrow_forward_ios, size: 16.sp, color: BWColors.muted),
       onTap: () {
         Navigator.push(
           context,
@@ -972,21 +954,21 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
 
   Widget _buildDataChip(String label, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: 12.sp, color: color),
+          SizedBox(width: 4.w),
           Text(
             label,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 10.sp,
               fontWeight: FontWeight.w600,
               color: color,
             ),
@@ -1011,48 +993,48 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 18, color: BWColors.primary),
-            const SizedBox(width: 8),
+            Icon(icon, size: 18.sp, color: BWColors.primary),
+            SizedBox(width: 8.w),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.bold,
                 color: BWColors.primary,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
           decoration: BoxDecoration(
             color: enabled ? BWColors.surface : BWColors.surface.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
               color: enabled ? BWColors.primary.withOpacity(0.3) : BWColors.secondaryText.withOpacity(0.2),
               width: 1,
             ),
           ),
           child: isLoading
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
+              ? Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
                   child: Row(
                     children: [
                       SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
+                        width: 16.w,
+                        height: 16.h,
+                        child: const CircularProgressIndicator(
                           strokeWidth: 2,
                           color: BWColors.primary,
                         ),
                       ),
-                      SizedBox(width: 12),
+                      SizedBox(width: 12.w),
                       Text(
                         'Loading...',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           color: BWColors.secondaryText,
                         ),
                       ),
@@ -1065,7 +1047,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                     hint: Text(
                       enabled ? hint : 'Select ${title.toLowerCase()} first',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         color: BWColors.secondaryText,
                       ),
                     ),
@@ -1074,8 +1056,8 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                       Icons.keyboard_arrow_down,
                       color: enabled ? BWColors.primary : BWColors.secondaryText,
                     ),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       color: BWColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1101,48 +1083,48 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
       children: [
         Row(
             children: [
-            const Icon(Icons.business, size: 18, color: BWColors.primary),
-            const SizedBox(width: 8),
-            const Text(
+            Icon(Icons.business, size: 18.sp, color: BWColors.primary),
+            SizedBox(width: 8.w),
+            Text(
               'Site',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.bold,
                 color: BWColors.primary,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
           decoration: BoxDecoration(
             color: _selectedStreet != null ? BWColors.surface : BWColors.surface.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
               color: _selectedStreet != null ? BWColors.primary.withOpacity(0.3) : BWColors.secondaryText.withOpacity(0.2),
               width: 1,
             ),
           ),
           child: _isLoadingSites
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
+              ? Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
                   child: Row(
                     children: [
                       SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
+                        width: 16.w,
+                        height: 16.h,
+                        child: const CircularProgressIndicator(
                           strokeWidth: 2,
                           color: BWColors.primary,
                         ),
                       ),
-                      SizedBox(width: 12),
+                      SizedBox(width: 12.w),
                       Text(
                         'Loading sites...',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           color: BWColors.secondaryText,
                         ),
                       ),
@@ -1155,7 +1137,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                     hint: Text(
                       _selectedStreet != null ? 'Select a site' : 'Select street first',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         color: BWColors.secondaryText,
                       ),
                     ),
@@ -1164,8 +1146,8 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                       Icons.keyboard_arrow_down,
                       color: _selectedStreet != null ? BWColors.primary : BWColors.secondaryText,
                     ),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       color: BWColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1187,42 +1169,42 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
 
   Widget _buildSelectedSiteInfo() {
     final site = _sites.firstWhere((s) => s['id'] == _selectedSite);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(Icons.check_circle, color: Colors.white, size: 24),
-            const SizedBox(width: 12),
-            const Text(
+            Icon(Icons.check_circle, color: Colors.white, size: 24.sp),
+            SizedBox(width: 12.w),
+            Text(
               'Site Selected',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 16.sp,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         Text(
           site['display_name'] ?? site['site_name'] ?? 'Site',
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 18.sp,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4.h),
         Text(
           '$_selectedArea • $_selectedStreet',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 14.sp,
             color: Colors.white.withValues(alpha: 0.9),
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         Row(
           children: [
             Expanded(
@@ -1239,20 +1221,20 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                   backgroundColor: Colors.white,
                   foregroundColor: BWColors.primary,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.visibility_outlined, size: 18),
-                    SizedBox(width: 8),
+                    Icon(Icons.visibility_outlined, size: 18.sp),
+                    SizedBox(width: 8.w),
                     Text(
                       'View Details',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1260,7 +1242,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12.w),
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
@@ -1277,14 +1259,14 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                 backgroundColor: Colors.white.withValues(alpha: 0.2),
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
               ),
-              child: const Icon(Icons.history, size: 18),
+              child: Icon(Icons.history, size: 18.sp),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12.w),
             ElevatedButton(
               onPressed: () {
                 _showMaterialUsageDialog(site);
@@ -1293,12 +1275,12 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                 backgroundColor: Colors.white.withValues(alpha: 0.2),
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
               ),
-              child: const Icon(Icons.inventory_2, size: 18),
+              child: Icon(Icons.inventory_2, size: 18.sp),
             ),
           ],
         ),
@@ -1308,15 +1290,15 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
 
   Widget _buildSimpleSiteCard(Map<String, dynamic> site) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: BWColors.border),
         boxShadow: [
           BoxShadow(
             color: BWColors.primary.withOpacity(0.06),
-            blurRadius: 10,
+            blurRadius: 10.r,
             offset: const Offset(0, 4),
           ),
         ],
@@ -1330,23 +1312,23 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
             ),
           );
         },
-        contentPadding: const EdgeInsets.all(12),
+        contentPadding: EdgeInsets.all(12.r),
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(10.r),
           decoration: BoxDecoration(
             color: BWColors.primary,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(8.r),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.location_city,
             color: Colors.white,
-            size: 20,
+            size: 20.sp,
           ),
         ),
         title: Text(
           site['display_name'] ?? site['site_name'] ?? 'Unnamed Site',
-          style: const TextStyle(
-            fontSize: 15,
+          style: TextStyle(
+            fontSize: 15.sp,
             fontWeight: FontWeight.w600,
             color: BWColors.primary,
           ),
@@ -1354,7 +1336,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
         subtitle: Text(
           '${site['area'] ?? ''} • ${site['street'] ?? ''}',
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 12.sp,
             color: BWColors.secondaryText,
           ),
         ),
@@ -1381,20 +1363,20 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
           // Profile Info
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               child: Column(
                 children: [
                   // Avatar
                   Container(
-                    width: 80,
-                    height: 80,
+                    width: 80.w,
+                    height: 80.h,
                     decoration: BoxDecoration(
                       gradient: BWColors.bwGradient,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
                           color: BWColors.primary.withOpacity(0.3),
-                          blurRadius: 10,
+                          blurRadius: 10.r,
                           offset: const Offset(0, 4),
                         ),
                       ],
@@ -1402,132 +1384,132 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                     child: Center(
                       child: Text(
                         (_currentUser?['full_name'] ?? 'S').substring(0, 1).toUpperCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 32,
+                          fontSize: 32.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   Text(
                     _currentUser?['full_name'] ?? 'Supervisor',
-                    style: const TextStyle(
-                      fontSize: 20,
+                    style: TextStyle(
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.bold,
                       color: BWColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Text(
                     _currentUser?['role'] ?? 'Supervisor',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       color: BWColors.secondaryText,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24.h),
                   // Info Cards
                   _buildSimpleProfileInfo('Email', _currentUser?['email'] ?? 'N/A', Icons.email),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildSimpleProfileInfo('Username', _currentUser?['username'] ?? 'N/A', Icons.person),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildSimpleProfileInfo('Phone', _currentUser?['phone'] ?? 'N/A', Icons.phone),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24.h),
                   // Settings
-                  const Text(
+                  Text(
                     'Settings',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
                       color: BWColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   _buildProfileSettingsTile(
                     icon: Icons.edit_outlined,
                     title: 'Edit Profile',
                     subtitle: 'Update your name and phone',
                     onTap: () => _showEditProfileDialog(),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildProfileSettingsTile(
                     icon: Icons.lock_outline,
                     title: 'Change Password',
                     subtitle: 'Update your password',
                     onTap: () => _showChangePasswordDialog(),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildProfileSettingsTile(
                     icon: Icons.notifications_outlined,
                     title: 'Notifications',
                     subtitle: 'Manage notification preferences',
                     onTap: () => _showComingSoonDialog('Notifications'),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildProfileSettingsTile(
                     icon: Icons.language,
                     title: 'Language',
                     subtitle: 'English',
                     onTap: () => _showComingSoonDialog('Language Settings'),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32.h),
                   // App Information
-                  const Text(
+                  Text(
                     'About',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
                       color: BWColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   _buildProfileSettingsTile(
                     icon: Icons.info_outline,
                     title: 'App Version',
                     subtitle: '1.0.0',
                     onTap: null,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildProfileSettingsTile(
                     icon: Icons.help_outline,
                     title: 'Help & Support',
                     subtitle: 'Get help with the app',
                     onTap: () => _showComingSoonDialog('Help & Support'),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildProfileSettingsTile(
                     icon: Icons.privacy_tip_outlined,
                     title: 'Privacy Policy',
                     subtitle: 'Read our privacy policy',
                     onTap: () => _showComingSoonDialog('Privacy Policy'),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32.h),
                   // Logout Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: _logout,
                       icon: const Icon(Icons.logout),
-                      label: const Text(
+                      label: Text(
                         'Logout',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: BWColors.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: 16.h),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12.r),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20.h),
                 ],
               ),
             ),
@@ -1539,23 +1521,23 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
 
   Widget _buildSimpleProfileInfo(String title, String value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: BWColors.border),
         boxShadow: [
           BoxShadow(
             color: BWColors.primary.withOpacity(0.06),
-            blurRadius: 10,
+            blurRadius: 10.r,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
-          Icon(icon, color: BWColors.primary, size: 20),
-          const SizedBox(width: 12),
+          Icon(icon, color: BWColors.primary, size: 20.sp),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1563,15 +1545,15 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     color: BWColors.secondaryText,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2.h),
                 Text(
                   value,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                     color: BWColors.primary,
                   ),
@@ -1593,38 +1575,38 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: BWColors.primary.withOpacity(0.06),
-            blurRadius: 10,
+            blurRadius: 10.r,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ListTile(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(10.r),
           decoration: BoxDecoration(
             color: BWColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r),
           ),
-          child: Icon(icon, color: BWColors.primary, size: 24),
+          child: Icon(icon, color: BWColors.primary, size: 24.sp),
         ),
         title: Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: 16.sp,
             fontWeight: FontWeight.w600,
             color: BWColors.primary,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(
-            fontSize: 13,
+          style: TextStyle(
+            fontSize: 13.sp,
             color: BWColors.secondaryText,
           ),
         ),
@@ -1652,7 +1634,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
             'Edit Profile',
             style: TextStyle(color: BWColors.primary, fontWeight: FontWeight.bold),
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
           content: Form(
             key: formKey,
             child: Column(
@@ -1663,16 +1645,16 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                   decoration: InputDecoration(
                     labelText: 'Full Name',
                     prefixIcon: const Icon(Icons.person_outline, color: BWColors.primary),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       borderSide: const BorderSide(color: BWColors.primary, width: 2),
                     ),
                   ),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Name is required' : null,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 TextFormField(
                   controller: phoneCtrl,
                   keyboardType: TextInputType.phone,
@@ -1681,9 +1663,9 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                   decoration: InputDecoration(
                     labelText: 'Phone Number',
                     prefixIcon: const Icon(Icons.phone_outlined, color: BWColors.primary),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       borderSide: const BorderSide(color: BWColors.primary, width: 2),
                     ),
                     counterText: '',
@@ -1706,7 +1688,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: BWColors.primary,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
               ),
               onPressed: isSaving
                   ? null
@@ -1742,10 +1724,10 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                       );
                     },
               child: isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  ? SizedBox(
+                      width: 18.w,
+                      height: 18.h,
+                      child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : const Text('Save'),
             ),
@@ -1770,28 +1752,25 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: currentPasswordController,
+            const TextField(
               obscureText: true,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Current Password',
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: newPasswordController,
+            SizedBox(height: 16.h),
+            const TextField(
               obscureText: true,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'New Password',
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: confirmPasswordController,
+            SizedBox(height: 16.h),
+            const TextField(
               obscureText: true,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Confirm New Password',
                 border: OutlineInputBorder(),
               ),
@@ -1842,14 +1821,14 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
         boxShadow: [
           BoxShadow(
             color: BWColors.primary.withOpacity(0.1),
-            blurRadius: 10,
+            blurRadius: 10.r,
             offset: const Offset(0, -2),
           ),
         ],
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -1869,17 +1848,17 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
       onTap: () {
         setState(() => _selectedIndex = index);
       },
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(16.r),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
         decoration: BoxDecoration(
           color: isSelected ? BWColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           boxShadow: isSelected ? [
             BoxShadow(
               color: BWColors.primary.withOpacity(0.3),
-              blurRadius: 10,
+              blurRadius: 10.r,
               offset: const Offset(0, 4),
             )
           ] : null,
@@ -1890,14 +1869,14 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
             Icon(
               icon,
               color: isSelected ? Colors.white : BWColors.secondaryText,
-              size: 22,
+              size: 22.sp,
             ),
             if (isSelected) ...[
-              const SizedBox(width: 8),
+              SizedBox(width: 8.w),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 13,
+                style: TextStyle(
+                  fontSize: 13.sp,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
@@ -1953,45 +1932,45 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
         final totalSitesInArea = streets.values.fold(0, (sum, s) => sum + s.length);
 
         return ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          tilePadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
           leading: Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(8.r),
             decoration: BoxDecoration(
               color: BWColors.primary.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8.r),
             ),
-            child: const Icon(Icons.location_city, color: BWColors.primary, size: 20),
+            child: Icon(Icons.location_city, color: BWColors.primary, size: 20.sp),
           ),
           title: Text(
             area,
-            style: const TextStyle(
-              fontSize: 15,
+            style: TextStyle(
+              fontSize: 15.sp,
               fontWeight: FontWeight.bold,
               color: BWColors.primary,
             ),
           ),
           subtitle: Text(
             '$totalSitesInArea ${totalSitesInArea == 1 ? 'site' : 'sites'} · ${streets.length} ${streets.length == 1 ? 'street' : 'streets'}',
-            style: TextStyle(fontSize: 12, color: BWColors.secondaryText),
+            style: TextStyle(fontSize: 12.sp, color: BWColors.secondaryText),
           ),
           children: streets.entries.map((streetEntry) {
             final street = streetEntry.key;
             final sites = streetEntry.value;
 
             return ExpansionTile(
-              tilePadding: const EdgeInsets.only(left: 32, right: 16),
-              leading: const Icon(Icons.route, color: BWColors.muted, size: 18),
+              tilePadding: EdgeInsets.only(left: 32.w, right: 16.w),
+              leading: Icon(Icons.route, color: BWColors.muted, size: 18.sp),
               title: Text(
                 street,
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.w600,
                   color: BWColors.primary,
                 ),
               ),
               subtitle: Text(
                 '${sites.length} ${sites.length == 1 ? 'site' : 'sites'}',
-                style: TextStyle(fontSize: 12, color: BWColors.secondaryText),
+                style: TextStyle(fontSize: 12.sp, color: BWColors.secondaryText),
               ),
               children: sites.map((site) {
                 final siteForDetail = {
@@ -2003,19 +1982,19 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                   'site_name': site['site_name'],
                 };
                 return ListTile(
-                  contentPadding: const EdgeInsets.only(left: 56, right: 16),
+                  contentPadding: EdgeInsets.only(left: 56.w, right: 16.w),
                   leading: Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(8.r),
                     decoration: BoxDecoration(
                       color: BWColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
-                    child: const Icon(Icons.construction, color: BWColors.primary, size: 18),
+                    child: Icon(Icons.construction, color: BWColors.primary, size: 18.sp),
                   ),
                   title: Text(
                     site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                       color: BWColors.primary,
                     ),
@@ -2023,12 +2002,12 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                   subtitle: site['description'] != null && site['description'].toString().trim().isNotEmpty
                       ? Text(
                           site['description'],
-                          style: TextStyle(fontSize: 12, color: BWColors.secondaryText),
+                          style: TextStyle(fontSize: 12.sp, color: BWColors.secondaryText),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         )
                       : null,
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: BWColors.muted),
+                  trailing: Icon(Icons.arrow_forward_ios, size: 14.sp, color: BWColors.muted),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -2049,38 +2028,38 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
   Widget _buildWorkingSitesDropdown() {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
       child: Column(
         children: [
           InkWell(
             onTap: () {
               setState(() => _workingSitesExpanded = !_workingSitesExpanded);
             },
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12.r),
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: BWColors.primary.withOpacity(0.1),
                 borderRadius: _workingSitesExpanded
-                    ? const BorderRadius.vertical(top: Radius.circular(12))
-                    : BorderRadius.circular(12),
+                    ? BorderRadius.vertical(top: Radius.circular(12.r))
+                    : BorderRadius.circular(12.r),
               ),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(8.r),
                     decoration: BoxDecoration(
                       color: BWColors.primary.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
-                    child: const Icon(Icons.work, color: BWColors.primary, size: 20),
+                    child: Icon(Icons.work, color: BWColors.primary, size: 20.sp),
                   ),
-                  const SizedBox(width: 12),
-                  const Expanded(
+                  SizedBox(width: 12.w),
+                  Expanded(
                     child: Text(
                       'Working Sites',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                         color: BWColors.primary,
                       ),
@@ -2088,21 +2067,21 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                   ),
                   if (_workingSites.isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                       decoration: BoxDecoration(
                         color: BWColors.primary,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
                       child: Text(
                         '${_workingSites.length}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Icon(
                     _workingSitesExpanded ? Icons.expand_less : Icons.expand_more,
                     color: BWColors.primary,
@@ -2113,20 +2092,20 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
           ),
           if (_workingSitesExpanded) ...[
             if (_isLoadingWorkingSites)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(),
+              Padding(
+                padding: EdgeInsets.all(24.r),
+                child: const CircularProgressIndicator(),
               )
             else if (_workingSites.isEmpty)
               Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(24.r),
                 child: Column(
                   children: [
-                    Icon(Icons.work_off, size: 48, color: BWColors.secondaryText),
-                    const SizedBox(height: 8),
+                    Icon(Icons.work_off, size: 48.sp, color: BWColors.secondaryText),
+                    SizedBox(height: 8.h),
                     Text(
                       'No working sites assigned yet',
-                      style: TextStyle(color: BWColors.secondaryText, fontSize: 14),
+                      style: TextStyle(color: BWColors.secondaryText, fontSize: 14.sp),
                     ),
                   ],
                 ),

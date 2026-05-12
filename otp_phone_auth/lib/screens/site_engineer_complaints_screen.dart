@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../providers/site_engineer_provider.dart';
 import '../utils/app_colors.dart';
 
@@ -30,13 +31,13 @@ class _SiteEngineerComplaintsScreenState extends State<SiteEngineerComplaintsScr
           icon: const Icon(Icons.arrow_back, color: AppColors.deepNavy),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Client Complaints',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
@@ -44,7 +45,7 @@ class _SiteEngineerComplaintsScreenState extends State<SiteEngineerComplaintsScr
             Text(
               'Raised by Architect',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.normal,
               ),
@@ -69,32 +70,32 @@ class _SiteEngineerComplaintsScreenState extends State<SiteEngineerComplaintsScr
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 120,
-                    height: 120,
+                    width: 120.w,
+                    height: 120.h,
                     decoration: BoxDecoration(
                       color: AppColors.lightSlate,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.check_circle_outline,
-                      size: 60,
+                      size: 60.sp,
                       color: AppColors.statusCompleted,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
+                  SizedBox(height: 24.h),
+                  Text(
                     'No Complaints',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.deepNavy,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   Text(
                     'All complaints have been resolved',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -106,7 +107,7 @@ class _SiteEngineerComplaintsScreenState extends State<SiteEngineerComplaintsScr
           return RefreshIndicator(
             onRefresh: () => provider.loadComplaints(forceRefresh: true),
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               itemCount: complaints.length,
               itemBuilder: (context, index) {
                 final complaint = complaints[index];
@@ -123,10 +124,10 @@ class _SiteEngineerComplaintsScreenState extends State<SiteEngineerComplaintsScr
     final isOpen = complaint['status'] == 'OPEN';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.deepNavy.withValues(alpha: 0.08),
@@ -139,42 +140,42 @@ class _SiteEngineerComplaintsScreenState extends State<SiteEngineerComplaintsScr
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20.r),
             child: Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 48.w,
+                  height: 48.h,
                   decoration: BoxDecoration(
                     color: isOpen
                         ? AppColors.statusOverdue.withValues(alpha: 0.2)
                         : AppColors.statusCompleted.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Icon(
                     isOpen ? Icons.warning_amber_rounded : Icons.check_circle,
                     color: isOpen ? AppColors.statusOverdue : AppColors.statusCompleted,
-                    size: 26,
+                    size: 26.sp,
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Complaint #${complaint['complaint_id']}',
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text(
                         complaint['created_at'] ?? '',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -182,17 +183,17 @@ class _SiteEngineerComplaintsScreenState extends State<SiteEngineerComplaintsScr
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
                     color: isOpen
                         ? AppColors.statusOverdue.withValues(alpha: 0.1)
                         : AppColors.statusCompleted.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20.r),
                   ),
                   child: Text(
                     isOpen ? 'OPEN' : 'RESOLVED',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.bold,
                       color: isOpen ? AppColors.statusOverdue : AppColors.statusCompleted,
                     ),
@@ -206,20 +207,20 @@ class _SiteEngineerComplaintsScreenState extends State<SiteEngineerComplaintsScr
             color: AppColors.lightSlate,
           ),
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20.r),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   complaint['description'] ?? 'No description',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     color: AppColors.deepNavy,
                     height: 1.5,
                   ),
                 ),
                 if (isOpen) ...[
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   ElevatedButton.icon(
                     onPressed: () {
                       // TODO: Navigate to rectification upload screen
@@ -234,9 +235,9 @@ class _SiteEngineerComplaintsScreenState extends State<SiteEngineerComplaintsScr
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.deepNavy,
                       foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 48),
+                      minimumSize: Size(double.infinity, 48.h),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
                     ),
                   ),

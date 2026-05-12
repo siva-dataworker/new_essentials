@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../services/construction_service.dart';
 
 class AccountantCompareScreen extends StatefulWidget {
@@ -11,7 +12,7 @@ class AccountantCompareScreen extends StatefulWidget {
 
 class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
   final _constructionService = ConstructionService();
-  
+
   DateTime _selectedDate = DateTime.now();
   String? _selectedSite; // null = All Sites
   List<Map<String, dynamic>> _sites = [];
@@ -20,7 +21,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
   bool _isLoading = false;
   bool _isLoadingSites = false;
   String? _error;
-  
+
   // Selection state
   String? _selectedEntryId; // ID of selected entry
   String? _selectedEntryType; // 'supervisor' or 'site_engineer'
@@ -35,10 +36,10 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
 
   Future<void> _loadSites() async {
     setState(() => _isLoadingSites = true);
-    
+
     try {
       final sites = await _constructionService.getSites();
-      
+
       if (mounted) {
         setState(() {
           _sites = sites;
@@ -60,23 +61,23 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
 
     try {
       final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
-      
+
       print('🔍 [COMPARE] Loading data for date: $dateStr');
-      
+
       // Load supervisor entries
       final supervisorData = await _constructionService.getEntriesByDateAndRole(dateStr, 'Supervisor');
       print('📊 [COMPARE] Supervisor data: ${supervisorData.length} sites');
       if (supervisorData.isNotEmpty) {
         print('📊 [COMPARE] First supervisor entry: ${supervisorData[0]}');
       }
-      
-      // Load site engineer entries  
+
+      // Load site engineer entries
       final engineerData = await _constructionService.getEntriesByDateAndRole(dateStr, 'Site Engineer');
       print('📊 [COMPARE] Engineer data: ${engineerData.length} sites');
       if (engineerData.isNotEmpty) {
         print('📊 [COMPARE] First engineer entry: ${engineerData[0]}');
       }
-      
+
       if (mounted) {
         setState(() {
           // Filter by selected site if one is selected
@@ -135,12 +136,12 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Compare Entries',
           style: TextStyle(
-            color: Color(0xFF1A1A2E),
+            color: const Color(0xFF1A1A2E),
             fontWeight: FontWeight.bold,
-            fontSize: 18,
+            fontSize: 18.sp,
           ),
         ),
         backgroundColor: Colors.white,
@@ -168,11 +169,11 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
         children: [
           // Date selector card
           Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
+            margin: EdgeInsets.all(16.r),
+            padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
@@ -186,36 +187,36 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: EdgeInsets.all(10.r),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(10.r),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.compare_arrows,
-                        color: Color(0xFF1A1A2E),
-                        size: 24,
+                        color: const Color(0xFF1A1A2E),
+                        size: 24.sp,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Comparing Entries For',
                             style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7280),
+                              fontSize: 12.sp,
+                              color: const Color(0xFF6B7280),
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4.h),
                           Text(
                             DateFormat('EEEE, MMM d, yyyy').format(_selectedDate),
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A1A2E),
+                              color: const Color(0xFF1A1A2E),
                             ),
                           ),
                         ],
@@ -228,34 +229,34 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 const Divider(height: 1),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 // Site filter dropdown
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.location_on_outlined,
-                      color: Color(0xFF6B7280),
-                      size: 20,
+                      color: const Color(0xFF6B7280),
+                      size: 20.sp,
                     ),
-                    const SizedBox(width: 8),
-                    const Text(
+                    SizedBox(width: 8.w),
+                    Text(
                       'Site:',
                       style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF6B7280),
+                        fontSize: 14.sp,
+                        color: const Color(0xFF6B7280),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: _isLoadingSites
-                          ? const Center(
+                          ? Center(
                               child: SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
+                                width: 20.w,
+                                height: 20.h,
+                                child: const CircularProgressIndicator(
                                   strokeWidth: 2,
                                   color: Color(0xFF1A1A2E),
                                 ),
@@ -264,23 +265,23 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                           : DropdownButtonFormField<String>(
                               value: _selectedSite,
                               decoration: InputDecoration(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                                 border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(8.r),
                                   borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                                 ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(8.r),
                                   borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(8.r),
                                   borderSide: const BorderSide(color: Color(0xFF1A1A2E)),
                                 ),
                               ),
-                              hint: const Text(
+                              hint: Text(
                                 'All Sites',
-                                style: TextStyle(fontSize: 14),
+                                style: TextStyle(fontSize: 14.sp),
                               ),
                               items: [
                                 const DropdownMenuItem<String>(
@@ -292,7 +293,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                                     value: site['id'],
                                     child: Text(
                                       site['display_name'] ?? site['site_name'] ?? 'Unknown',
-                                      style: const TextStyle(fontSize: 14),
+                                      style: TextStyle(fontSize: 14.sp),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   );
@@ -323,17 +324,17 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.error_outline,
-                              size: 64,
+                              size: 64.sp,
                               color: Colors.red,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16.h),
                             Text(
                               'Error: $_error',
                               style: const TextStyle(color: Colors.red),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16.h),
                             ElevatedButton(
                               onPressed: _loadComparisonData,
                               child: const Text('Retry'),
@@ -343,11 +344,11 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                       )
                     : _buildComparisonView(),
           ),
-          
+
           // Confirm button at bottom
           if (_selectedEntryId != null)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -363,24 +364,24 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                   onPressed: _isConfirming ? null : _confirmSelection,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF059669),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: 16.h),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
                   child: _isConfirming
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
+                      ? SizedBox(
+                          width: 20.w,
+                          height: 20.h,
+                          child: const CircularProgressIndicator(
                             strokeWidth: 2,
                             color: Colors.white,
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'Confirm Selection',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
@@ -400,8 +401,8 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 100,
-              height: 100,
+              width: 100.w,
+              height: 100.h,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
@@ -410,28 +411,28 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                 ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.inbox_outlined,
-                size: 50,
+                size: 50.sp,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: 24.h),
+            Text(
               'No Entries Found',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A2E),
+                color: const Color(0xFF1A1A2E),
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8.h),
+            Text(
               'No labour entries for this date',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 16,
-                color: Color(0xFF6B7280),
+                fontSize: 16.sp,
+                color: const Color(0xFF6B7280),
               ),
             ),
           ],
@@ -440,7 +441,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
     }
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       children: [
         // Supervisor Section
         _buildSectionHeader(
@@ -449,11 +450,11 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
           Icons.engineering,
           const Color(0xFF059669),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         ..._supervisorEntries.map((entry) => _buildEntryCard(entry, true)),
-        
-        const SizedBox(height: 24),
-        
+
+        SizedBox(height: 24.h),
+
         // Site Engineer Section
         _buildSectionHeader(
           'Site Engineer Entries',
@@ -461,7 +462,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
           Icons.construction,
           const Color(0xFF2563EB),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         ..._engineerEntries.map((entry) => _buildEntryCard(entry, false)),
       ],
     );
@@ -469,44 +470,44 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
 
   Widget _buildSectionHeader(String title, int count, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(8.r),
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8.r),
             ),
-            child: Icon(icon, color: Colors.white, size: 20),
+            child: Icon(icon, color: Colors.white, size: 20.sp),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Text(
               title,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 16.sp,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(20.r),
             ),
             child: Text(
               '$count ${count == 1 ? 'Entry' : 'Entries'}',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 12,
+                fontSize: 12.sp,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -522,16 +523,16 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
     final labourEntries = entry['labour_entries'] as List? ?? [];
     final submittedBy = entry['submitted_by'] ?? 'Unknown';
     final submittedAt = entry['submitted_at'] as String?;
-    
+
     final color = isSupervisor ? const Color(0xFF059669) : const Color(0xFF2563EB);
     final entryType = isSupervisor ? 'supervisor' : 'site_engineer';
     final isSelected = _selectedEntryId == siteId && _selectedEntryType == entryType;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         side: BorderSide(
           color: isSelected ? color : color.withValues(alpha: 0.2),
           width: isSelected ? 2 : 1,
@@ -553,12 +554,12 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
               });
             },
             child: Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
                 color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12.r),
+                  topRight: Radius.circular(12.r),
                 ),
               ),
               child: Row(
@@ -578,12 +579,12 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                     },
                     activeColor: color,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
                       isSelected ? 'Selected for confirmation' : 'Tap to select this entry',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         color: isSelected ? color : const Color(0xFF6B7280),
                       ),
@@ -593,46 +594,46 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
               ),
             ),
           ),
-          
+
           // Existing expansion tile
           ExpansionTile(
             leading: Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8.r),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
               ),
               child: Icon(
                 isSupervisor ? Icons.engineering : Icons.construction,
                 color: color,
-                size: 20,
+                size: 20.sp,
               ),
             ),
             title: Text(
               siteName,
-              style: const TextStyle(
-                fontSize: 15,
+              style: TextStyle(
+                fontSize: 15.sp,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A2E),
+                color: const Color(0xFF1A1A2E),
               ),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   'By: $submittedBy',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF6B7280),
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: const Color(0xFF6B7280),
                   ),
                 ),
                 if (submittedAt != null)
                   Text(
                     'At: ${_formatTime(submittedAt)}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF9CA3AF),
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: const Color(0xFF9CA3AF),
                     ),
                   ),
               ],
@@ -640,19 +641,19 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
             children: [
               const Divider(height: 1),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Labour Details',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.bold,
                         color: color,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     ...labourEntries.map((labour) => _buildLabourRow(labour)),
                   ],
                 ),
@@ -669,39 +670,39 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
     final count = labour['labour_count'] ?? 0;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 8.h),
       child: Row(
         children: [
           Container(
-            width: 6,
-            height: 6,
+            width: 6.w,
+            height: 6.h,
             decoration: const BoxDecoration(
               color: Color(0xFF1A1A2E),
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Text(
               labourType,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF1A1A2E),
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: const Color(0xFF1A1A2E),
               ),
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
             ),
             child: Text(
               '$count',
-              style: const TextStyle(
-                fontSize: 13,
+              style: TextStyle(
+                fontSize: 13.sp,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A2E),
+                color: const Color(0xFF1A1A2E),
               ),
             ),
           ),
@@ -728,16 +729,16 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
       // Find the selected entry
       final entries = _selectedEntryType == 'supervisor' ? _supervisorEntries : _engineerEntries;
       final selectedEntry = entries.firstWhere((e) => e['site_id'] == _selectedEntryId);
-      
+
       final labourEntries = selectedEntry['labour_entries'] as List;
       final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
-      
+
       // Fetch labour rates for each labour type
       final labourEntriesWithRates = <Map<String, dynamic>>[];
       for (var labour in labourEntries) {
         final labourType = labour['labour_type'];
         final labourCount = labour['labour_count'];
-        
+
         // Get rate from backend (global rates)
         final ratesResponse = await _constructionService.getLabourRates('global');
         final rates = ratesResponse['rates'] as List? ?? [];
@@ -745,16 +746,16 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
           (r) => r['labour_type'] == labourType,
           orElse: () => {'daily_rate': 600.0}, // Default fallback
         );
-        
+
         final dailyRate = (rateData['daily_rate'] as num).toDouble();
-        
+
         labourEntriesWithRates.add({
           'labour_type': labourType,
           'labour_count': labourCount,
           'daily_rate': dailyRate,
         });
       }
-      
+
       // Call confirm cash entry API
       final result = await _constructionService.confirmCashEntry(
         siteId: _selectedEntryId!,
@@ -763,7 +764,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
         sourceEntryId: null, // We don't have individual entry IDs in the grouped data
         labourEntries: labourEntriesWithRates,
       );
-      
+
       if (mounted) {
         if (result['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -772,12 +773,12 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          
+
           setState(() {
             _selectedEntryId = null;
             _selectedEntryType = null;
           });
-          
+
           // Reload data
           _loadComparisonData();
         } else {
@@ -830,12 +831,12 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
           }
 
           return AlertDialog(
-            title: const Text(
+            title: Text(
               'Create Custom Entry',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A2E),
+                color: const Color(0xFF1A1A2E),
               ),
             ),
             content: SingleChildScrollView(
@@ -844,21 +845,21 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Site selector
-                  const Text(
+                  Text(
                     'Site',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A2E),
+                      color: const Color(0xFF1A1A2E),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   DropdownButtonFormField<String>(
                     value: selectedSiteId,
                     decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       hintText: 'Select site',
                     ),
@@ -867,7 +868,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                         value: site['id'],
                         child: Text(
                           site['display_name'] ?? site['site_name'] ?? 'Unknown',
-                          style: const TextStyle(fontSize: 14),
+                          style: TextStyle(fontSize: 14.sp),
                         ),
                       );
                     }).toList(),
@@ -875,25 +876,25 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                       setDialogState(() => selectedSiteId = value);
                     },
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
 
                   // Date picker
-                  const Text(
+                  Text(
                     'Date',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A2E),
+                      color: const Color(0xFF1A1A2E),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   TextField(
                     controller: dateController,
                     readOnly: true,
                     decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       suffixIcon: const Icon(Icons.calendar_today),
                     ),
@@ -911,26 +912,26 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                       }
                     },
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
 
                   // Labour type selector
-                  const Text(
+                  Text(
                     'Labour Type',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A2E),
+                      color: const Color(0xFF1A1A2E),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   isLoadingRates
                       ? const Center(child: CircularProgressIndicator())
                       : DropdownButtonFormField<String>(
                           value: selectedLabourType,
                           decoration: InputDecoration(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(8.r),
                             ),
                             hintText: 'Select labour type',
                           ),
@@ -939,7 +940,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                               value: rate['labour_type'],
                               child: Text(
                                 rate['labour_type'],
-                                style: const TextStyle(fontSize: 14),
+                                style: TextStyle(fontSize: 14.sp),
                               ),
                             );
                           }).toList(),
@@ -955,75 +956,75 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                             });
                           },
                         ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
 
                   // Labour count
-                  const Text(
+                  Text(
                     'Labour Count',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A2E),
+                      color: const Color(0xFF1A1A2E),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   TextField(
                     controller: countController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       hintText: 'Enter count',
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
 
                   // Daily rate (auto-filled, read-only)
-                  const Text(
+                  Text(
                     'Daily Rate',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A2E),
+                      color: const Color(0xFF1A1A2E),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                       border: Border.all(color: const Color(0xFFE5E7EB)),
                     ),
                     child: Text(
                       dailyRate != null ? '₹${dailyRate!.toStringAsFixed(0)}' : 'Select labour type first',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         color: dailyRate != null ? const Color(0xFF1A1A2E) : const Color(0xFF9CA3AF),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
 
                   // Notes
-                  const Text(
+                  Text(
                     'Notes (Optional)',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A2E),
+                      color: const Color(0xFF1A1A2E),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   TextField(
                     controller: notesController,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.all(12),
+                      contentPadding: EdgeInsets.all(12.r),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       hintText: 'Enter notes',
                     ),

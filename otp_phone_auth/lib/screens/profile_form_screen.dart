@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../utils/app_colors.dart';
 import '../services/supabase_service.dart';
 import 'role_selection_screen.dart';
@@ -52,7 +53,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
 
     try {
       final supabase = SupabaseService();
-      
+
       // Create user profile in Supabase
       await supabase.createUserProfile(
         userId: widget.userId,
@@ -98,68 +99,68 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
       backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: EdgeInsets.all(24.r),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24.h),
                   // Icon - Professional Navy
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsets.all(20.r),
                     decoration: BoxDecoration(
                       color: AppColors.deepNavy,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.deepNavy.withValues(alpha: 0.15),
-                          blurRadius: 12,
+                          blurRadius: 12.r,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.person_add,
-                      size: 48,
+                      size: 48.sp,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
+                  SizedBox(height: 24.h),
+                  Text(
                     'Welcome! 👋',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 24.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   if (widget.phoneNumber != null)
                     Text(
                       'Phone: ${widget.phoneNumber}',
-                    
-                      style: const TextStyle(
-                        fontSize: 14,
+
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textSecondary,
-                        
+
                       ),
                       textAlign: TextAlign.center,
                     ),
                   if (widget.phoneNumber != null)
-                    const SizedBox(height: 8),
-                  const Text(
+                    SizedBox(height: 8.h),
+                  Text(
                     'Please complete your profile to continue',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       color: AppColors.textSecondary,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
-                
+                  SizedBox(height: 32.h),
+
                 // Name Field
                 TextFormField(
                   controller: _nameController,
@@ -180,8 +181,8 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                
+                SizedBox(height: 16.h),
+
                 // Age Field
                 TextFormField(
                   controller: _ageController,
@@ -206,8 +207,8 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                
+                SizedBox(height: 16.h),
+
                 // Email Field
                 TextFormField(
                   controller: _emailController,
@@ -230,8 +231,8 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                
+                SizedBox(height: 16.h),
+
                 // Address Field
                 TextFormField(
                   controller: _addressController,
@@ -244,18 +245,18 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                   maxLines: 3,
                   textCapitalization: TextCapitalization.sentences,
                 ),
-                const SizedBox(height: 24),
-                
+                SizedBox(height: 24.h),
+
                 // Submit Button - Professional
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _saveProfile,
                     child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
+                        ? SizedBox(
+                            height: 20.h,
+                            width: 20.w,
+                            child: const CircularProgressIndicator(
                               color: Colors.white,
                               strokeWidth: 2,
                             ),
@@ -263,11 +264,11 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                         : const Text('Complete Profile'),
                   ),
                 ),
-                const SizedBox(height: 12),
-                const Text(
+                SizedBox(height: 12.h),
+                Text(
                   '* Required fields',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     color: AppColors.textTertiary,
                   ),
                   textAlign: TextAlign.center,

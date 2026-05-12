@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/material_provider.dart';
 import '../utils/app_colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class LowStockAlertsWidget extends StatefulWidget {
   const LowStockAlertsWidget({Key? key}) : super(key: key);
@@ -52,27 +53,27 @@ class _LowStockAlertsWidgetState extends State<LowStockAlertsWidget> {
       builder: (context, provider, child) {
         if (provider.isLoadingAlerts) {
           return Card(
-            margin: const EdgeInsets.all(16),
-            child: const Padding(
-              padding: EdgeInsets.all(24.0),
-              child: Center(child: CircularProgressIndicator()),
+            margin: EdgeInsets.all(16.r),
+            child: Padding(
+              padding: EdgeInsets.all(24.r),
+              child: const Center(child: CircularProgressIndicator()),
             ),
           );
         }
 
         if (provider.lowStockAlerts.isEmpty) {
           return Card(
-            margin: const EdgeInsets.all(16),
+            margin: EdgeInsets.all(16.r),
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24.r),
               child: Row(
                 children: [
                   Icon(
                     Icons.check_circle,
                     color: AppColors.success,
-                    size: 32,
+                    size: 32.sp,
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 16.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,16 +81,16 @@ class _LowStockAlertsWidgetState extends State<LowStockAlertsWidget> {
                         Text(
                           'All Stock Levels Good',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4.h),
                         Text(
                           'No low stock alerts at this time.',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.sp,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -111,13 +112,13 @@ class _LowStockAlertsWidgetState extends State<LowStockAlertsWidget> {
             .length;
 
         return Card(
-          margin: const EdgeInsets.all(16),
+          margin: EdgeInsets.all(16.r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
                   color: AppColors.error.withOpacity(0.1),
                   border: Border(
@@ -129,25 +130,25 @@ class _LowStockAlertsWidgetState extends State<LowStockAlertsWidget> {
                     Icon(
                       Icons.warning_amber_rounded,
                       color: AppColors.error,
-                      size: 28,
+                      size: 28.sp,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Low Stock Alerts',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 18.sp,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4.h),
                           Text(
                             '$outOfStock out of stock, $lowStock running low',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.sp,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -155,13 +156,13 @@ class _LowStockAlertsWidgetState extends State<LowStockAlertsWidget> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 6.h,
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.error,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
                       child: Text(
                         '${provider.lowStockAlerts.length}',
@@ -196,23 +197,23 @@ class _LowStockAlertsWidgetState extends State<LowStockAlertsWidget> {
                   final alertIcon = _getAlertIcon(status);
 
                   return Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16.r),
                     child: Row(
                       children: [
                         // Alert Icon
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: EdgeInsets.all(8.r),
                           decoration: BoxDecoration(
                             color: alertColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(8.r),
                           ),
                           child: Icon(
                             alertIcon,
                             color: alertColor,
-                            size: 24,
+                            size: 24.sp,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12.w),
 
                         // Details
                         Expanded(
@@ -221,18 +222,18 @@ class _LowStockAlertsWidgetState extends State<LowStockAlertsWidget> {
                             children: [
                               Text(
                                 materialType,
-                                style: const TextStyle(
-                                  fontSize: 16,
+                                style: TextStyle(
+                                  fontSize: 16.sp,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4.h),
                               Text(
                                 customerName.isNotEmpty
                                     ? '$customerName - $siteName'
                                     : siteName,
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 12.sp,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
@@ -247,7 +248,7 @@ class _LowStockAlertsWidgetState extends State<LowStockAlertsWidget> {
                             Text(
                               currentBalance.toStringAsFixed(1),
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: 20.sp,
                                 fontWeight: FontWeight.bold,
                                 color: alertColor,
                               ),
@@ -255,7 +256,7 @@ class _LowStockAlertsWidgetState extends State<LowStockAlertsWidget> {
                             Text(
                               unit,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 12.sp,
                                 color: AppColors.textSecondary,
                               ),
                             ),
@@ -269,7 +270,7 @@ class _LowStockAlertsWidgetState extends State<LowStockAlertsWidget> {
 
               // Refresh Button
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
                   border: Border(
                     top: BorderSide(color: AppColors.mediumGray),

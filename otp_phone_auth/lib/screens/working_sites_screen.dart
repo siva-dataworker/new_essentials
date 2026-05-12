@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/construction_service.dart';
 import '../utils/app_colors.dart';
 import 'site_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class WorkingSitesScreen extends StatefulWidget {
   const WorkingSitesScreen({super.key});
@@ -12,7 +13,7 @@ class WorkingSitesScreen extends StatefulWidget {
 
 class _WorkingSitesScreenState extends State<WorkingSitesScreen> {
   final _constructionService = ConstructionService();
-  
+
   List<Map<String, dynamic>> _workingSites = [];
   bool _isLoading = false;
 
@@ -24,10 +25,10 @@ class _WorkingSitesScreenState extends State<WorkingSitesScreen> {
 
   Future<void> _loadWorkingSites() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final result = await _constructionService.getWorkingSites();
-      
+
       if (result['success'] && mounted) {
         setState(() {
           _workingSites = result['sites'] as List<Map<String, dynamic>>;
@@ -93,7 +94,7 @@ class _WorkingSitesScreenState extends State<WorkingSitesScreen> {
             : _workingSites.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16.r),
                     itemCount: _workingSites.length,
                     itemBuilder: (context, index) {
                       final site = _workingSites[index];
@@ -111,23 +112,23 @@ class _WorkingSitesScreenState extends State<WorkingSitesScreen> {
         children: [
           Icon(
             Icons.work_outline,
-            size: 80,
+            size: 80.sp,
             color: AppColors.textSecondary,
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: 16.h),
+          Text(
             'No Working Sites Assigned',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 20.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.deepNavy,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             'Your accountant will assign sites to you',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
             ),
           ),
@@ -138,79 +139,79 @@ class _WorkingSitesScreenState extends State<WorkingSitesScreen> {
 
   Widget _buildSiteCard(Map<String, dynamic> site) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [AppColors.cardShadow],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _navigateToSite(site),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Container(
-                      width: 50,
-                      height: 50,
+                      width: 50.w,
+                      height: 50.h,
                       decoration: BoxDecoration(
                         gradient: AppColors.navyGradient,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.construction,
                         color: Colors.white,
-                        size: 26,
+                        size: 26.sp,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(width: 16.w),
                     Expanded(
                       child: Text(
                         site['display_name'] ?? site['site_name'] ?? 'Site',
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: 18.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.arrow_forward_ios,
-                      size: 16,
+                      size: 16.sp,
                       color: AppColors.deepNavy,
                     ),
                   ],
                 ),
-                
+
                 // Description (if available)
                 if (site['description'] != null && site['description'].toString().isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(12.r),
                     decoration: BoxDecoration(
                       color: AppColors.lightSlate,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Icon(
                           Icons.info_outline,
-                          size: 18,
+                          size: 18.sp,
                           color: AppColors.deepNavy,
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8.w),
                         Expanded(
                           child: Text(
                             site['description'],
-                            style: const TextStyle(
-                              fontSize: 13,
+                            style: TextStyle(
+                              fontSize: 13.sp,
                               color: AppColors.deepNavy,
                             ),
                           ),
@@ -219,22 +220,22 @@ class _WorkingSitesScreenState extends State<WorkingSitesScreen> {
                     ),
                   ),
                 ],
-                
+
                 // Assigned Date
                 if (site['assigned_date'] != null) ...[
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   Row(
                     children: [
                       Icon(
                         Icons.calendar_today,
-                        size: 14,
+                        size: 14.sp,
                         color: AppColors.textSecondary,
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6.w),
                       Text(
                         'Assigned: ${site['assigned_date']}',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),

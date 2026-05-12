@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ArchitectComplaintsScreen extends StatefulWidget {
   final String siteId;
@@ -93,11 +94,11 @@ class _ArchitectComplaintsScreenState extends State<ArchitectComplaintsScreen>
                   filled: true,
                   fillColor: Colors.black,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               TextField(
                 controller: descriptionController,
                 style: const TextStyle(color: Colors.white),
@@ -108,11 +109,11 @@ class _ArchitectComplaintsScreenState extends State<ArchitectComplaintsScreen>
                   filled: true,
                   fillColor: Colors.black,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               DropdownButtonFormField<String>(
                 value: priority,
                 decoration: InputDecoration(
@@ -121,7 +122,7 @@ class _ArchitectComplaintsScreenState extends State<ArchitectComplaintsScreen>
                   filled: true,
                   fillColor: Colors.black,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
                 dropdownColor: const Color(0xFF1C1C1E),
@@ -225,11 +226,11 @@ class _ArchitectComplaintsScreenState extends State<ArchitectComplaintsScreen>
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Client Complaints',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -237,7 +238,7 @@ class _ArchitectComplaintsScreenState extends State<ArchitectComplaintsScreen>
               widget.siteName,
               style: TextStyle(
                 color: Colors.grey[400],
-                fontSize: 12,
+                fontSize: 12.sp,
               ),
             ),
           ],
@@ -279,15 +280,15 @@ class _ArchitectComplaintsScreenState extends State<ArchitectComplaintsScreen>
           children: [
             Icon(
               isActive ? Icons.check_circle_outline : Icons.history,
-              size: 64,
+              size: 64.sp,
               color: Colors.grey[600],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             Text(
               isActive ? 'No active complaints' : 'No resolved complaints',
               style: TextStyle(
                 color: Colors.grey[400],
-                fontSize: 16,
+                fontSize: 16.sp,
               ),
             ),
           ],
@@ -296,7 +297,7 @@ class _ArchitectComplaintsScreenState extends State<ArchitectComplaintsScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       itemCount: complaints.length,
       itemBuilder: (context, index) {
         final complaint = complaints[index];
@@ -309,11 +310,11 @@ class _ArchitectComplaintsScreenState extends State<ArchitectComplaintsScreen>
     final priorityColor = _getPriorityColor(complaint['priority']);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 16.h),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: Colors.grey[800]!, width: 1),
       ),
       child: Column(
@@ -324,79 +325,79 @@ class _ArchitectComplaintsScreenState extends State<ArchitectComplaintsScreen>
               Expanded(
                 child: Text(
                   complaint['title'],
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 decoration: BoxDecoration(
                   color: priorityColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(6.r),
                 ),
                 child: Text(
                   complaint['priority'],
                   style: TextStyle(
                     color: priorityColor,
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             complaint['description'],
-            style: TextStyle(color: Colors.grey[400], fontSize: 14),
+            style: TextStyle(color: Colors.grey[400], fontSize: 14.sp),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Row(
             children: [
-              Icon(Icons.person, size: 14, color: Colors.grey[500]),
-              const SizedBox(width: 6),
+              Icon(Icons.person, size: 14.sp, color: Colors.grey[500]),
+              SizedBox(width: 6.w),
               Text(
                 complaint['assignedTo'],
-                style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                style: TextStyle(color: Colors.grey[500], fontSize: 13.sp),
               ),
-              const SizedBox(width: 16),
-              Icon(Icons.calendar_today, size: 14, color: Colors.grey[500]),
-              const SizedBox(width: 6),
+              SizedBox(width: 16.w),
+              Icon(Icons.calendar_today, size: 14.sp, color: Colors.grey[500]),
+              SizedBox(width: 6.w),
               Text(
                 complaint['raisedDate'],
-                style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                style: TextStyle(color: Colors.grey[500], fontSize: 13.sp),
               ),
             ],
           ),
           if (isActive && complaint['hasRectificationPhotos']) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
                 color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
                 border: Border.all(color: Colors.green.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.photo_camera, color: Colors.green, size: 20),
-                  const SizedBox(width: 12),
+                  Icon(Icons.photo_camera, color: Colors.green, size: 20.sp),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: Text(
                       'Site engineer uploaded rectification photos',
                       style: TextStyle(
                         color: Colors.grey[300],
-                        fontSize: 13,
+                        fontSize: 13.sp,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
                 Expanded(
@@ -404,27 +405,27 @@ class _ArchitectComplaintsScreenState extends State<ArchitectComplaintsScreen>
                     onPressed: () {
                       // TODO: View photos
                     },
-                    icon: const Icon(Icons.photo_library, size: 18),
+                    icon: Icon(Icons.photo_library, size: 18.sp),
                     label: const Text('View Photos'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.orange,
                       side: const BorderSide(color: Colors.orange),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _verifyComplaint(complaint['id']),
-                    icon: const Icon(Icons.check_circle, size: 18),
+                    icon: Icon(Icons.check_circle, size: 18.sp),
                     label: const Text('Verify'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                     ),
                   ),
@@ -433,22 +434,22 @@ class _ArchitectComplaintsScreenState extends State<ArchitectComplaintsScreen>
             ),
           ],
           if (!isActive) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
                 color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                  const SizedBox(width: 12),
+                  Icon(Icons.check_circle, color: Colors.green, size: 20.sp),
+                  SizedBox(width: 12.w),
                   Text(
                     'Verified and resolved',
                     style: TextStyle(
                       color: Colors.grey[300],
-                      fontSize: 13,
+                      fontSize: 13.sp,
                       fontWeight: FontWeight.w500,
                     ),
                   ),

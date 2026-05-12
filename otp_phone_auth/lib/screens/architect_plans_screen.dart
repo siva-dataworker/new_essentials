@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ArchitectPlansScreen extends StatefulWidget {
   final String siteId;
@@ -105,8 +106,6 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
     setState(() => _isLoading = true);
     try {
       // TODO: Upload to backend
-      // Mark previous versions as outdated
-      // Send notifications to site engineers, owners, and client
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -144,17 +143,17 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
         backgroundColor: Colors.black,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: Colors.white, size: 24.sp),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Floor Plans & Designs',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -162,7 +161,7 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
               widget.siteName,
               style: TextStyle(
                 color: Colors.grey[400],
-                fontSize: 12,
+                fontSize: 12.sp,
               ),
             ),
           ],
@@ -172,13 +171,13 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
           ? const Center(child: CircularProgressIndicator(color: Colors.purple))
           : SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(16.r),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Upload Form
                     _buildUploadForm(),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
 
                     // Uploaded Plans
                     _buildUploadedPlansSection(),
@@ -191,10 +190,10 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
 
   Widget _buildUploadForm() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
         color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: Colors.grey[800]!, width: 1),
       ),
       child: Form(
@@ -202,15 +201,15 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Upload New Plan',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
 
             // Plan Type Dropdown
             DropdownButtonFormField<String>(
@@ -221,15 +220,15 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
                 filled: true,
                 fillColor: Colors.black,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide(color: Colors.grey[800]!),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide(color: Colors.grey[800]!),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: const BorderSide(color: Colors.purple),
                 ),
               ),
@@ -245,7 +244,7 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
                 setState(() => _selectedType = value!);
               },
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
 
             // Title
             TextFormField(
@@ -257,15 +256,15 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
                 filled: true,
                 fillColor: Colors.black,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide(color: Colors.grey[800]!),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide(color: Colors.grey[800]!),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: const BorderSide(color: Colors.purple),
                 ),
               ),
@@ -276,16 +275,16 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
 
             // File Upload
             InkWell(
               onTap: _pickFile,
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
                   color: Colors.black,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   border: Border.all(
                     color: _selectedFile != null ? Colors.purple : Colors.grey[800]!,
                     width: 1,
@@ -297,13 +296,13 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
                       _selectedFile != null ? Icons.check_circle : Icons.upload_file,
                       color: _selectedFile != null ? Colors.purple : Colors.grey[400],
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: Text(
                         _selectedFileName ?? 'Upload Plan File (PDF, DWG, DXF, Image)',
                         style: TextStyle(
                           color: _selectedFile != null ? Colors.white : Colors.grey[400],
-                          fontSize: 14,
+                          fontSize: 14.sp,
                         ),
                       ),
                     ),
@@ -311,7 +310,7 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
 
             // Description
             TextFormField(
@@ -324,46 +323,46 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
                 filled: true,
                 fillColor: Colors.black,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide(color: Colors.grey[800]!),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide(color: Colors.grey[800]!),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: const BorderSide(color: Colors.purple),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
 
             // Info Box
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
                 color: Colors.purple.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
                 border: Border.all(color: Colors.purple.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, color: Colors.purple, size: 20),
-                  const SizedBox(width: 12),
+                  Icon(Icons.info_outline, color: Colors.purple, size: 20.sp),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: Text(
                       'Notifications will be sent to site engineers, owners, and client to download the latest file.',
                       style: TextStyle(
                         color: Colors.grey[300],
-                        fontSize: 12,
+                        fontSize: 12.sp,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
 
             // Submit Button
             SizedBox(
@@ -372,24 +371,24 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
                 onPressed: _isLoading ? null : _uploadPlan,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.purple,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: 16.h),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
                 child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
+                    ? SizedBox(
+                        height: 20.h,
+                        width: 20.w,
+                        child: const CircularProgressIndicator(
                           color: Colors.white,
                           strokeWidth: 2,
                         ),
                       )
-                    : const Text(
+                    : Text(
                         'Upload & Notify',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -405,28 +404,28 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Uploaded Plans',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         if (_uploadedPlans.isEmpty)
           Container(
-            padding: const EdgeInsets.all(40),
+            padding: EdgeInsets.all(40.r),
             decoration: BoxDecoration(
               color: const Color(0xFF1C1C1E),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
               border: Border.all(color: Colors.grey[800]!, width: 1),
             ),
             child: Center(
               child: Column(
                 children: [
-                  Icon(Icons.architecture, size: 48, color: Colors.grey[600]),
-                  const SizedBox(height: 12),
+                  Icon(Icons.architecture, size: 48.sp, color: Colors.grey[600]),
+                  SizedBox(height: 12.h),
                   Text(
                     'No plans uploaded yet',
                     style: TextStyle(color: Colors.grey[400]),
@@ -443,11 +442,11 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
 
   Widget _buildPlanCard(Map<String, dynamic> plan) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
           color: plan['isLatest'] ? Colors.purple : Colors.grey[800]!,
           width: 1,
@@ -465,57 +464,57 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
                   children: [
                     Text(
                       plan['title'],
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4.h),
                     Text(
                       plan['type'],
-                      style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                      style: TextStyle(color: Colors.grey[400], fontSize: 14.sp),
                     ),
                   ],
                 ),
               ),
               if (plan['isLatest'])
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                   decoration: BoxDecoration(
                     color: Colors.purple.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(6.r),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Latest',
                     style: TextStyle(
                       color: Colors.purple,
-                      fontSize: 12,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Row(
             children: [
-              Icon(Icons.calendar_today, size: 14, color: Colors.grey[500]),
-              const SizedBox(width: 6),
+              Icon(Icons.calendar_today, size: 14.sp, color: Colors.grey[500]),
+              SizedBox(width: 6.w),
               Text(
                 plan['date'],
-                style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                style: TextStyle(color: Colors.grey[500], fontSize: 13.sp),
               ),
-              const SizedBox(width: 16),
-              Icon(Icons.label, size: 14, color: Colors.grey[500]),
-              const SizedBox(width: 6),
+              SizedBox(width: 16.w),
+              Icon(Icons.label, size: 14.sp, color: Colors.grey[500]),
+              SizedBox(width: 6.w),
               Text(
                 plan['version'],
-                style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                style: TextStyle(color: Colors.grey[500], fontSize: 13.sp),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Row(
             children: [
               Expanded(
@@ -523,30 +522,30 @@ class _ArchitectPlansScreenState extends State<ArchitectPlansScreen> {
                   onPressed: () {
                     // TODO: Download file
                   },
-                  icon: const Icon(Icons.download, size: 18),
+                  icon: Icon(Icons.download, size: 18.sp),
                   label: const Text('Download'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.purple,
                     side: const BorderSide(color: Colors.purple),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
                     // TODO: View version history
                   },
-                  icon: const Icon(Icons.history, size: 18),
+                  icon: Icon(Icons.history, size: 18.sp),
                   label: const Text('History'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.grey[400],
                     side: BorderSide(color: Colors.grey[800]!),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
                   ),
                 ),

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import '../utils/app_colors.dart';
 import 'otp_verification_screen.dart';
 
 class PhoneAuthScreen extends StatefulWidget {
   final String roleTitle;
-  
+
   const PhoneAuthScreen({
     super.key,
     this.roleTitle = 'Phone Verification',
@@ -37,7 +38,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
 
     if (mounted) {
       setState(() => _isLoading = false);
-      
+
       // Navigate to OTP verification with mock verification ID
       Navigator.push(
         context,
@@ -76,17 +77,17 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
           children: [
             // Back Button
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               child: Row(
                 children: [
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 10,
+                          blurRadius: 10.r,
                         ),
                       ],
                     ),
@@ -98,147 +99,147 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                 ],
               ),
             ),
-            
+
             // Main Content
             Expanded(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: EdgeInsets.all(24.r),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                    // Logo/Icon - Professional Navy
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: AppColors.deepNavy,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.deepNavy.withValues(alpha: 0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                        // Logo/Icon - Professional Navy
+                        Container(
+                          padding: EdgeInsets.all(24.r),
+                          decoration: BoxDecoration(
+                            color: AppColors.deepNavy,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.deepNavy.withValues(alpha: 0.15),
+                                blurRadius: 12.r,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.phone_android,
-                        size: 64,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    
-                    // Welcome Text - Professional
-                    Text(
-                      widget.roleTitle,
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          child: Icon(
+                            Icons.phone_android,
+                            size: 64.sp,
+                            color: Colors.white,
+                          ),
                         ),
-                        textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    const SizedBox(height: 32),
-                    
-                    // Phone Input Card - Clean White
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: AppColors.cleanWhite,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: AppColors.borderColor,
-                          width: 0.5,
+                        SizedBox(height: 32.h),
+
+                        // Welcome Text - Professional
+                        Text(
+                          widget.roleTitle,
+                          style: TextStyle(
+                            fontSize: 28.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.deepNavy.withValues(alpha: 0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                        SizedBox(height: 12.h),
+                        SizedBox(height: 32.h),
+
+                        // Phone Input Card - Clean White
+                        Container(
+                          padding: EdgeInsets.all(24.r),
+                          decoration: BoxDecoration(
+                            color: AppColors.cleanWhite,
+                            borderRadius: BorderRadius.circular(8.r),
+                            border: Border.all(
+                              color: AppColors.borderColor,
+                              width: 0.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.deepNavy.withValues(alpha: 0.08),
+                                blurRadius: 8.r,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Text(
-                            'Enter Your Phone Number',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                            textAlign: TextAlign.center,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Enter Your Phone Number',
+                                style: TextStyle(
+                                  fontSize: 18.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 8.h),
+                              Text(
+                                'We will send you a verification code',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  color: AppColors.textSecondary,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 24.h),
+
+                              // Phone Field - Professional
+                              IntlPhoneField(
+                                controller: _phoneController,
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 16.sp,
+                                ),
+                                decoration: const InputDecoration(
+                                  labelText: 'Phone Number',
+                                  hintText: '9876543210',
+                                ),
+                                initialCountryCode: 'IN',
+                                dropdownTextStyle: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                ),
+                                dropdownIconPosition: IconPosition.trailing,
+                                onChanged: (phone) {
+                                  _completePhoneNumber = phone.completeNumber;
+                                },
+                              ),
+                              SizedBox(height: 24.h),
+
+                              // Send OTP Button - Professional
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _sendOTP,
+                                  child: _isLoading
+                                      ? SizedBox(
+                                          height: 20.h,
+                                          width: 20.w,
+                                          child: const CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Text('Send OTP'),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'We will send you a verification code',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                            textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 16.h),
+
+                        // Info Text
+                        Text(
+                          'By continuing, you agree to our Terms & Privacy Policy',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.grey.shade600,
                           ),
-                          const SizedBox(height: 24),
-                          
-                          // Phone Field - Professional
-                          IntlPhoneField(
-                            controller: _phoneController,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 16,
-                            ),
-                            decoration: const InputDecoration(
-                              labelText: 'Phone Number',
-                              hintText: '9876543210',
-                            ),
-                            initialCountryCode: 'IN',
-                            dropdownTextStyle: const TextStyle(
-                              color: AppColors.textPrimary,
-                            ),
-                            dropdownIconPosition: IconPosition.trailing,
-                            onChanged: (phone) {
-                              _completePhoneNumber = phone.completeNumber;
-                            },
-                          ),
-                          const SizedBox(height: 24),
-                          
-                          // Send OTP Button - Professional
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _sendOTP,
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text('Send OTP'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Info Text
-                    Text(
-                      'By continuing, you agree to our Terms & Privacy Policy',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                          textAlign: TextAlign.center,
+                        ),
                       ],
                     ),
                   ),

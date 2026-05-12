@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../providers/site_engineer_provider.dart';
 import '../utils/app_colors.dart';
 
@@ -122,8 +123,8 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
           children: [
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 18,
+              style: TextStyle(
+                fontSize: 18.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
@@ -131,7 +132,7 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.normal,
               ),
@@ -140,18 +141,18 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Info Card
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: isMorning
                     ? AppColors.statusPending.withValues(alpha: 0.1)
                     : AppColors.statusCompleted.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16.r),
                 border: Border.all(
                   color: isMorning
                       ? AppColors.statusPending.withValues(alpha: 0.3)
@@ -162,15 +163,15 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
               child: Row(
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 48.w,
+                    height: 48.h,
                     decoration: BoxDecoration(
                       color: isMorning ? AppColors.statusPending : AppColors.statusCompleted,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
-                    child: Icon(icon, color: Colors.white, size: 26),
+                    child: Icon(icon, color: Colors.white, size: 26.sp),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 16.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,18 +179,18 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
                         Text(
                           isMorning ? 'Before 1:00 PM' : 'End of Day',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
                             color: isMorning ? AppColors.statusPending : AppColors.statusCompleted,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4.h),
                         Text(
                           isMorning
                               ? 'Upload work started photo before 1pm to avoid notifications'
                               : 'Upload work finished photo. This will be sent to the client.',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.sp,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -199,15 +200,15 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
 
             // Image Picker
             if (_selectedImage == null)
               Container(
-                height: 300,
+                height: 300.h,
                 decoration: BoxDecoration(
                   color: AppColors.cleanWhite,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(20.r),
                   border: Border.all(
                     color: AppColors.deepNavy.withValues(alpha: 0.2),
                     width: 2,
@@ -219,19 +220,19 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
                   children: [
                     Icon(
                       Icons.add_photo_alternate_outlined,
-                      size: 80,
+                      size: 80.sp,
                       color: AppColors.textSecondary.withValues(alpha: 0.5),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     Text(
                       'Add Photo',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -242,23 +243,23 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.deepNavy,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(12.r),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: 16.w),
                         OutlinedButton.icon(
                           onPressed: () => _pickImage(ImageSource.gallery),
                           icon: const Icon(Icons.photo_library),
                           label: const Text('Gallery'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.deepNavy,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
                             side: const BorderSide(color: AppColors.deepNavy, width: 2),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(12.r),
                             ),
                           ),
                         ),
@@ -271,7 +272,7 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.cleanWhite,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(20.r),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.deepNavy.withValues(alpha: 0.08),
@@ -283,16 +284,16 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
                 child: Column(
                   children: [
                     ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
                       child: Image.file(
                         _selectedImage!,
-                        height: 300,
+                        height: 300.h,
                         width: double.infinity,
                         fit: BoxFit.cover,
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16.r),
                       child: Row(
                         children: [
                           Expanded(
@@ -306,7 +307,7 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12.w),
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () => _pickImage(ImageSource.camera),
@@ -324,13 +325,13 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
                   ],
                 ),
               ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
 
             // Notes Field
             Container(
               decoration: BoxDecoration(
                 color: AppColors.cleanWhite,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16.r),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.deepNavy.withValues(alpha: 0.05),
@@ -346,16 +347,16 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
                   labelText: 'Notes (Optional)',
                   hintText: 'Add any notes about the work...',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16.r),
                     borderSide: BorderSide.none,
                   ),
                   filled: true,
                   fillColor: AppColors.cleanWhite,
-                  contentPadding: const EdgeInsets.all(16),
+                  contentPadding: EdgeInsets.all(16.r),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
 
             // Upload Button
             ElevatedButton(
@@ -363,17 +364,17 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.deepNavy,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 16.h),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                 ),
                 elevation: 0,
               ),
               child: _isUploading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
+                  ? SizedBox(
+                      height: 20.h,
+                      width: 20.w,
+                      child: const CircularProgressIndicator(
                         color: Colors.white,
                         strokeWidth: 2,
                       ),
@@ -381,12 +382,12 @@ class _SiteEngineerWorkUpdateScreenState extends State<SiteEngineerWorkUpdateScr
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.cloud_upload_outlined, size: 22),
-                        const SizedBox(width: 12),
+                        Icon(Icons.cloud_upload_outlined, size: 22.sp),
+                        SizedBox(width: 12.w),
                         Text(
                           'Upload ${isMorning ? "Morning" : "Evening"} Update',
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

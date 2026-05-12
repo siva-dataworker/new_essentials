@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../utils/app_colors.dart';
 import '../services/google_auth_service.dart';
 import '../models/user_model.dart';
@@ -6,7 +7,7 @@ import 'supervisor_dashboard.dart';
 
 class GoogleAuthScreen extends StatefulWidget {
   final UserRole selectedRole;
-  
+
   const GoogleAuthScreen({super.key, required this.selectedRole});
 
   @override
@@ -37,7 +38,7 @@ class _GoogleAuthScreenState extends State<GoogleAuthScreen> {
 
     try {
       final userCredential = await _googleAuthService.signInWithGoogle();
-      
+
       if (userCredential == null) {
         // User cancelled
         setState(() => _isLoading = false);
@@ -78,7 +79,7 @@ class _GoogleAuthScreenState extends State<GoogleAuthScreen> {
 
   void _navigateToDashboard(UserModel user) {
     Widget dashboard;
-    
+
     switch (widget.selectedRole) {
       case UserRole.supervisor:
         dashboard = SupervisorDashboard(user: user);
@@ -87,7 +88,7 @@ class _GoogleAuthScreenState extends State<GoogleAuthScreen> {
       default:
         dashboard = SupervisorDashboard(user: user);
     }
-    
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => dashboard),
@@ -117,23 +118,23 @@ class _GoogleAuthScreenState extends State<GoogleAuthScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: EdgeInsets.all(24.r),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Logo - Essential Homes
                 Container(
-                  width: 120,
-                  height: 120,
-                  padding: const EdgeInsets.all(16),
+                  width: 120.w,
+                  height: 120.h,
+                  padding: EdgeInsets.all(16.r),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.deepNavy.withValues(alpha: 0.15),
-                        blurRadius: 12,
+                        blurRadius: 12.r,
                         offset: const Offset(0, 4),
                       ),
                     ],
@@ -143,52 +144,52 @@ class _GoogleAuthScreenState extends State<GoogleAuthScreen> {
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       // Fallback to icon if image not found
-                      return const Icon(
+                      return Icon(
                         Icons.business,
-                        size: 64,
+                        size: 64.sp,
                         color: AppColors.deepNavy,
                       );
                     },
                   ),
                 ),
-                const SizedBox(height: 32),
-                
+                SizedBox(height: 32.h),
+
                 // Welcome Text
-                const Text(
+                Text(
                   'Welcome to',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 24.sp,
                     color: AppColors.textSecondary,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Text(
                   'Essential Homes',
-                  style: const TextStyle(
-                    fontSize: 32,
+                  style: TextStyle(
+                    fontSize: 32.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 Text(
                   '$_roleTitle Login',
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     color: AppColors.textSecondary,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 48),
-                
+                SizedBox(height: 48.h),
+
                 // Sign In Card
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(24.r),
                   decoration: BoxDecoration(
                     color: AppColors.cleanWhite,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                     border: Border.all(
                       color: AppColors.borderColor,
                       width: 0.5,
@@ -196,7 +197,7 @@ class _GoogleAuthScreenState extends State<GoogleAuthScreen> {
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.deepNavy.withValues(alpha: 0.08),
-                        blurRadius: 8,
+                        blurRadius: 8.r,
                         offset: const Offset(0, 2),
                       ),
                     ],
@@ -204,61 +205,61 @@ class _GoogleAuthScreenState extends State<GoogleAuthScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
+                      Text(
                         'Sign In',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 20.sp,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      SizedBox(height: 8.h),
+                      Text(
                         'Use your Google account to continue',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           color: AppColors.textSecondary,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 24),
-                      
+                      SizedBox(height: 24.h),
+
                       // Google Sign In Button
                       SizedBox(
                         width: double.infinity,
-                        height: 50,
+                        height: 50.h,
                         child: OutlinedButton.icon(
                           onPressed: _isLoading ? null : _signInWithGoogle,
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: AppColors.borderColor),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(8.r),
                             ),
                           ),
                           icon: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
+                              ? SizedBox(
+                                  height: 20.h,
+                                  width: 20.w,
+                                  child: const CircularProgressIndicator(
                                     strokeWidth: 2,
                                   ),
                                 )
                               : Image.asset(
                                   'assets/google_logo.png',
-                                  height: 24,
+                                  height: 24.h,
                                   errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(
+                                    return Icon(
                                       Icons.g_mobiledata,
-                                      size: 32,
+                                      size: 32.sp,
                                       color: AppColors.deepNavy,
                                     );
                                   },
                                 ),
                           label: Text(
                             _isLoading ? 'Signing in...' : 'Continue with Google',
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary,
                             ),
@@ -268,13 +269,13 @@ class _GoogleAuthScreenState extends State<GoogleAuthScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                
+                SizedBox(height: 24.h),
+
                 // Info Text
                 Text(
                   'By continuing, you agree to our Terms & Privacy Policy',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     color: Colors.grey.shade600,
                   ),
                   textAlign: TextAlign.center,

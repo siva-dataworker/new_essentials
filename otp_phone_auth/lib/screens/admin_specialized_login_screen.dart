@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../utils/app_colors.dart';
@@ -126,7 +127,7 @@ class _AdminSpecializedLoginScreenState
       content: Text(msg),
       backgroundColor: Colors.redAccent,
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
     ));
   }
 
@@ -150,12 +151,12 @@ class _AdminSpecializedLoginScreenState
           Positioned(
             top: -50,
             right: -50,
-            child: _circle(180, Colors.white.withValues(alpha: 0.04)),
+            child: _circle(180.r, Colors.white.withValues(alpha: 0.04)),
           ),
           Positioned(
             top: 100,
             left: -30,
-            child: _circle(120, Colors.white.withValues(alpha: 0.04)),
+            child: _circle(120.r, Colors.white.withValues(alpha: 0.04)),
           ),
 
           SafeArea(
@@ -164,44 +165,44 @@ class _AdminSpecializedLoginScreenState
                 // ── Header ──────────────────────────────────────
                 Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                   child: Row(
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
                         icon: Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: EdgeInsets.all(8.r),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12.r),
                           ),
-                          child: const Icon(Icons.arrow_back_ios_new_rounded,
-                              color: Colors.white, size: 18),
+                          child: Icon(Icons.arrow_back_ios_new_rounded,
+                              color: Colors.white, size: 18.sp),
                         ),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Specialized Access',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 48), // balance back button
+                      SizedBox(width: 48.w), // balance back button
                     ],
                   ),
                 ),
 
                 // ── Logo ─────────────────────────────────────────
                 Container(
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  padding: const EdgeInsets.all(12),
+                  margin: EdgeInsets.symmetric(vertical: 12.h),
+                  padding: EdgeInsets.all(12.r),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20.r),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.20),
@@ -212,7 +213,7 @@ class _AdminSpecializedLoginScreenState
                   ),
                   child: Image.asset(
                     'assets/images/essential_homes_logo.png',
-                    height: 110,
+                    height: 110.h,
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -224,16 +225,16 @@ class _AdminSpecializedLoginScreenState
                     child: SlideTransition(
                       position: _slideAnim,
                       child: Container(
-                        margin: const EdgeInsets.only(top: 8),
-                        decoration: const BoxDecoration(
+                        margin: EdgeInsets.only(top: 8.h),
+                        decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(36),
-                            topRight: Radius.circular(36),
+                            topLeft: Radius.circular(36.r),
+                            topRight: Radius.circular(36.r),
                           ),
                         ),
                         child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                          padding: EdgeInsets.fromLTRB(24.w, 28.h, 24.w, 24.h),
                           child: Form(
                             key: _formKey,
                             child: Column(
@@ -243,32 +244,32 @@ class _AdminSpecializedLoginScreenState
                                 Row(
                                   children: [
                                     Container(
-                                      width: 4,
-                                      height: 18,
+                                      width: 4.w,
+                                      height: 18.h,
                                       decoration: BoxDecoration(
                                         gradient: AppColors.orangeGradient,
                                         borderRadius:
-                                            BorderRadius.circular(2),
+                                            BorderRadius.circular(2.r),
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
-                                    const Text(
+                                    SizedBox(width: 10.w),
+                                    Text(
                                       'Select Access Type',
                                       style: TextStyle(
-                                        fontSize: 16,
+                                        fontSize: 16.sp,
                                         fontWeight: FontWeight.bold,
                                         color: AppColors.deepNavy,
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 16),
+                                SizedBox(height: 16.h),
 
                                 // Access type cards
                                 ..._accessOptions.map((opt) =>
                                     _buildAccessCard(opt)),
 
-                                const SizedBox(height: 24),
+                                SizedBox(height: 24.h),
 
                                 // Divider
                                 Row(children: [
@@ -277,19 +278,19 @@ class _AdminSpecializedLoginScreenState
                                           color: Colors.grey.shade200,
                                           thickness: 1.5)),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12),
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 12.w),
                                     child: Text('Credentials',
                                         style: TextStyle(
                                             color: AppColors.textSecondary,
-                                            fontSize: 12)),
+                                            fontSize: 12.sp)),
                                   ),
                                   Expanded(
                                       child: Divider(
                                           color: Colors.grey.shade200,
                                           thickness: 1.5)),
                                 ]),
-                                const SizedBox(height: 20),
+                                SizedBox(height: 20.h),
 
                                 // Username
                                 _buildInputField(
@@ -301,7 +302,7 @@ class _AdminSpecializedLoginScreenState
                                           ? 'Enter username'
                                           : null,
                                 ),
-                                const SizedBox(height: 14),
+                                SizedBox(height: 14.h),
 
                                 // Password
                                 _buildInputField(
@@ -315,7 +316,7 @@ class _AdminSpecializedLoginScreenState
                                           ? Icons.visibility_outlined
                                           : Icons.visibility_off_outlined,
                                       color: AppColors.textSecondary,
-                                      size: 20,
+                                      size: 20.sp,
                                     ),
                                     onPressed: () => setState(
                                         () => _obscurePassword =
@@ -326,11 +327,11 @@ class _AdminSpecializedLoginScreenState
                                           ? 'Enter password'
                                           : null,
                                 ),
-                                const SizedBox(height: 28),
+                                SizedBox(height: 28.h),
 
                                 // Login button
                                 _buildLoginButton(),
-                                const SizedBox(height: 12),
+                                SizedBox(height: 12.h),
                               ],
                             ),
                           ),
@@ -353,13 +354,13 @@ class _AdminSpecializedLoginScreenState
       onTap: () => setState(() => _selectedAccessType = opt.key),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        margin: EdgeInsets.only(bottom: 10.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         decoration: BoxDecoration(
           color: selected
               ? opt.color.withValues(alpha: 0.07)
               : const Color(0xFFF4F6FA),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           border: Border.all(
             color: selected ? opt.color : const Color(0xFFE8ECF4),
             width: selected ? 2 : 1.5,
@@ -377,14 +378,14 @@ class _AdminSpecializedLoginScreenState
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(10.r),
               decoration: BoxDecoration(
                 color: opt.color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: Icon(opt.icon, color: opt.color, size: 22),
+              child: Icon(opt.icon, color: opt.color, size: 22.sp),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: 14.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,16 +393,16 @@ class _AdminSpecializedLoginScreenState
                   Text(
                     opt.title,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.bold,
                       color: selected ? opt.color : AppColors.deepNavy,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2.h),
                   Text(
                     opt.description,
                     style: TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary),
+                        fontSize: 12.sp, color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -410,11 +411,11 @@ class _AdminSpecializedLoginScreenState
               duration: const Duration(milliseconds: 200),
               child: selected
                   ? Icon(Icons.check_circle_rounded,
-                      key: const ValueKey('check'), color: opt.color, size: 22)
+                      key: const ValueKey('check'), color: opt.color, size: 22.sp)
                   : Icon(Icons.circle_outlined,
                       key: const ValueKey('empty'),
                       color: Colors.grey.shade300,
-                      size: 22),
+                      size: 22.sp),
             ),
           ],
         ),
@@ -433,41 +434,41 @@ class _AdminSpecializedLoginScreenState
     return TextFormField(
       controller: controller,
       obscureText: obscure,
-      style: const TextStyle(
-          fontSize: 15,
+      style: TextStyle(
+          fontSize: 15.sp,
           color: AppColors.deepNavy,
           fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
         labelStyle:
-            TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            TextStyle(color: AppColors.textSecondary, fontSize: 14.sp),
         prefixIcon: Icon(icon,
-            color: AppColors.deepNavy.withValues(alpha: 0.6), size: 20),
+            color: AppColors.deepNavy.withValues(alpha: 0.6), size: 20.sp),
         suffixIcon: suffix,
         filled: true,
         fillColor: const Color(0xFFF4F6FA),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.r),
             borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           borderSide:
               const BorderSide(color: Color(0xFFE8ECF4), width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           borderSide:
               const BorderSide(color: AppColors.deepNavy, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           borderSide:
               const BorderSide(color: AppColors.statusOverdue, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           borderSide:
               const BorderSide(color: AppColors.statusOverdue, width: 2),
         ),
@@ -478,10 +479,10 @@ class _AdminSpecializedLoginScreenState
 
   Widget _buildLoginButton() {
     return Container(
-      height: 56,
+      height: 56.h,
       decoration: BoxDecoration(
         color: const Color(0xFF0D1B2A),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.35),
@@ -496,29 +497,29 @@ class _AdminSpecializedLoginScreenState
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
+              borderRadius: BorderRadius.circular(16.r)),
         ),
         child: _isLoading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
+            ? SizedBox(
+                width: 22.w,
+                height: 22.h,
+                child: const CircularProgressIndicator(
                     strokeWidth: 2.5, color: Colors.white))
-            : const Row(
+            : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     'Access Dashboard',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),
                   ),
-                  SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Icon(Icons.arrow_forward_rounded,
-                      color: Colors.white, size: 20),
+                      color: Colors.white, size: 20.sp),
                 ],
               ),
       ),

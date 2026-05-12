@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../services/document_service.dart';
 import '../utils/app_colors.dart';
 
@@ -32,17 +33,17 @@ class _SiteEngineerDocumentScreenState extends State<SiteEngineerDocumentScreen>
 
   Future<void> _loadDocuments() async {
     setState(() => _isLoading = true);
-    
+
     final result = await _documentService.getSiteEngineerDocuments(
       siteId: widget.siteId,
     );
-    
+
     if (result['success'] == true) {
       setState(() {
         _documents = result['documents'];
       });
     }
-    
+
     setState(() => _isLoading = false);
   }
 
@@ -101,18 +102,18 @@ class _SiteEngineerDocumentScreenState extends State<SiteEngineerDocumentScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.description_outlined, size: 80, color: AppColors.textSecondary),
-          const SizedBox(height: 16),
-          const Text(
+          Icon(Icons.description_outlined, size: 80.sp, color: AppColors.textSecondary),
+          SizedBox(height: 16.h),
+          Text(
             'No Documents Yet',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             'Upload site plans and floor designs',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           ElevatedButton.icon(
             onPressed: _uploadDocument,
             icon: const Icon(Icons.upload_file),
@@ -120,7 +121,7 @@ class _SiteEngineerDocumentScreenState extends State<SiteEngineerDocumentScreen>
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.deepNavy,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
             ),
           ),
         ],
@@ -133,7 +134,7 @@ class _SiteEngineerDocumentScreenState extends State<SiteEngineerDocumentScreen>
       onRefresh: _loadDocuments,
       color: AppColors.deepNavy,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         itemCount: _documents.length,
         itemBuilder: (context, index) {
           final doc = _documents[index];
@@ -144,77 +145,77 @@ class _SiteEngineerDocumentScreenState extends State<SiteEngineerDocumentScreen>
   }
 
   Widget _buildDocumentCard(Map<String, dynamic> doc) {
-    final fileSize = doc['file_size'] != null 
+    final fileSize = doc['file_size'] != null
         ? '${(doc['file_size'] / 1024 / 1024).toStringAsFixed(2)} MB'
         : 'Unknown size';
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [AppColors.cardShadow],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _openDocument(doc['file_url']),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             child: Row(
               children: [
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: 50.w,
+                  height: 50.h,
                   decoration: BoxDecoration(
                     color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
-                  child: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 30),
+                  child: Icon(Icons.picture_as_pdf, color: Colors.red, size: 30.sp),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         doc['title'] ?? 'Untitled',
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                         decoration: BoxDecoration(
                           color: AppColors.deepNavy.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(8.r),
                         ),
                         child: Text(
                           doc['document_type'] ?? '',
-                          style: const TextStyle(
-                            fontSize: 12,
+                          style: TextStyle(
+                            fontSize: 12.sp,
                             fontWeight: FontWeight.w600,
                             color: AppColors.deepNavy,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text(
                         doc['upload_date'] ?? '',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
                       ),
                       Text(
                         fileSize,
-                        style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        style: TextStyle(fontSize: 11.sp, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textSecondary),
+                Icon(Icons.arrow_forward_ios, size: 16.sp, color: AppColors.textSecondary),
               ],
             ),
           ),
@@ -296,7 +297,7 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
       );
       return;
     }
-    
+
     if (_selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -343,31 +344,31 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24.r),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Upload Document',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 20.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.deepNavy,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Text(
                 widget.siteName,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 14.sp,
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24.h),
               DropdownButtonFormField<String>(
                 value: _selectedType,
                 decoration: const InputDecoration(
@@ -379,7 +380,7 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                 }).toList(),
                 onChanged: (value) => setState(() => _selectedType = value!),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               TextField(
                 controller: _titleController,
                 autofocus: true,
@@ -389,11 +390,11 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.title),
                   helperText: 'Required - Enter a descriptive title',
-                  helperStyle: const TextStyle(color: Colors.red, fontSize: 11),
+                  helperStyle: TextStyle(color: Colors.red, fontSize: 11.sp),
                 ),
                 textCapitalization: TextCapitalization.words,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               TextField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(
@@ -402,32 +403,32 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                 ),
                 maxLines: 3,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               OutlinedButton.icon(
                 onPressed: _pickFile,
                 icon: const Icon(Icons.attach_file),
                 label: Text(_selectedFile == null ? 'Select PDF File *' : 'PDF Selected'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: 16.h),
                 ),
               ),
               if (_selectedFile != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12.r),
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                     border: Border.all(color: Colors.green.shade200),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                      const SizedBox(width: 8),
+                      Icon(Icons.check_circle, color: Colors.green, size: 20.sp),
+                      SizedBox(width: 8.w),
                       Expanded(
                         child: Text(
                           _selectedFile!.path.split('/').last,
-                          style: const TextStyle(fontSize: 12),
+                          style: TextStyle(fontSize: 12.sp),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -435,7 +436,7 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                   ),
                 ),
               ],
-              const SizedBox(height: 24),
+              SizedBox(height: 24.h),
               Row(
                 children: [
                   Expanded(
@@ -444,20 +445,20 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                       child: const Text('Cancel'),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _isUploading ? null : _upload,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.deepNavy,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: 16.h),
                       ),
                       child: _isUploading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
+                          ? SizedBox(
+                              width: 20.w,
+                              height: 20.h,
+                              child: const CircularProgressIndicator(
                                 color: Colors.white,
                                 strokeWidth: 2,
                               ),

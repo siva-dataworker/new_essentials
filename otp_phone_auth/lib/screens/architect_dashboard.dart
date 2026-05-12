@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:convert';
 import '../models/user_model.dart';
 import '../providers/construction_provider.dart';
@@ -26,17 +27,17 @@ class ArchitectDashboard extends StatefulWidget {
 class _ArchitectDashboardState extends State<ArchitectDashboard> {
   final _authService = AuthService();
   int _selectedIndex = 0; // 0 = Sites, 1 = Profile
-  
+
   // Dropdown state
   String? _selectedArea;
   String? _selectedStreet;
   String? _selectedSite;
-  
+
   // Data lists
   List<String> _areas = [];
   List<String> _streets = [];
   List<Map<String, dynamic>> _sites = [];
-  
+
   // Loading states
   bool _isLoadingAreas = false;
   bool _isLoadingStreets = false;
@@ -142,7 +143,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
       _streets = [];
       _sites = [];
     });
-    
+
     if (area != null) {
       _loadStreets(area);
     }
@@ -154,7 +155,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
       _selectedSite = null;
       _sites = [];
     });
-    
+
     if (street != null && _selectedArea != null) {
       _loadSites(_selectedArea!, street);
     }
@@ -193,7 +194,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
     if (_selectedSite == null) {
       return _buildSiteSelectionScreen();
     }
-    
+
     // If site is selected, show architect tools
     return _buildArchitectToolsScreen();
   }
@@ -212,20 +213,20 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header Card
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20.r),
               decoration: BoxDecoration(
                 color: AppColors.cleanWhite,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16.r),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.deepNavy.withValues(alpha: 0.08),
-                    blurRadius: 20,
+                    blurRadius: 20.r,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -233,8 +234,8 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
               child: Row(
                 children: [
                   Container(
-                    width: 50,
-                    height: 50,
+                    width: 50.w,
+                    height: 50.h,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.purple.shade600, Colors.purple.shade400],
@@ -244,32 +245,32 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                     child: Center(
                       child: Text(
                         (widget.user.name ?? 'A').substring(0, 1).toUpperCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 20,
+                          fontSize: 20.sp,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 16.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           widget.user.name ?? 'Architect',
-                          style: const TextStyle(
-                            fontSize: 18,
+                          style: TextStyle(
+                            fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.deepNavy,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        const Text(
+                        SizedBox(height: 4.h),
+                        Text(
                           'Select site to manage documents & complaints',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.sp,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -279,19 +280,19 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                 ],
               ),
             ),
-            
-            const SizedBox(height: 24),
-            
+
+            SizedBox(height: 24.h),
+
             // Site Selection Card
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24.r),
               decoration: BoxDecoration(
                 color: AppColors.cleanWhite,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(20.r),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.deepNavy.withValues(alpha: 0.08),
-                    blurRadius: 20,
+                    blurRadius: 20.r,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -299,24 +300,24 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Site Selection',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.deepNavy,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  SizedBox(height: 8.h),
+                  Text(
                     'Choose area, street, and site to manage',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  
+                  SizedBox(height: 24.h),
+
                   // Area Dropdown
                   _buildDropdownSection(
                     title: 'Area',
@@ -327,9 +328,9 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                     isLoading: _isLoadingAreas,
                     hint: 'Select an area',
                   ),
-                  
-                  const SizedBox(height: 20),
-                  
+
+                  SizedBox(height: 20.h),
+
                   // Street Dropdown
                   _buildDropdownSection(
                     title: 'Street',
@@ -341,23 +342,23 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                     hint: 'Select a street',
                     enabled: _selectedArea != null,
                   ),
-                  
-                  const SizedBox(height: 20),
-                  
+
+                  SizedBox(height: 20.h),
+
                   // Site Dropdown
                   _buildSiteDropdownSection(),
                 ],
               ),
             ),
-            
-            const SizedBox(height: 20),
-            
+
+            SizedBox(height: 20.h),
+
             // Instructions
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: Colors.purple.shade50,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16.r),
                 border: Border.all(
                   color: Colors.purple.shade200,
                   width: 1,
@@ -368,14 +369,14 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                   Icon(
                     Icons.info_outline,
                     color: Colors.purple.shade600,
-                    size: 20,
+                    size: 20.sp,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: Text(
                       'Select all three dropdowns to access architect tools for the site.',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         color: Colors.purple.shade700,
                         height: 1.4,
                       ),
@@ -393,7 +394,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
   Widget _buildArchitectToolsScreen() {
     final site = _sites.firstWhere((s) => s['id'] == _selectedSite);
     final siteName = site['display_name'] ?? site['site_name'] ?? 'Site';
-    
+
     return Scaffold(
       backgroundColor: AppColors.lightSlate,
       appBar: CommonWidgets.buildAppBar(
@@ -419,19 +420,19 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           children: [
             // Site Info Card
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20.r),
               decoration: BoxDecoration(
                 color: AppColors.cleanWhite,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16.r),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.deepNavy.withValues(alpha: 0.08),
-                    blurRadius: 20,
+                    blurRadius: 20.r,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -439,34 +440,34 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
               child: Row(
                 children: [
                   Container(
-                    width: 50,
-                    height: 50,
+                    width: 50.w,
+                    height: 50.h,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.purple.shade600, Colors.purple.shade400],
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
-                    child: const Icon(Icons.architecture, color: Colors.white, size: 24),
+                    child: Icon(Icons.architecture, color: Colors.white, size: 24.sp),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 16.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           siteName,
-                          style: const TextStyle(
-                            fontSize: 18,
+                          style: TextStyle(
+                            fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.deepNavy,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4.h),
                         Text(
                           '${site['area']} • ${site['street']}',
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -476,15 +477,15 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                 ],
               ),
             ),
-            
-            const SizedBox(height: 24),
-            
+
+            SizedBox(height: 24.h),
+
             // Action Buttons
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+                crossAxisSpacing: 16.w,
+                mainAxisSpacing: 16.h,
                 children: [
                   _buildActionCard(
                     title: 'Upload Documents',
@@ -531,25 +532,25 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 18, color: Colors.purple.shade600),
-            const SizedBox(width: 8),
+            Icon(icon, size: 18.sp, color: Colors.purple.shade600),
+            SizedBox(width: 8.w),
             Text(
               title,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.bold,
                 color: Colors.purple.shade600,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
           decoration: BoxDecoration(
             color: enabled ? AppColors.lightBackground : AppColors.lightBackground.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
               color: enabled ? Colors.purple.shade300 : AppColors.textSecondary.withValues(alpha: 0.2),
               width: 1,
@@ -557,22 +558,22 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
           ),
           child: isLoading
               ? Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
                   child: Row(
                     children: [
                       SizedBox(
-                        width: 16,
-                        height: 16,
+                        width: 16.w,
+                        height: 16.h,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: Colors.purple.shade600,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      const Text(
+                      SizedBox(width: 12.w),
+                      Text(
                         'Loading...',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -584,8 +585,8 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                     value: value,
                     hint: Text(
                       enabled ? hint : 'Select ${title.toLowerCase()} first',
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -595,7 +596,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                       color: enabled ? Colors.purple.shade600 : AppColors.textSecondary,
                     ),
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       color: Colors.purple.shade700,
                       fontWeight: FontWeight.w600,
                     ),
@@ -621,25 +622,25 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
       children: [
         Row(
           children: [
-            Icon(Icons.business, size: 18, color: Colors.purple.shade600),
-            const SizedBox(width: 8),
+            Icon(Icons.business, size: 18.sp, color: Colors.purple.shade600),
+            SizedBox(width: 8.w),
             Text(
               'Site',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.bold,
                 color: Colors.purple.shade600,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
           decoration: BoxDecoration(
             color: _selectedStreet != null ? AppColors.lightBackground : AppColors.lightBackground.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
               color: _selectedStreet != null ? Colors.purple.shade300 : AppColors.textSecondary.withValues(alpha: 0.2),
               width: 1,
@@ -647,22 +648,22 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
           ),
           child: _isLoadingSites
               ? Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
                   child: Row(
                     children: [
                       SizedBox(
-                        width: 16,
-                        height: 16,
+                        width: 16.w,
+                        height: 16.h,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: Colors.purple.shade600,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      const Text(
+                      SizedBox(width: 12.w),
+                      Text(
                         'Loading sites...',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -674,8 +675,8 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                     value: _selectedSite,
                     hint: Text(
                       _selectedStreet != null ? 'Select a site' : 'Select street first',
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -685,7 +686,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                       color: _selectedStreet != null ? Colors.purple.shade600 : AppColors.textSecondary,
                     ),
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       color: Colors.purple.shade700,
                       fontWeight: FontWeight.w600,
                     ),
@@ -715,14 +716,14 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(20.r),
         decoration: BoxDecoration(
           color: AppColors.cleanWhite,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
             BoxShadow(
               color: AppColors.deepNavy.withValues(alpha: 0.08),
-              blurRadius: 20,
+              blurRadius: 20.r,
               offset: const Offset(0, 4),
             ),
           ],
@@ -731,29 +732,29 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 50,
-              height: 50,
+              width: 50.w,
+              height: 50.h,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: color, size: 24.sp),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: 16.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               subtitle,
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: 12.sp,
                 color: AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
@@ -834,56 +835,56 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
         title: 'Profile',
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           children: [
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             // Profile Avatar
             Container(
-              width: 100,
-              height: 100,
+              width: 100.w,
+              height: 100.h,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Colors.purple.shade600, Colors.purple.shade400],
                 ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.person, size: 50, color: Colors.white),
+              child: Icon(Icons.person, size: 50.sp, color: Colors.white),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             Text(
               widget.user.name ?? 'Architect',
-              style: const TextStyle(
-                fontSize: 22,
+              style: TextStyle(
+                fontSize: 22.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4.h),
             Text(
               widget.user.email ?? '',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(fontSize: 14.sp, color: Colors.grey),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Colors.purple.shade600, Colors.purple.shade400],
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(20.r),
               ),
-              child: const Text(
+              child: Text(
                 'Architect',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
             ),
-            const SizedBox(height: 32),
-            
+            SizedBox(height: 32.h),
+
             // Profile Options
             _buildProfileOption(Icons.person_outline, 'Edit Profile', () {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -910,7 +911,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                 const SnackBar(content: Text('About - Coming Soon')),
               );
             }),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             _buildProfileOption(
               Icons.logout,
               'Sign Out',
@@ -930,14 +931,14 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
     bool isDestructive = false,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            blurRadius: 10.r,
             offset: const Offset(0, 2),
           ),
         ],
@@ -950,14 +951,14 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
         title: Text(
           title,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 16.sp,
             fontWeight: FontWeight.w500,
             color: isDestructive ? Colors.red : AppColors.deepNavy,
           ),
         ),
         trailing: Icon(
           Icons.arrow_forward_ios,
-          size: 16,
+          size: 16.sp,
           color: isDestructive ? Colors.red : Colors.grey,
         ),
         onTap: onTap,
@@ -1052,7 +1053,7 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
       if (result['success']) {
         widget.onUploadSuccess();
         Navigator.pop(context);
-        
+
         // Refresh architect data in provider
         if (mounted) {
           context.read<ConstructionProvider>().loadArchitectData(
@@ -1077,40 +1078,40 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24.r),
         constraints: const BoxConstraints(maxWidth: 400),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Upload Document',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 20),
-            
+            SizedBox(height: 20.h),
+
             // Document Type Dropdown
-            const Text(
+            Text(
               'Document Type',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: 12.w),
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.purple.shade300),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
@@ -1125,30 +1126,30 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // File Selection
-            const Text(
+            Text(
               'Select File',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             GestureDetector(
               onTap: _pickFile,
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: _selectedFile != null ? Colors.purple.shade600 : Colors.purple.shade300,
                     width: 2,
                     style: BorderStyle.solid,
                   ),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   color: _selectedFile != null ? Colors.purple.shade50 : Colors.grey.shade50,
                 ),
                 child: Row(
@@ -1157,7 +1158,7 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                       _selectedFile != null ? Icons.check_circle : Icons.upload_file,
                       color: _selectedFile != null ? Colors.purple.shade600 : Colors.grey.shade600,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1165,26 +1166,26 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                           Text(
                             _selectedFile != null ? _selectedFile!.name : 'Tap to select file',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
                               color: _selectedFile != null ? Colors.purple.shade700 : Colors.grey.shade600,
                             ),
                           ),
                           if (_selectedFile != null) ...[
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4.h),
                             Text(
                               '${(_selectedFile!.size / 1024 / 1024).toStringAsFixed(2)} MB',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 12.sp,
                                 color: Colors.grey.shade600,
                               ),
                             ),
                           ] else ...[
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4.h),
                             Text(
                               'Supported: PDF, JPG, PNG, DOC, DOCX',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 12.sp,
                                 color: Colors.grey.shade600,
                               ),
                             ),
@@ -1196,61 +1197,61 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Title Field
-            const Text(
+            Text(
               'Title',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
                 hintText: 'Enter document title',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   borderSide: BorderSide(color: Colors.purple.shade300),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   borderSide: BorderSide(color: Colors.purple.shade600),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Description Field
-            const Text(
+            Text(
               'Description (Optional)',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             TextField(
               controller: _descriptionController,
               maxLines: 3,
               decoration: InputDecoration(
                 hintText: 'Enter description',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   borderSide: BorderSide(color: Colors.purple.shade300),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   borderSide: BorderSide(color: Colors.purple.shade600),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            
+            SizedBox(height: 24.h),
+
             // Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -1259,7 +1260,7 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                   onPressed: _isUploading ? null : () => Navigator.pop(context),
                   child: const Text('Cancel'),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 ElevatedButton(
                   onPressed: _isUploading ? null : _uploadDocument,
                   style: ElevatedButton.styleFrom(
@@ -1267,10 +1268,10 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                     foregroundColor: Colors.white,
                   ),
                   child: _isUploading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
+                      ? SizedBox(
+                          width: 16.w,
+                          height: 16.h,
+                          child: const CircularProgressIndicator(
                             strokeWidth: 2,
                             color: Colors.white,
                           ),
@@ -1337,7 +1338,7 @@ class _ComplaintFormDialogState extends State<_ComplaintFormDialog> {
       if (result['success']) {
         widget.onSubmitSuccess();
         Navigator.pop(context);
-        
+
         // Refresh architect data in provider
         if (mounted) {
           context.read<ConstructionProvider>().loadArchitectData(
@@ -1362,40 +1363,40 @@ class _ComplaintFormDialogState extends State<_ComplaintFormDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24.r),
         constraints: const BoxConstraints(maxWidth: 400),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Raise Complaint',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 20),
-            
+            SizedBox(height: 20.h),
+
             // Priority Dropdown
-            const Text(
+            Text(
               'Priority',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: 12.w),
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.orange.shade300),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
@@ -1410,61 +1411,61 @@ class _ComplaintFormDialogState extends State<_ComplaintFormDialog> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Title Field
-            const Text(
+            Text(
               'Title',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
                 hintText: 'Enter complaint title',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   borderSide: BorderSide(color: Colors.orange.shade300),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   borderSide: BorderSide(color: Colors.orange.shade600),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Description Field
-            const Text(
+            Text(
               'Description',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             TextField(
               controller: _descriptionController,
               maxLines: 4,
               decoration: InputDecoration(
                 hintText: 'Describe the issue in detail',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   borderSide: BorderSide(color: Colors.orange.shade300),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   borderSide: BorderSide(color: Colors.orange.shade600),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            
+            SizedBox(height: 24.h),
+
             // Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -1473,7 +1474,7 @@ class _ComplaintFormDialogState extends State<_ComplaintFormDialog> {
                   onPressed: _isSubmitting ? null : () => Navigator.pop(context),
                   child: const Text('Cancel'),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitComplaint,
                   style: ElevatedButton.styleFrom(
@@ -1481,10 +1482,10 @@ class _ComplaintFormDialogState extends State<_ComplaintFormDialog> {
                     foregroundColor: Colors.white,
                   ),
                   child: _isSubmitting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
+                      ? SizedBox(
+                          width: 16.w,
+                          height: 16.h,
+                          child: const CircularProgressIndicator(
                             strokeWidth: 2,
                             color: Colors.white,
                           ),
@@ -1580,10 +1581,10 @@ class _ArchitectHistoryScreenState extends State<ArchitectHistoryScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, size: 56, color: Colors.red),
-                      const SizedBox(height: 12),
+                      Icon(Icons.error_outline, size: 56.sp, color: Colors.red),
+                      SizedBox(height: 12.h),
                       Text(_error!, style: const TextStyle(color: AppColors.textSecondary)),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12.h),
                       ElevatedButton(
                         onPressed: _loadHistory,
                         style: ElevatedButton.styleFrom(
@@ -1598,16 +1599,16 @@ class _ArchitectHistoryScreenState extends State<ArchitectHistoryScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.history, size: 72, color: Colors.grey.shade300),
-                          const SizedBox(height: 16),
-                          const Text('No documents uploaded yet',
+                          Icon(Icons.history, size: 72.sp, color: Colors.grey.shade300),
+                          SizedBox(height: 16.h),
+                          Text('No documents uploaded yet',
                               style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 18.sp,
                                   fontWeight: FontWeight.bold,
                                   color: AppColors.deepNavy)),
-                          const SizedBox(height: 8),
-                          const Text('Documents you upload will appear here.',
-                              style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+                          SizedBox(height: 8.h),
+                          Text('Documents you upload will appear here.',
+                              style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary)),
                         ],
                       ),
                     )
@@ -1615,9 +1616,9 @@ class _ArchitectHistoryScreenState extends State<ArchitectHistoryScreen> {
                       onRefresh: _loadHistory,
                       color: Colors.purple,
                       child: ListView.separated(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16.r),
                         itemCount: _documents.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        separatorBuilder: (_, __) => SizedBox(height: 12.h),
                         itemBuilder: (context, index) {
                           final doc = _documents[index];
                           final docType = doc['document_type'] as String? ?? '';
@@ -1630,72 +1631,72 @@ class _ArchitectHistoryScreenState extends State<ArchitectHistoryScreen> {
                           return Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(12.r),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.purple.withValues(alpha: 0.08),
-                                  blurRadius: 8,
+                                  blurRadius: 8.r,
                                   offset: const Offset(0, 2),
                                 ),
                               ],
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(16.r),
                               child: Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(10),
+                                    padding: EdgeInsets.all(10.r),
                                     decoration: BoxDecoration(
                                       color: Colors.purple.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(10.r),
                                     ),
-                                    child: const Icon(Icons.insert_drive_file,
-                                        color: Colors.purple, size: 24),
+                                    child: Icon(Icons.insert_drive_file,
+                                        color: Colors.purple, size: 24.sp),
                                   ),
-                                  const SizedBox(width: 14),
+                                  SizedBox(width: 14.w),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(title,
-                                            style: const TextStyle(
-                                                fontSize: 14,
+                                            style: TextStyle(
+                                                fontSize: 14.sp,
                                                 fontWeight: FontWeight.bold,
                                                 color: AppColors.deepNavy)),
                                         if (docType.isNotEmpty) ...[
-                                          const SizedBox(height: 2),
+                                          SizedBox(height: 2.h),
                                           Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 8, vertical: 2),
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 8.w, vertical: 2.h),
                                             decoration: BoxDecoration(
                                               color: Colors.purple.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(6),
+                                              borderRadius: BorderRadius.circular(6.r),
                                             ),
                                             child: Text(docType,
-                                                style: const TextStyle(
-                                                    fontSize: 11,
+                                                style: TextStyle(
+                                                    fontSize: 11.sp,
                                                     color: Colors.purple,
                                                     fontWeight: FontWeight.w600)),
                                           ),
                                         ],
                                         if (description.isNotEmpty) ...[
-                                          const SizedBox(height: 4),
+                                          SizedBox(height: 4.h),
                                           Text(description,
                                               style: TextStyle(
-                                                  fontSize: 12,
+                                                  fontSize: 12.sp,
                                                   color: Colors.grey.shade600),
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis),
                                         ],
-                                        const SizedBox(height: 4),
+                                        SizedBox(height: 4.h),
                                         Row(
                                           children: [
                                             Icon(Icons.calendar_today_outlined,
-                                                size: 12, color: Colors.grey.shade500),
-                                            const SizedBox(width: 4),
+                                                size: 12.sp, color: Colors.grey.shade500),
+                                            SizedBox(width: 4.w),
                                             Text(dateStr,
                                                 style: TextStyle(
-                                                    fontSize: 12,
+                                                    fontSize: 12.sp,
                                                     color: Colors.grey.shade600)),
                                           ],
                                         ),
@@ -1704,8 +1705,8 @@ class _ArchitectHistoryScreenState extends State<ArchitectHistoryScreen> {
                                   ),
                                   if (fileUrl.isNotEmpty)
                                     IconButton(
-                                      icon: const Icon(Icons.open_in_new,
-                                          color: Colors.purple, size: 22),
+                                      icon: Icon(Icons.open_in_new,
+                                          color: Colors.purple, size: 22.sp),
                                       onPressed: () => _openDocument(fileUrl),
                                       tooltip: 'Open document',
                                     ),

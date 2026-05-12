@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../models/budget_model.dart';
 import '../services/budget_service.dart';
 
@@ -48,13 +49,13 @@ class _BudgetOverviewCardState extends State<BudgetOverviewCard> {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
       ),
       child: InkWell(
         onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           child: _isLoading
               ? const Center(
                   child: CircularProgressIndicator(),
@@ -74,35 +75,35 @@ class _BudgetOverviewCardState extends State<BudgetOverviewCard> {
         Row(
           children: [
             Icon(Icons.account_balance_wallet, color: Colors.grey.shade400),
-            const SizedBox(width: 8),
+            SizedBox(width: 8.w),
             Expanded(
               child: Text(
                 widget.siteName,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12.r),
           decoration: BoxDecoration(
             color: Colors.orange.shade50,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(8.r),
             border: Border.all(color: Colors.orange.shade200),
           ),
           child: Row(
             children: [
-              Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 20),
-              const SizedBox(width: 8),
-              const Expanded(
+              Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 20.sp),
+              SizedBox(width: 8.w),
+              Expanded(
                 child: Text(
                   'No budget allocated',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -133,12 +134,12 @@ class _BudgetOverviewCardState extends State<BudgetOverviewCard> {
               child: Row(
                 children: [
                   Icon(Icons.account_balance_wallet, color: Colors.blue.shade700),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
                       widget.siteName,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -147,15 +148,15 @@ class _BudgetOverviewCardState extends State<BudgetOverviewCard> {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
               decoration: BoxDecoration(
                 color: Colors.green.shade100,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
               child: Text(
                 'ACTIVE',
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 10.sp,
                   fontWeight: FontWeight.bold,
                   color: Colors.green.shade700,
                 ),
@@ -163,7 +164,7 @@ class _BudgetOverviewCardState extends State<BudgetOverviewCard> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
 
         // Budget amounts
         _buildAmountRow(
@@ -171,19 +172,19 @@ class _BudgetOverviewCardState extends State<BudgetOverviewCard> {
           budget.formattedAllocated,
           Colors.blue.shade700,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         _buildAmountRow(
           'Utilized',
           budget.formattedUtilized,
           Colors.orange.shade700,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         _buildAmountRow(
           'Remaining',
           budget.formattedRemaining,
           Colors.green.shade700,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
 
         // Progress bar
         Column(
@@ -192,26 +193,26 @@ class _BudgetOverviewCardState extends State<BudgetOverviewCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Utilization',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 Text(
                   '${budget.utilizationPercentage.toStringAsFixed(1)}%',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.bold,
                     color: utilizationColor,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4.h),
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(4.r),
               child: LinearProgressIndicator(
                 value: budget.utilizationPercentage / 100,
                 backgroundColor: Colors.grey.shade200,
@@ -224,15 +225,15 @@ class _BudgetOverviewCardState extends State<BudgetOverviewCard> {
 
         // Allocated by
         if (budget.allocatedBy != null) ...[
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Row(
             children: [
-              Icon(Icons.person, size: 14, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
+              Icon(Icons.person, size: 14.sp, color: Colors.grey.shade600),
+              SizedBox(width: 4.w),
               Text(
                 'By ${budget.allocatedBy}',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   color: Colors.grey.shade600,
                 ),
               ),
@@ -249,15 +250,15 @@ class _BudgetOverviewCardState extends State<BudgetOverviewCard> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: 14.sp,
             fontWeight: FontWeight.w500,
           ),
         ),
         Text(
           amount,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 16.sp,
             fontWeight: FontWeight.bold,
             color: color,
           ),

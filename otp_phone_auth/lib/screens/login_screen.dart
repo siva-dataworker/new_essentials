@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/app_colors.dart';
@@ -62,14 +63,14 @@ class _LoginScreenState extends State<LoginScreen>
     if (success) {
       final user = authProvider.currentUser!;
       final role = user['role'];
-      
+
       // Debug logs removed for performance
-      
+
       Widget dashboard;
-      
+
       // Normalize role for comparison (case-insensitive)
       final roleNormalized = role?.toString().toLowerCase() ?? '';
-      
+
       switch (roleNormalized) {
         case 'admin':
           dashboard = const AdminDashboard();
@@ -127,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen>
         default:
           dashboard = const SupervisorDashboardFeed();
       }
-      
+
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (_) => dashboard));
     } else {
@@ -146,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen>
           backgroundColor: AppColors.statusOverdue,
           behavior: SnackBarBehavior.floating,
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
         ));
       }
     }
@@ -195,41 +196,41 @@ class _LoginScreenState extends State<LoginScreen>
                           children: [
                             // Logo container with frosted look
                             Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(16.r),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(24),
+                                borderRadius: BorderRadius.circular(24.r),
                                 boxShadow: [
                                   BoxShadow(
                                     color:
                                         Colors.black.withValues(alpha: 0.25),
-                                    blurRadius: 24,
+                                    blurRadius: 24.r,
                                     offset: const Offset(0, 8),
                                   ),
                                 ],
                               ),
                               child: Image.asset(
                                 'assets/images/essential_homes_logo.png',
-                                height: 150,
+                                height: 150.h,
                                 fit: BoxFit.contain,
                               ),
                             ),
-                            const SizedBox(height: 20),
-                            const Text(
+                            SizedBox(height: 20.h),
+                            Text(
                               'Welcome Back',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 28,
+                                fontSize: 28.sp,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.5,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: 6.h),
                             Text(
                               'Sign in to continue',
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.65),
-                                fontSize: 15,
+                                fontSize: 15.sp,
                               ),
                             ),
                           ],
@@ -243,14 +244,14 @@ class _LoginScreenState extends State<LoginScreen>
                       child: SlideTransition(
                         position: _slideAnim,
                         child: Container(
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(36),
-                              topRight: Radius.circular(36),
+                              topLeft: Radius.circular(36.r),
+                              topRight: Radius.circular(36.r),
                             ),
                           ),
-                          padding: const EdgeInsets.fromLTRB(28, 32, 28, 24),
+                          padding: EdgeInsets.fromLTRB(28.w, 32.h, 28.w, 24.h),
                           child: Form(
                             key: _formKey,
                             child: Column(
@@ -266,7 +267,7 @@ class _LoginScreenState extends State<LoginScreen>
                                           ? 'Enter your username'
                                           : null,
                                 ),
-                                const SizedBox(height: 16),
+                                SizedBox(height: 16.h),
 
                                 // Password
                                 _buildInputField(
@@ -280,7 +281,7 @@ class _LoginScreenState extends State<LoginScreen>
                                           ? Icons.visibility_outlined
                                           : Icons.visibility_off_outlined,
                                       color: AppColors.textSecondary,
-                                      size: 20,
+                                      size: 20.sp,
                                     ),
                                     onPressed: () => setState(
                                         () => _obscurePassword =
@@ -291,12 +292,12 @@ class _LoginScreenState extends State<LoginScreen>
                                           ? 'Enter your password'
                                           : null,
                                 ),
-                                const SizedBox(height: 28),
+                                SizedBox(height: 28.h),
 
                                 // Login button
                                 _buildLoginButton(authProvider),
 
-                                const SizedBox(height: 20),
+                                SizedBox(height: 20.h),
 
                                 // Register link
                                 Row(
@@ -306,7 +307,7 @@ class _LoginScreenState extends State<LoginScreen>
                                       "Don't have an account? ",
                                       style: TextStyle(
                                           color: AppColors.textSecondary,
-                                          fontSize: 13),
+                                          fontSize: 13.sp),
                                     ),
                                     GestureDetector(
                                       onTap: () => Navigator.pushReplacement(
@@ -315,18 +316,18 @@ class _LoginScreenState extends State<LoginScreen>
                                             builder: (_) =>
                                                 const RegistrationScreen()),
                                       ),
-                                      child: const Text(
+                                      child: Text(
                                         'Register',
                                         style: TextStyle(
                                           color: AppColors.deepNavy,
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 13,
+                                          fontSize: 13.sp,
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 14),
+                                SizedBox(height: 14.h),
 
                                 // Guest entry button
                                 GestureDetector(
@@ -338,13 +339,13 @@ class _LoginScreenState extends State<LoginScreen>
                                   ),
                                   child: Container(
                                     width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 13),
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: 13.h),
                                     decoration: BoxDecoration(
                                       border: Border.all(
                                           color: AppColors.deepNavy
                                               .withValues(alpha: 0.35)),
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(12.r),
                                       color: AppColors.deepNavy
                                           .withValues(alpha: 0.04),
                                     ),
@@ -353,23 +354,23 @@ class _LoginScreenState extends State<LoginScreen>
                                           MainAxisAlignment.center,
                                       children: [
                                         Icon(Icons.person_add_alt_1,
-                                            size: 18,
+                                            size: 18.sp,
                                             color: AppColors.deepNavy
                                                 .withValues(alpha: 0.8)),
-                                        const SizedBox(width: 8),
+                                        SizedBox(width: 8.w),
                                         Text(
                                           'Guest Entry',
                                           style: TextStyle(
                                             color: AppColors.deepNavy,
                                             fontWeight: FontWeight.w600,
-                                            fontSize: 14,
+                                            fontSize: 14.sp,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: 8.h),
                               ],
                             ),
                           ),
@@ -397,40 +398,40 @@ class _LoginScreenState extends State<LoginScreen>
     return TextFormField(
       controller: controller,
       obscureText: obscure,
-      style: const TextStyle(
-          fontSize: 15, color: AppColors.deepNavy, fontWeight: FontWeight.w500),
+      style: TextStyle(
+          fontSize: 15.sp, color: AppColors.deepNavy, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
         labelStyle:
-            TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            TextStyle(color: AppColors.textSecondary, fontSize: 14.sp),
         prefixIcon:
-            Icon(icon, color: AppColors.deepNavy.withValues(alpha: 0.6), size: 20),
+            Icon(icon, color: AppColors.deepNavy.withValues(alpha: 0.6), size: 20.sp),
         suffixIcon: suffix,
         filled: true,
         fillColor: const Color(0xFFF4F6FA),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           borderSide:
               const BorderSide(color: Color(0xFFE8ECF4), width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           borderSide:
               const BorderSide(color: AppColors.deepNavy, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           borderSide:
               const BorderSide(color: AppColors.statusOverdue, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           borderSide:
               const BorderSide(color: AppColors.statusOverdue, width: 2),
         ),
@@ -441,14 +442,14 @@ class _LoginScreenState extends State<LoginScreen>
 
   Widget _buildLoginButton(AuthProvider authProvider) {
     return Container(
-      height: 56,
+      height: 56.h,
       decoration: BoxDecoration(
         color: const Color(0xFF0D1B2A),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 16,
+            blurRadius: 16.r,
             offset: const Offset(0, 6),
           ),
         ],
@@ -459,29 +460,29 @@ class _LoginScreenState extends State<LoginScreen>
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
+              borderRadius: BorderRadius.circular(16.r)),
         ),
         child: authProvider.isLoading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
+            ? SizedBox(
+                width: 22.w,
+                height: 22.h,
+                child: const CircularProgressIndicator(
                     strokeWidth: 2.5, color: Colors.white))
-            : const Row(
+            : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     'Sign In',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),
                   ),
-                  SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Icon(Icons.arrow_forward_rounded,
-                      color: Colors.white, size: 20),
+                      color: Colors.white, size: 20.sp),
                 ],
               ),
       ),

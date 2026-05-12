@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../providers/supervisor_provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/app_colors.dart';
@@ -50,8 +51,8 @@ class _SupervisorDashboardWithProviderState extends State<SupervisorDashboardWit
               IconButton(
                 icon: supervisorProvider.isLoading
                     ? SizedBox(
-                        width: 20,
-                        height: 20,
+                        width: 20.w,
+                        height: 20.h,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: Colors.white,
@@ -90,10 +91,10 @@ class _SupervisorDashboardWithProviderState extends State<SupervisorDashboardWit
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red),
-            SizedBox(height: 16),
+            Icon(Icons.error_outline, size: 64.sp, color: Colors.red),
+            SizedBox(height: 16.h),
             Text('Error: ${provider.error}'),
-            SizedBox(height: 16),
+            SizedBox(height: 16.h),
             ElevatedButton(
               onPressed: () {
                 provider.clearError();
@@ -123,7 +124,7 @@ class _SupervisorDashboardWithProviderState extends State<SupervisorDashboardWit
       onRefresh: () => provider.refreshData(),
       child: SingleChildScrollView(
         physics: AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -138,8 +139,8 @@ class _SupervisorDashboardWithProviderState extends State<SupervisorDashboardWit
                 }
               },
             ),
-            SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Street Dropdown
             if (provider.streets.isNotEmpty)
               _buildDropdown(
@@ -155,26 +156,26 @@ class _SupervisorDashboardWithProviderState extends State<SupervisorDashboardWit
                   }
                 },
               ),
-            SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Sites List
             if (provider.sites.isNotEmpty) ...[
               Text(
                 'Sites (${provider.sites.length})',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 8),
+              SizedBox(height: 8.h),
               ...provider.sites.map((site) => _buildSiteCard(site, provider)),
             ],
-            
+
             // Today's Entries
             if (provider.selectedSite != null && provider.todayEntries != null) ...[
-              SizedBox(height: 24),
+              SizedBox(height: 24.h),
               Text(
                 'Today\'s Entries',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 8),
+              SizedBox(height: 8.h),
               _buildTodayEntriesCard(provider.todayEntries!),
             ],
           ],
@@ -196,20 +197,20 @@ class _SupervisorDashboardWithProviderState extends State<SupervisorDashboardWit
     return RefreshIndicator(
       onRefresh: () => provider.refreshData(),
       child: ListView(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         children: [
           Text(
             'Labour History (${labourEntries.length})',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 8),
+          SizedBox(height: 8.h),
           ...labourEntries.map((entry) => _buildHistoryCard(entry, 'Labour')),
-          SizedBox(height: 24),
+          SizedBox(height: 24.h),
           Text(
             'Material History (${materialEntries.length})',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 8),
+          SizedBox(height: 8.h),
           ...materialEntries.map((entry) => _buildHistoryCard(entry, 'Material')),
         ],
       ),
@@ -232,12 +233,12 @@ class _SupervisorDashboardWithProviderState extends State<SupervisorDashboardWit
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
-        SizedBox(height: 8),
+        SizedBox(height: 8.h),
         DropdownButtonFormField<String>(
           value: value,
           decoration: InputDecoration(
             border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
           ),
           items: items.map((item) {
             return DropdownMenuItem(value: item, child: Text(item));
@@ -270,12 +271,12 @@ class _SupervisorDashboardWithProviderState extends State<SupervisorDashboardWit
   Widget _buildTodayEntriesCard(Map<String, dynamic> entries) {
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Labour: ${entries['labour_count'] ?? 0}'),
-            SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text('Materials: ${entries['material_count'] ?? 0}'),
           ],
         ),
@@ -285,7 +286,7 @@ class _SupervisorDashboardWithProviderState extends State<SupervisorDashboardWit
 
   Widget _buildHistoryCard(Map<String, dynamic> entry, String type) {
     return Card(
-      margin: EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 8.h),
       child: ListTile(
         title: Text(type),
         subtitle: Text(entry['entry_date'] ?? 'Unknown date'),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:io';
 import '../services/construction_service.dart';
 import '../services/notification_service.dart';
@@ -284,7 +285,7 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
           // Site Info Header
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
               gradient: AppColors.navyGradient,
               boxShadow: [AppColors.cardShadow],
@@ -294,44 +295,44 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
               children: [
                 Text(
                   widget.site['display_name'] ?? 'Site',
-                  style: const TextStyle(
-                    fontSize: 20,
+                  style: TextStyle(
+                    fontSize: 20.sp,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 14, color: Colors.white70),
-                    const SizedBox(width: 4),
+                    Icon(Icons.location_on, size: 14.sp, color: Colors.white70),
+                    SizedBox(width: 4.w),
                     Text(
                       '${widget.site['area']} - ${widget.site['street']}',
-                      style: const TextStyle(fontSize: 13, color: Colors.white70),
+                      style: TextStyle(fontSize: 13.sp, color: Colors.white70),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          
+
           // Tab Bar
           Container(
-            margin: const EdgeInsets.all(16),
+            margin: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
               color: AppColors.lightSlate,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
             ),
             child: TabBar(
               controller: _tabController,
               indicator: BoxDecoration(
                 gradient: AppColors.orangeGradient,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
               labelColor: Colors.white,
               unselectedLabelColor: AppColors.textSecondary,
-              labelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              unselectedLabelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              labelStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+              unselectedLabelStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w500),
               tabs: const [
                 Tab(text: '🌅 Morning'),
                 Tab(text: '🌆 Evening'),
@@ -362,21 +363,21 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
     final timeEmoji = isMorning ? '🌅' : '🌆';
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Header
           Text(
             '$timeEmoji $timeLabel Photos',
-            style: const TextStyle(
-              fontSize: 20,
+            style: TextStyle(
+              fontSize: 20.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.deepNavy,
             ),
           ),
-          const SizedBox(height: 16),
-          
+          SizedBox(height: 16.h),
+
           // Action Buttons
           Row(
             children: [
@@ -388,14 +389,14 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.deepNavy,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: isUploading ? null : () => _pickImages(isMorning),
@@ -404,62 +405,62 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.statusCompleted,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          
+          SizedBox(height: 20.h),
+
           // New Photos to Upload Section
           if (photos.isNotEmpty) ...[
             Row(
               children: [
-                const Icon(Icons.upload_file, size: 18, color: AppColors.safetyOrange),
-                const SizedBox(width: 8),
+                Icon(Icons.upload_file, size: 18.sp, color: AppColors.safetyOrange),
+                SizedBox(width: 8.w),
                 Text(
                   'Ready to Upload (${photos.length})',
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.safetyOrange,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             SizedBox(
-              height: 120,
+              height: 120.h,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: photos.length,
                 itemBuilder: (context, index) {
                   return Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: EdgeInsets.only(right: 8.w),
                     child: _buildPhotoThumbnail(photos[index], index, isMorning),
                   );
                 },
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             ElevatedButton(
               onPressed: isUploading ? null : () => _uploadPhotos(isMorning),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.safetyOrange,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 16.h),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
               ),
               child: isUploading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
+                  ? SizedBox(
+                      height: 20.h,
+                      width: 20.w,
                       child: CircularProgressIndicator(
                         color: Colors.white,
                         strokeWidth: 2,
@@ -467,38 +468,38 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
                     )
                   : Text(
                       'Upload ${photos.length} Photo${photos.length > 1 ? 's' : ''}',
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
           ],
-          
+
           // Uploaded Photos Section
           Row(
             children: [
-              const Icon(Icons.cloud_done, size: 18, color: AppColors.statusCompleted),
-              const SizedBox(width: 8),
+              Icon(Icons.cloud_done, size: 18.sp, color: AppColors.statusCompleted),
+              SizedBox(width: 8.w),
               Text(
                 'Uploaded Photos (${uploadedPhotos.length})',
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.statusCompleted,
                 ),
               ),
               const Spacer(),
               if (_isLoadingPhotos)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
+                SizedBox(
+                  width: 16.w,
+                  height: 16.h,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           
           // Uploaded Photos by Date (Expandable)
           Expanded(
@@ -515,7 +516,7 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: AppColors.borderColor),
       ),
       child: Center(
@@ -524,23 +525,23 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
           children: [
             Icon(
               Icons.add_photo_alternate_outlined,
-              size: 80,
+              size: 80.sp,
               color: AppColors.textSecondary,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             Text(
               'No $timeLabel Photos',
-              style: const TextStyle(
-                fontSize: 18,
+              style: TextStyle(
+                fontSize: 18.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               'Take a photo or choose from gallery',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 color: AppColors.textSecondary,
               ),
             ),
@@ -554,7 +555,7 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: AppColors.borderColor),
       ),
       child: Center(
@@ -563,23 +564,23 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
           children: [
             Icon(
               Icons.cloud_off_outlined,
-              size: 60,
+              size: 60.sp,
               color: AppColors.textSecondary,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             Text(
               'No Uploaded $timeLabel Photos',
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: 16.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               'Upload photos to see them here',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 13.sp,
                 color: AppColors.textSecondary,
               ),
             ),
@@ -594,7 +595,7 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
       fit: StackFit.expand,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
           child: Image.file(
             File(photo.path),
             fit: BoxFit.cover,
@@ -606,7 +607,7 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
           child: GestureDetector(
             onTap: () => _removePhoto(index, isMorning),
             child: Container(
-              padding: const EdgeInsets.all(4),
+              padding: EdgeInsets.all(4.r),
               decoration: BoxDecoration(
                 color: Colors.red,
                 shape: BoxShape.circle,
@@ -617,10 +618,10 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.close,
                 color: Colors.white,
-                size: 16,
+                size: 16.sp,
               ),
             ),
           ),
@@ -642,7 +643,7 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
         fit: StackFit.expand,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12.r),
             child: Image.network(
               imageUrl,
               fit: BoxFit.cover,
@@ -677,7 +678,7 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
             left: 0,
             right: 0,
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+              padding: EdgeInsets.symmetric(vertical: 4.h, horizontal: 6.w),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
@@ -687,16 +688,16 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
                     Colors.black.withValues(alpha: 0.7),
                   ],
                 ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(12.r),
+                  bottomRight: Radius.circular(12.r),
                 ),
               ),
               child: Text(
                 uploadDate,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 10,
+                  fontSize: 10.sp,
                   fontWeight: FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
@@ -729,7 +730,7 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
               top: 40,
               right: 20,
               child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                icon: Icon(Icons.close, color: Colors.white, size: 30.sp),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -768,10 +769,10 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
     final formattedDate = _formatDateForCard(date);
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [AppColors.cardShadow],
       ),
       child: Column(
@@ -789,12 +790,12 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
                   }
                 });
               },
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
                   color: isExpanded ? AppColors.statusCompleted.withValues(alpha: 0.05) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                   border: Border.all(
                     color: isExpanded ? AppColors.statusCompleted.withValues(alpha: 0.2) : Colors.transparent,
                     width: 1,
@@ -804,20 +805,20 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
                   children: [
                     // Calendar Icon
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: EdgeInsets.all(10.r),
                       decoration: BoxDecoration(
                         gradient: isExpanded ? AppColors.greenGradient : null,
                         color: isExpanded ? null : AppColors.statusCompleted.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(10.r),
                       ),
                       child: Icon(
                         Icons.calendar_today,
                         color: isExpanded ? Colors.white : AppColors.statusCompleted,
-                        size: 20,
+                        size: 20.sp,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    
+                    SizedBox(width: 16.w),
+
                     // Date and Photo Count
                     Expanded(
                       child: Column(
@@ -825,23 +826,23 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
                         children: [
                           Text(
                             formattedDate,
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.bold,
                               color: AppColors.deepNavy,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4.h),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                             decoration: BoxDecoration(
                               color: AppColors.statusCompleted.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(8.r),
                             ),
                             child: Text(
                               '${photos.length} photo${photos.length > 1 ? 's' : ''}',
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: TextStyle(
+                                fontSize: 12.sp,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.statusCompleted,
                               ),
@@ -850,15 +851,15 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
                         ],
                       ),
                     ),
-                    
+
                     // Dropdown Arrow
                     AnimatedRotation(
                       turns: isExpanded ? 0.5 : 0,
                       duration: const Duration(milliseconds: 200),
-                      child: const Icon(
+                      child: Icon(
                         Icons.keyboard_arrow_down,
                         color: AppColors.deepNavy,
-                        size: 24,
+                        size: 24.sp,
                       ),
                     ),
                   ],
@@ -870,7 +871,7 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
           // Expandable Photo Grid
           if (isExpanded)
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               child: GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),

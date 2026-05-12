@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -103,7 +104,7 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
         slivers: [
           // ── Header ──────────────────────────────────────────
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: 200.h,
             pinned: true,
             backgroundColor: _navy,
             leading: IconButton(
@@ -123,30 +124,30 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20.h),
                       Container(
-                        width: 72,
-                        height: 72,
+                        width: 72.w,
+                        height: 72.h,
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                           border: Border.all(
                               color: Colors.white.withValues(alpha: 0.3), width: 2),
                         ),
-                        child: const Icon(Icons.person_add_alt_1,
-                            color: Colors.white, size: 36),
+                        child: Icon(Icons.person_add_alt_1,
+                            color: Colors.white, size: 36.sp),
                       ),
-                      const SizedBox(height: 12),
-                      const Text('Guest Check-In',
+                      SizedBox(height: 12.h),
+                      Text('Guest Check-In',
                           style: TextStyle(
                               color: Colors.white,
-                              fontSize: 22,
+                              fontSize: 22.sp,
                               fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text('Welcome — please register your visit',
                           style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.75),
-                              fontSize: 13)),
+                              fontSize: 13.sp)),
                     ],
                   ),
                 ),
@@ -156,7 +157,7 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
 
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20.r),
               child: Column(
                 children: [
                   // ── Form card ────────────────────────────────
@@ -182,16 +183,16 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
             color: _navy.withValues(alpha: 0.08),
-            blurRadius: 20,
+            blurRadius: 20.r,
             offset: const Offset(0, 6),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24.r),
       child: Form(
         key: _formKey,
         child: Column(
@@ -200,22 +201,22 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: _navy.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
-                  child: const Icon(Icons.assignment_ind, color: _navy, size: 20),
+                  child: Icon(Icons.assignment_ind, color: _navy, size: 20.sp),
                 ),
-                const SizedBox(width: 10),
-                const Text('Visitor Details',
+                SizedBox(width: 10.w),
+                Text('Visitor Details',
                     style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                         color: _navy)),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
 
             // Name
             _buildField(
@@ -227,7 +228,7 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Please enter your name' : null,
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14.h),
 
             // Phone
             _buildField(
@@ -243,7 +244,7 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
                 return null;
               },
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14.h),
 
             // Purpose
             _buildField(
@@ -254,34 +255,34 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
               inputType: TextInputType.text,
               maxLines: 2,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
 
             // Submit button
             SizedBox(
-              height: 52,
+              height: 52.h,
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _navy,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(14.r)),
                   elevation: 0,
                 ),
                 child: _isSubmitting
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
+                    ? SizedBox(
+                        width: 22.w,
+                        height: 22.h,
+                        child: const CircularProgressIndicator(
                             color: Colors.white, strokeWidth: 2.5))
-                    : const Row(
+                    : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.how_to_reg, size: 20),
-                          SizedBox(width: 8),
+                          Icon(Icons.how_to_reg, size: 20.sp),
+                          SizedBox(width: 8.w),
                           Text('Check In',
                               style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold)),
+                                  fontSize: 16.sp, fontWeight: FontWeight.bold)),
                         ],
                       ),
               ),
@@ -304,57 +305,57 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
         // ── Success banner ─────────────────────────────────
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20.r),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFF059669), Color(0xFF047857)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(18.r),
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFF059669).withValues(alpha: 0.3),
-                blurRadius: 14,
+                blurRadius: 14.r,
                 offset: const Offset(0, 5),
               ),
             ],
           ),
           child: Column(
             children: [
-              const Icon(Icons.check_circle, color: Colors.white, size: 52),
-              const SizedBox(height: 10),
+              Icon(Icons.check_circle, color: Colors.white, size: 52.sp),
+              SizedBox(height: 10.h),
               Text(
                 'Welcome, ${_nameCtrl.text.trim()}!',
-                style: const TextStyle(
+                style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 20.sp,
                     fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 6),
-              const Text('You are checked in. Admin has been notified.',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+              SizedBox(height: 6.h),
+              Text('You are checked in. Admin has been notified.',
+                  style: TextStyle(color: Colors.white70, fontSize: 13.sp),
                   textAlign: TextAlign.center),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(20.r),
                 ),
                 child: Text(
                   'Ref: $_refNumber  ·  $timeStr  ·  $dateStr',
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 12),
+                      fontSize: 12.sp),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
 
         // ── Visitor details recap ──────────────────────────
         _infoCard(
@@ -368,7 +369,7 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
             _infoRow(Icons.access_time, 'Check-in Time', '$timeStr on $dateStr'),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
 
         // ── Company overview (test data) ───────────────────
         _infoCard(
@@ -395,7 +396,7 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
 
         // ── Contact info (test data) ───────────────────────
         _infoCard(
@@ -410,12 +411,12 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
             _infoRow(Icons.email_outlined, 'Email', 'info@ayotta-tech.com'),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
 
         // ── Check-in again button ──────────────────────────
         SizedBox(
           width: double.infinity,
-          height: 48,
+          height: 48.h,
           child: OutlinedButton.icon(
             onPressed: () {
               setState(() {
@@ -426,17 +427,17 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
               });
               _welcomeCtrl.reset();
             },
-            icon: const Icon(Icons.refresh, size: 18),
+            icon: Icon(Icons.refresh, size: 18.sp),
             label: const Text('New Check-In'),
             style: OutlinedButton.styleFrom(
               foregroundColor: _navy,
               side: const BorderSide(color: _navy),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12.r)),
             ),
           ),
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: 32.h),
       ],
     );
   }
@@ -449,11 +450,11 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18.r),
         boxShadow: [
           BoxShadow(
             color: _navy.withValues(alpha: 0.07),
-            blurRadius: 14,
+            blurRadius: 14.r,
             offset: const Offset(0, 4),
           ),
         ],
@@ -462,33 +463,33 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 12.h),
             decoration: BoxDecoration(
               color: _navy.withValues(alpha: 0.04),
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(18)),
+                  BorderRadius.vertical(top: Radius.circular(18.r)),
             ),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(7),
+                  padding: EdgeInsets.all(7.r),
                   decoration: BoxDecoration(
                     color: _navy.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: Icon(icon, color: _navy, size: 18),
+                  child: Icon(icon, color: _navy, size: 18.sp),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10.w),
                 Text(title,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         color: _navy)),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: children),
@@ -500,26 +501,26 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
 
   Widget _infoRow(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF6B7280)),
-          const SizedBox(width: 8),
+          Icon(icon, size: 16.sp, color: const Color(0xFF6B7280)),
+          SizedBox(width: 8.w),
           Expanded(
             child: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
                       text: '$label: ',
-                      style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6B7280),
+                      style: TextStyle(
+                          fontSize: 12.sp,
+                          color: const Color(0xFF6B7280),
                           fontWeight: FontWeight.w500)),
                   TextSpan(
                       text: value,
-                      style: const TextStyle(
-                          fontSize: 13,
+                      style: TextStyle(
+                          fontSize: 13.sp,
                           color: _navy,
                           fontWeight: FontWeight.w600)),
                 ],
@@ -547,33 +548,33 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
       inputFormatters: formatters,
       maxLines: maxLines,
       validator: validator,
-      style: const TextStyle(fontSize: 14, color: _navy),
+      style: TextStyle(fontSize: 14.sp, color: _navy),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: _navy.withValues(alpha: 0.5), size: 20),
+        prefixIcon: Icon(icon, color: _navy.withValues(alpha: 0.5), size: 20.sp),
         labelStyle:
-            TextStyle(color: _navy.withValues(alpha: 0.6), fontSize: 13),
+            TextStyle(color: _navy.withValues(alpha: 0.6), fontSize: 13.sp),
         hintStyle:
-            TextStyle(color: Colors.grey.shade400, fontSize: 13),
+            TextStyle(color: Colors.grey.shade400, fontSize: 13.sp),
         filled: true,
         fillColor: const Color(0xFFF8F9FC),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
           borderSide: BorderSide(color: Colors.grey.shade200),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
           borderSide: BorderSide(color: Colors.grey.shade200),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
           borderSide: const BorderSide(color: _navy, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
           borderSide: const BorderSide(color: Colors.red),
         ),
       ),
@@ -599,24 +600,24 @@ class _ProjectItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
         color: statusColor.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(10.r),
         border: Border.all(color: statusColor.withValues(alpha: 0.15)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 2),
-            width: 8,
-            height: 8,
+            margin: EdgeInsets.only(top: 2.h),
+            width: 8.w,
+            height: 8.h,
             decoration: BoxDecoration(
                 color: statusColor, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,30 +626,30 @@ class _ProjectItem extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(name,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: Color(0xFF1A1A2E))),
+                              fontSize: 13.sp,
+                              color: const Color(0xFF1A1A2E))),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 8.w, vertical: 3.h),
                       decoration: BoxDecoration(
                         color: statusColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Text(status,
                           style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 10.sp,
                               fontWeight: FontWeight.bold,
                               color: statusColor)),
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3.h),
                 Text(detail,
                     style: TextStyle(
-                        fontSize: 11, color: Colors.grey.shade600)),
+                        fontSize: 11.sp, color: Colors.grey.shade600)),
               ],
             ),
           ),

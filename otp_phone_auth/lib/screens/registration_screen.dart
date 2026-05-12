@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 import 'pending_approval_screen.dart';
@@ -14,13 +15,13 @@ class RegistrationScreen extends StatefulWidget {
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _authService = AuthService();
-  
+
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _fullNameController = TextEditingController();
-  
+
   String? _selectedRole;
   List<String> _roles = [];
   bool _isLoading = false;
@@ -87,51 +88,51 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(24.r),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 40),
-                
+                SizedBox(height: 40.h),
+
                 // Logo
                 Center(
                   child: Image.asset(
                     'assets/logo.png',
-                    height: 80,
+                    height: 80.h,
                     errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.construction, size: 80, color: AppColors.primary);
+                      return Icon(Icons.construction, size: 80.sp, color: AppColors.primary);
                     },
                   ),
                 ),
-                
-                const SizedBox(height: 24),
-                
+
+                SizedBox(height: 24.h),
+
                 // Title
                 Text(
                   'Create Account',
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize: 28.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
-                const SizedBox(height: 8),
-                
+
+                SizedBox(height: 8.h),
+
                 Text(
                   'Register to get started',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     color: AppColors.textSecondary,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
-                const SizedBox(height: 32),
-                
+
+                SizedBox(height: 32.h),
+
                 // Full Name
                 TextFormField(
                   controller: _fullNameController,
@@ -139,7 +140,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     labelText: 'Full Name',
                     prefixIcon: const Icon(Icons.person),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
                   validator: (value) {
@@ -149,9 +150,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     return null;
                   },
                 ),
-                
-                const SizedBox(height: 16),
-                
+
+                SizedBox(height: 16.h),
+
                 // Username
                 TextFormField(
                   controller: _usernameController,
@@ -159,7 +160,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     labelText: 'Username',
                     prefixIcon: const Icon(Icons.account_circle),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
                   validator: (value) {
@@ -172,9 +173,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     return null;
                   },
                 ),
-                
-                const SizedBox(height: 16),
-                
+
+                SizedBox(height: 16.h),
+
                 // Email
                 TextFormField(
                   controller: _emailController,
@@ -183,7 +184,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     labelText: 'Email',
                     prefixIcon: const Icon(Icons.email),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
                   validator: (value) {
@@ -196,9 +197,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     return null;
                   },
                 ),
-                
-                const SizedBox(height: 16),
-                
+
+                SizedBox(height: 16.h),
+
                 // Phone
                 TextFormField(
                   controller: _phoneController,
@@ -207,7 +208,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     labelText: 'Phone Number',
                     prefixIcon: const Icon(Icons.phone),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
                   validator: (value) {
@@ -220,9 +221,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     return null;
                   },
                 ),
-                
-                const SizedBox(height: 16),
-                
+
+                SizedBox(height: 16.h),
+
                 // Password
                 TextFormField(
                   controller: _passwordController,
@@ -239,7 +240,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       },
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
                   validator: (value) {
@@ -252,9 +253,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     return null;
                   },
                 ),
-                
-                const SizedBox(height: 16),
-                
+
+                SizedBox(height: 16.h),
+
                 // Role Dropdown
                 DropdownButtonFormField<String>(
                   value: _selectedRole,
@@ -262,7 +263,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     labelText: 'Role',
                     prefixIcon: const Icon(Icons.work),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
                   items: _roles.map((role) {
@@ -281,40 +282,40 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     return null;
                   },
                 ),
-                
-                const SizedBox(height: 24),
-                
+
+                SizedBox(height: 24.h),
+
                 // Register Button
                 ElevatedButton(
                   onPressed: _isLoading ? null : _register,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: 16.h),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
                   child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
+                      ? SizedBox(
+                          height: 20.h,
+                          width: 20.w,
+                          child: const CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'Register',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),
                 ),
-                
-                const SizedBox(height: 16),
-                
+
+                SizedBox(height: 16.h),
+
                 // Login Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

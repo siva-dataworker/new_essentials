@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../providers/change_request_provider.dart';
 import '../utils/app_colors.dart';
 
@@ -23,14 +24,14 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
   Future<void> _handleRequest(Map<String, dynamic> request) async {
     final newValueController = TextEditingController();
     final responseController = TextEditingController();
-    
+
     final entryDetails = request['entry_details'] as Map<String, dynamic>?;
     final entryType = request['entry_type'] as String?;
-    
+
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: const Text(
           'Handle Change Request',
           style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.deepNavy),
@@ -42,61 +43,61 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
             children: [
               // Request details
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.person, size: 16, color: AppColors.deepNavy),
-                        const SizedBox(width: 6),
+                        Icon(Icons.person, size: 16.sp, color: AppColors.deepNavy),
+                        SizedBox(width: 6.w),
                         Text(
                           request['requested_by_name'] ?? 'Unknown',
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.deepNavy,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.h),
                     Text(
                       request['request_message'] ?? '',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               // Current value
               Text(
                 'Current Value:',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4.h),
               Text(
                 entryType == 'LABOUR'
                     ? '${entryDetails?['labour_type']}: ${entryDetails?['labour_count']} workers'
                     : '${entryDetails?['material_type']}: ${entryDetails?['quantity']} ${entryDetails?['unit']}',
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.deepNavy,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               // New value input
               TextField(
                 controller: newValueController,
@@ -105,15 +106,15 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
                   labelText: 'New Value',
                   hintText: 'Enter new count/quantity',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                     borderSide: const BorderSide(color: AppColors.deepNavy, width: 2),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               // Response message
               TextField(
                 controller: responseController,
@@ -122,10 +123,10 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
                   labelText: 'Response Message',
                   hintText: 'Explain the change...',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                     borderSide: const BorderSide(color: AppColors.deepNavy, width: 2),
                   ),
                 ),
@@ -153,7 +154,7 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.deepNavy,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
             child: const Text(
               'Apply Change',
@@ -167,7 +168,7 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
     if (result == true && newValueController.text.trim().isNotEmpty) {
       // Handle the request using provider
       final changeRequestProvider = context.read<ChangeRequestProvider>();
-      
+
       final response = await changeRequestProvider.handleChangeRequest(
         requestId: request['id'].toString(),
         newValue: int.tryParse(newValueController.text.trim()) ?? 0,
@@ -205,11 +206,11 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
         return Scaffold(
           backgroundColor: const Color(0xFF1A1A2E),
           appBar: AppBar(
-            title: const Text(
+            title: Text(
               'Change Requests',
               style: TextStyle(
                 color: AppColors.deepNavy,
-                fontSize: 20,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -240,23 +241,23 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
         children: [
           Icon(
             Icons.check_circle_outline,
-            size: 80,
+            size: 80.sp,
             color: AppColors.textSecondary.withValues(alpha: 0.5),
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: 16.h),
+          Text(
             'No Pending Requests',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.deepNavy,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             'Change requests will appear here',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
             ),
           ),
@@ -267,7 +268,7 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
 
   Widget _buildRequestsList(List<Map<String, dynamic>> changeRequests) {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       itemCount: changeRequests.length,
       itemBuilder: (context, index) {
         final request = changeRequests[index];
@@ -279,12 +280,12 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
   Widget _buildRequestCard(Map<String, dynamic> request) {
     final entryDetails = request['entry_details'] as Map<String, dynamic>?;
     final entryType = request['entry_type'] as String?;
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: AppColors.statusOverdue.withValues(alpha: 0.3),
           width: 2,
@@ -298,26 +299,26 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Request badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
               decoration: BoxDecoration(
                 color: AppColors.statusOverdue.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.pending_actions, size: 14, color: AppColors.statusOverdue),
-                  SizedBox(width: 4),
+                  Icon(Icons.pending_actions, size: 14.sp, color: AppColors.statusOverdue),
+                  SizedBox(width: 4.w),
                   Text(
                     'PENDING REQUEST',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.statusOverdue,
                       letterSpacing: 0.5,
@@ -326,34 +327,34 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             // Requested by
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: AppColors.deepNavy.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
-                  child: const Icon(Icons.person, size: 18, color: AppColors.deepNavy),
+                  child: Icon(Icons.person, size: 18.sp, color: AppColors.deepNavy),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Requested by',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
                       Text(
                         request['requested_by_name'] ?? 'Unknown',
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
@@ -363,96 +364,96 @@ class _AccountantChangeRequestsScreenState extends State<AccountantChangeRequest
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             // Entry details
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.r),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     entryType == 'LABOUR' ? 'Labour Entry' : 'Material Entry',
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: TextStyle(
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Text(
                     entryType == 'LABOUR'
                         ? '${entryDetails?['labour_type']}: ${entryDetails?['labour_count']} workers'
                         : '${entryDetails?['material_type']}: ${entryDetails?['quantity']} ${entryDetails?['unit']}',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.deepNavy,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   Text(
                     '${entryDetails?['customer_name'] ?? ''} ${entryDetails?['site_name'] ?? 'Unknown Site'}'.trim(),
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 13.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             // Request message
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
                 color: AppColors.statusOverdue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.r),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.message, size: 16, color: AppColors.statusOverdue),
-                      SizedBox(width: 6),
+                      Icon(Icons.message, size: 16.sp, color: AppColors.statusOverdue),
+                      SizedBox(width: 6.w),
                       Text(
                         'Request Message',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.statusOverdue,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6.h),
                   Text(
                     request['request_message'] ?? '',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 13.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             // Handle button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () => _handleRequest(request),
-                icon: const Icon(Icons.edit, size: 18),
+                icon: Icon(Icons.edit, size: 18.sp),
                 label: const Text('Handle Request'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:const Color(0xFF1A1A2E),
+                  backgroundColor: const Color(0xFF1A1A2E),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
                 ),
               ),
             ),

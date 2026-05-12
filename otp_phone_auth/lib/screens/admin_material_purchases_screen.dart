@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_provider.dart';
 import '../utils/smooth_animations.dart';
@@ -6,7 +7,7 @@ import '../utils/smooth_animations.dart';
 class AdminMaterialPurchasesScreen extends StatefulWidget {
   final String siteId;
   final String siteName;
-  
+
   const AdminMaterialPurchasesScreen({
     super.key,
     required this.siteId,
@@ -32,13 +33,13 @@ class _AdminMaterialPurchasesScreenState extends State<AdminMaterialPurchasesScr
 
   Future<void> _loadPurchases(AdminProvider provider) async {
     final purchases = await provider.getMaterialPurchases(widget.siteId, forceRefresh: true);
-    
+
     if (mounted) {
       double total = 0;
       for (var purchase in purchases) {
         total += double.tryParse(purchase['total_purchased']?.toString() ?? '0') ?? 0;
       }
-      
+
       setState(() {
         _purchases = purchases;
         _totalAmount = total;
@@ -51,26 +52,26 @@ class _AdminMaterialPurchasesScreenState extends State<AdminMaterialPurchasesScr
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
         final isLoading = adminProvider.isLoading('materials_${widget.siteId}');
-        
+
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FA),
           appBar: AppBar(
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Material Purchases',
                   style: TextStyle(
-                    color: Color(0xFF1A1A2E),
-                    fontSize: 18,
+                    color: const Color(0xFF1A1A2E),
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   widget.siteName,
-                  style: const TextStyle(
-                    color: Color(0xFF6B7280),
-                    fontSize: 12,
+                  style: TextStyle(
+                    color: const Color(0xFF6B7280),
+                    fontSize: 12.sp,
                   ),
                 ),
               ],
@@ -90,15 +91,15 @@ class _AdminMaterialPurchasesScreenState extends State<AdminMaterialPurchasesScr
             children: [
               // Total summary
               Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(20),
+                margin: EdgeInsets.all(16.r),
+                padding: EdgeInsets.all(20.r),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF1A1A2E).withValues(alpha: 0.3),
@@ -113,18 +114,18 @@ class _AdminMaterialPurchasesScreenState extends State<AdminMaterialPurchasesScr
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Total Material Cost',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.sp,
                             color: Colors.white70,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8.h),
                         Text(
                           '₹${_formatAmount(_totalAmount)}',
-                          style: const TextStyle(
-                            fontSize: 28,
+                          style: TextStyle(
+                            fontSize: 28.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
@@ -132,21 +133,21 @@ class _AdminMaterialPurchasesScreenState extends State<AdminMaterialPurchasesScr
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16.r),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.shopping_cart,
                         color: Colors.white,
-                        size: 32,
+                        size: 32.sp,
                       ),
                     ),
                   ],
                 ),
               ),
-              
+
               // Purchases list
               Expanded(
                 child: isLoading
@@ -160,15 +161,15 @@ class _AdminMaterialPurchasesScreenState extends State<AdminMaterialPurchasesScr
                               children: [
                                 Icon(
                                   Icons.inventory_2_outlined,
-                                  size: 80,
+                                  size: 80.sp,
                                   color: const Color(0xFF6B7280).withValues(alpha: 0.5),
                                 ),
-                                const SizedBox(height: 16),
-                                const Text(
+                                SizedBox(height: 16.h),
+                                Text(
                                   'No material purchases found',
                                   style: TextStyle(
-                                    fontSize: 16,
-                                    color: Color(0xFF6B7280),
+                                    fontSize: 16.sp,
+                                    color: const Color(0xFF6B7280),
                                   ),
                                 ),
                               ],
@@ -179,7 +180,7 @@ class _AdminMaterialPurchasesScreenState extends State<AdminMaterialPurchasesScr
                             color: const Color(0xFF1A1A2E),
                             child: ListView.builder(
                               physics: const SmoothScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
                               itemCount: _purchases.length,
                               itemBuilder: (context, index) {
                                 final purchase = _purchases[index];
@@ -198,13 +199,13 @@ class _AdminMaterialPurchasesScreenState extends State<AdminMaterialPurchasesScr
   Widget _buildPurchaseCard(Map<String, dynamic> purchase) {
     final amount = double.tryParse(purchase['total_purchased']?.toString() ?? '0') ?? 0;
     final percentage = _totalAmount > 0 ? (amount / _totalAmount * 100) : 0;
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -219,36 +220,36 @@ class _AdminMaterialPurchasesScreenState extends State<AdminMaterialPurchasesScr
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(10.r),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.inventory_2,
-                  color: Color(0xFF1A1A2E),
-                  size: 24,
+                  color: const Color(0xFF1A1A2E),
+                  size: 24.sp,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       purchase['material_name'] ?? 'N/A',
-                      style: const TextStyle(
-                        fontSize: 15,
+                      style: TextStyle(
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A2E),
+                        color: const Color(0xFF1A1A2E),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4.h),
                     Text(
                       '${purchase['purchase_count'] ?? 0} purchases',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6B7280),
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: const Color(0xFF6B7280),
                       ),
                     ),
                   ],
@@ -259,28 +260,28 @@ class _AdminMaterialPurchasesScreenState extends State<AdminMaterialPurchasesScr
                 children: [
                   Text(
                     '₹${_formatAmount(amount)}',
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A2E),
+                      color: const Color(0xFF1A1A2E),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Text(
                     '${percentage.toStringAsFixed(1)}%',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF6B7280),
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: const Color(0xFF6B7280),
                     ),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           // Progress bar
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(4.r),
             child: LinearProgressIndicator(
               value: percentage / 100,
               backgroundColor: const Color(0xFFF8F9FA),

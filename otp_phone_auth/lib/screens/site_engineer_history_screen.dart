@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../providers/construction_provider.dart';
 import '../utils/app_colors.dart';
 
@@ -43,18 +44,18 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
     setState(() {
       final constructionProvider = context.read<ConstructionProvider>();
       final allDates = <String>{};
-      
+
       // Filter only Site Engineer entries
       final siteEngineerEntries = constructionProvider.labourEntries.where((e) {
         final role = (e['user_role'] as String? ?? '').toLowerCase();
         return role == 'site engineer';
       });
-      
+
       for (var entry in siteEngineerEntries) {
         final date = entry['entry_date'] ?? '';
         if (date.isNotEmpty) allDates.add(date);
       }
-      
+
       _expandedDates.addAll(allDates);
     });
   }
@@ -72,7 +73,7 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
       appBar: AppBar(
         title: Text(
           widget.siteName ?? 'Labour History',
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.deepNavy,
             fontWeight: FontWeight.bold,
           ),
@@ -93,33 +94,33 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'expand_all',
                 child: Row(
                   children: [
-                    Icon(Icons.expand_more, size: 20, color: AppColors.deepNavy),
-                    SizedBox(width: 12),
-                    Text('Expand All Days'),
+                    Icon(Icons.expand_more, size: 20.sp, color: AppColors.deepNavy),
+                    SizedBox(width: 12.w),
+                    const Text('Expand All Days'),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'collapse_all',
                 child: Row(
                   children: [
-                    Icon(Icons.expand_less, size: 20, color: AppColors.deepNavy),
-                    SizedBox(width: 12),
-                    Text('Collapse All Days'),
+                    Icon(Icons.expand_less, size: 20.sp, color: AppColors.deepNavy),
+                    SizedBox(width: 12.w),
+                    const Text('Collapse All Days'),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'refresh',
                 child: Row(
                   children: [
-                    Icon(Icons.refresh, size: 20, color: AppColors.deepNavy),
-                    SizedBox(width: 12),
-                    Text('Refresh Data'),
+                    Icon(Icons.refresh, size: 20.sp, color: AppColors.deepNavy),
+                    SizedBox(width: 12.w),
+                    const Text('Refresh Data'),
                   ],
                 ),
               ),
@@ -146,23 +147,23 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
                 children: [
                   Icon(
                     Icons.history,
-                    size: 80,
+                    size: 80.sp,
                     color: Colors.grey.shade300,
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
+                  SizedBox(height: 16.h),
+                  Text(
                     'No Labour History',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.deepNavy,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   Text(
                     'Your labour entries will appear here',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       color: Colors.grey.shade600,
                     ),
                   ),
@@ -188,7 +189,7 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
   Widget _buildHistoryList(List<Map<String, dynamic>> entries) {
     // Group entries by date
     final Map<String, List<Map<String, dynamic>>> entriesByDate = {};
-    
+
     for (var entry in entries) {
       final date = entry['entry_date'] as String? ?? '';
       if (date.isNotEmpty) {
@@ -208,7 +209,7 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       itemCount: sortedDates.length,
       itemBuilder: (context, index) {
         final date = sortedDates[index];
@@ -226,10 +227,10 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
     final totalCost = entries.fold<double>(0, (sum, e) => sum + (e['total_cost'] as num? ?? 0).toDouble());
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -250,48 +251,48 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
                 }
               });
             },
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: AppColors.deepNavy.withOpacity(0.05),
                 borderRadius: BorderRadius.vertical(
-                  top: const Radius.circular(16),
-                  bottom: isExpanded ? Radius.zero : const Radius.circular(16),
+                  top: Radius.circular(16.r),
+                  bottom: isExpanded ? Radius.zero : Radius.circular(16.r),
                 ),
               ),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(8.r),
                     decoration: BoxDecoration(
                       color: AppColors.deepNavy,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.calendar_today,
                       color: Colors.white,
-                      size: 20,
+                      size: 20.sp,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           formattedDate,
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.deepNavy,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4.h),
                         Text(
                           '$totalWorkers workers • ₹${totalCost.toStringAsFixed(0)}',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 13.sp,
                             color: Colors.grey.shade600,
                           ),
                         ),
@@ -324,7 +325,7 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
     final entryTime = entry['entry_time'] as String? ?? '';
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(color: Colors.grey.shade200),
@@ -335,16 +336,16 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
         children: [
           Row(
             children: [
-              Icon(_getLabourIcon(labourType), color: AppColors.deepNavy, size: 24),
-              const SizedBox(width: 12),
+              Icon(_getLabourIcon(labourType), color: AppColors.deepNavy, size: 24.sp),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       labourType,
-                      style: const TextStyle(
-                        fontSize: 15,
+                      style: TextStyle(
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.deepNavy,
                       ),
@@ -352,7 +353,7 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
                     Text(
                       '$count workers × ₹${rate.toStringAsFixed(0)}/day',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         color: Colors.grey.shade600,
                       ),
                     ),
@@ -365,7 +366,7 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
                   Text(
                     '₹${totalCost.toStringAsFixed(0)}',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
                       color: Colors.green.shade700,
                     ),
@@ -374,7 +375,7 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
                     Text(
                       _formatTime(entryTime),
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 11.sp,
                         color: Colors.grey.shade500,
                       ),
                     ),
@@ -383,33 +384,33 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
             ],
           ),
           if (extraCost > 0) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8.r),
               decoration: BoxDecoration(
                 color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
                 border: Border.all(color: Colors.orange.shade200),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.attach_money, size: 16, color: Colors.orange.shade700),
-                  const SizedBox(width: 4),
+                  Icon(Icons.attach_money, size: 16.sp, color: Colors.orange.shade700),
+                  SizedBox(width: 4.w),
                   Text(
                     'Extra Cost: ₹${extraCost.toStringAsFixed(0)}',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w600,
                       color: Colors.orange.shade900,
                     ),
                   ),
                   if (extraCostNotes.isNotEmpty) ...[
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8.w),
                     Expanded(
                       child: Text(
                         extraCostNotes,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 11.sp,
                           color: Colors.grey.shade700,
                         ),
                         maxLines: 1,
@@ -422,11 +423,11 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
             ),
           ],
           if (notes.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               'Notes: $notes',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 color: Colors.grey.shade600,
                 fontStyle: FontStyle.italic,
               ),
@@ -477,7 +478,7 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
       } else if (checkDate == yesterday) {
         return 'Yesterday';
       }
-      
+
       return DateFormat('EEEE, MMM d, yyyy').format(date);
     } catch (e) {
       return dateStr;

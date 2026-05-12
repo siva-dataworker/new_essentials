@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../providers/construction_provider.dart';
 import '../services/construction_service.dart';
@@ -70,11 +71,11 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text(
+        title: Text(
           'Client Extra Requirement',
           style: TextStyle(
             color: AppColors.deepNavy,
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -86,23 +87,23 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
               // Site name display (read-only)
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
                 decoration: BoxDecoration(
                   color: AppColors.deepNavy.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   border: Border.all(
                       color: AppColors.deepNavy.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.location_on,
-                        color: AppColors.deepNavy, size: 18),
-                    const SizedBox(width: 8),
+                    Icon(Icons.location_on,
+                        color: AppColors.deepNavy, size: 18.sp),
+                    SizedBox(width: 8.w),
                     Expanded(
                       child: Text(
                         siteName,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w600,
                           color: AppColors.deepNavy,
                         ),
@@ -111,7 +112,7 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
 
               // Description
               TextField(
@@ -125,7 +126,7 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
                 ),
                 maxLines: 3,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
 
               // Amount
               TextField(
@@ -202,11 +203,11 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
     return Scaffold(
       backgroundColor: AppColors.lightSlate,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Reports',
           style: TextStyle(
             color: AppColors.deepNavy,
-            fontSize: 20,
+            fontSize: 20.sp,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -234,16 +235,16 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
   Widget _buildError() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24.r),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 56, color: Colors.red),
-            const SizedBox(height: 16),
+            Icon(Icons.error_outline, size: 56.sp, color: Colors.red),
+            SizedBox(height: 16.h),
             Text(_error!,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: AppColors.textSecondary)),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             ElevatedButton(
               onPressed: _loadWorkingSites,
               style: ElevatedButton.styleFrom(
@@ -263,20 +264,20 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.location_off,
-              size: 72,
+              size: 72.sp,
               color: AppColors.textSecondary.withValues(alpha: 0.3)),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: 16.h),
+          Text(
             'No sites assigned',
             style: TextStyle(
-                fontSize: 18,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy),
           ),
-          const SizedBox(height: 8),
-          const Text(
+          SizedBox(height: 8.h),
+          Text(
             'Contact your accountant to assign sites.',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -288,15 +289,15 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
       onRefresh: _loadWorkingSites,
       color: AppColors.deepNavy,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         children: [
           // Header
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: EdgeInsets.only(bottom: 12.h),
             child: Text(
               '${_sites.length} site${_sites.length == 1 ? '' : 's'} assigned',
-              style: const TextStyle(
-                fontSize: 13,
+              style: TextStyle(
+                fontSize: 13.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary,
               ),
@@ -318,33 +319,33 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
     final location = [area, street].where((s) => s.isNotEmpty).join(', ');
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(14.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.deepNavy.withValues(alpha: 0.06),
-            blurRadius: 10,
+            blurRadius: 10.r,
             offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Row(
           children: [
             // Site icon
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(10.r),
               decoration: BoxDecoration(
                 color: AppColors.deepNavy.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.r),
               ),
-              child: const Icon(Icons.location_city,
-                  color: AppColors.deepNavy, size: 22),
+              child: Icon(Icons.location_city,
+                  color: AppColors.deepNavy, size: 22.sp),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: 14.w),
 
             // Site info
             Expanded(
@@ -355,26 +356,26 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
                     customerName.isNotEmpty
                         ? '$customerName - $siteName'
                         : siteName,
-                    style: const TextStyle(
-                      fontSize: 15,
+                    style: TextStyle(
+                      fontSize: 15.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.deepNavy,
                     ),
                   ),
                   if (location.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4.h),
                     Row(
                       children: [
                         Icon(Icons.place,
-                            size: 13,
+                            size: 13.sp,
                             color: AppColors.textSecondary
                                 .withValues(alpha: 0.7)),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4.w),
                         Expanded(
                           child: Text(
                             location,
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.sp,
                               color: AppColors.textSecondary
                                   .withValues(alpha: 0.8),
                             ),
@@ -387,7 +388,7 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
                 ],
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10.w),
 
             // Client Requirement button
             ElevatedButton(
@@ -396,17 +397,17 @@ class _SupervisorReportsScreenState extends State<SupervisorReportsScreen> {
                 backgroundColor: AppColors.deepNavy,
                 foregroundColor: Colors.white,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text(
+              child: Text(
                 'Add\nRequirement',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold),
               ),
             ),
           ],

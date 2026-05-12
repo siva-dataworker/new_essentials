@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_provider.dart';
 import '../utils/smooth_animations.dart';
@@ -77,19 +78,19 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Site Documents',
                   style: TextStyle(
-                    color: Color(0xFF1A1A2E),
-                    fontSize: 18,
+                    color: const Color(0xFF1A1A2E),
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   widget.siteName,
-                  style: const TextStyle(
-                    color: Color(0xFF6B7280),
-                    fontSize: 12,
+                  style: TextStyle(
+                    color: const Color(0xFF6B7280),
+                    fontSize: 12.sp,
                   ),
                 ),
               ],
@@ -109,7 +110,7 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
             children: [
               // Document type tabs
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 color: Colors.white,
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -139,15 +140,15 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
                               children: [
                                 Icon(
                                   _documentTypes[_selectedType]!['icon'],
-                                  size: 80,
+                                  size: 80.sp,
                                   color: const Color(0xFF6B7280).withValues(alpha: 0.5),
                                 ),
-                                const SizedBox(height: 16),
+                                SizedBox(height: 16.h),
                                 Text(
                                   'No ${_documentTypes[_selectedType]!['title'].toLowerCase()} found',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: Color(0xFF6B7280),
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    color: const Color(0xFF6B7280),
                                   ),
                                 ),
                               ],
@@ -158,7 +159,7 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
                             color: _documentTypes[_selectedType]!['color'],
                             child: ListView.builder(
                               physics: const SmoothScrollPhysics(),
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(16.r),
                               itemCount: _documents[_selectedType]!.length,
                               itemBuilder: (context, index) {
                                 final doc = _documents[_selectedType]![index];
@@ -183,11 +184,11 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
         setState(() => _selectedType = type);
       },
       child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        margin: EdgeInsets.only(right: 8.w),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
         decoration: BoxDecoration(
           color: isSelected ? color : const Color(0xFFF8F9FA),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(20.r),
           boxShadow: isSelected
               ? [
                   BoxShadow(
@@ -203,30 +204,30 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
           children: [
             Icon(
               icon,
-              size: 18,
+              size: 18.sp,
               color: isSelected ? Colors.white : const Color(0xFF6B7280),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8.w),
             Text(
               title,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 13.sp,
                 fontWeight: FontWeight.bold,
                 color: isSelected ? Colors.white : const Color(0xFF6B7280),
               ),
             ),
             if (count > 0) ...[
-              const SizedBox(width: 6),
+              SizedBox(width: 6.w),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
                 decoration: BoxDecoration(
                   color: isSelected ? Colors.white : color,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
                 child: Text(
                   '$count',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.bold,
                     color: isSelected ? color : Colors.white,
                   ),
@@ -243,11 +244,11 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
     final color = _documentTypes[_selectedType]!['color'];
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -259,62 +260,62 @@ class _AdminSiteDocumentsScreenState extends State<AdminSiteDocumentsScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12.r),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8.r),
             ),
             child: Icon(
               _documentTypes[_selectedType]!['icon'],
               color: color,
-              size: 28,
+              size: 28.sp,
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   doc['document_name'] ?? 'Untitled',
-                  style: const TextStyle(
-                    fontSize: 15,
+                  style: TextStyle(
+                    fontSize: 15.sp,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A2E),
+                    color: const Color(0xFF1A1A2E),
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6.h),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.person,
-                      size: 14,
-                      color: Color(0xFF6B7280),
+                      size: 14.sp,
+                      color: const Color(0xFF6B7280),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4.w),
                     Text(
                       doc['uploaded_by'] ?? 'Unknown',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6B7280),
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: const Color(0xFF6B7280),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.access_time,
-                      size: 14,
-                      color: Color(0xFF6B7280),
+                      size: 14.sp,
+                      color: const Color(0xFF6B7280),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4.w),
                     Text(
                       _formatDate(doc['uploaded_at']),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6B7280),
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: const Color(0xFF6B7280),
                       ),
                     ),
                   ],

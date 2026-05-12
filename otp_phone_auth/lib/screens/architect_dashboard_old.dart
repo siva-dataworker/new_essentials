@@ -6,6 +6,7 @@ import '../utils/app_colors.dart';
 import 'login_screen.dart';
 import 'site_photo_gallery_screen.dart';
 import 'architect_site_detail_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ArchitectDashboard extends StatefulWidget {
   final UserModel user;
@@ -53,7 +54,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
         final area = (site['area'] ?? '').toString().toLowerCase();
         final street = (site['street'] ?? '').toString().toLowerCase();
         final query = _searchQuery.toLowerCase();
-        
+
         return siteName.contains(query) || area.contains(query) || street.contains(query);
       }).toList();
     }
@@ -75,7 +76,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
 
   Set<String> _getUniqueStreets(List<Map<String, dynamic>> sites) {
     var streets = sites.map((site) => site['street']?.toString() ?? '').where((street) => street.isNotEmpty).toSet();
-    
+
     if (_selectedArea != null && _selectedArea!.isNotEmpty) {
       streets = sites
           .where((site) => site['area']?.toString() == _selectedArea)
@@ -83,7 +84,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
           .where((street) => street.isNotEmpty)
           .toSet();
     }
-    
+
     return streets;
   }
 
@@ -119,8 +120,8 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                 title: Row(
                   children: [
                     Container(
-                      width: 45,
-                      height: 45,
+                      width: 45.w,
+                      height: 45.h,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [Colors.purple.shade600, Colors.purple.shade400],
@@ -137,15 +138,15 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                       child: Center(
                         child: Text(
                           (widget.user.name ?? 'A').substring(0, 1).toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 20,
+                            fontSize: 20.sp,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,29 +154,29 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                         children: [
                           Text(
                             widget.user.name ?? 'Architect',
-                            style: const TextStyle(
-                              fontSize: 17,
+                            style: TextStyle(
+                              fontSize: 17.sp,
                               fontWeight: FontWeight.bold,
                               color: AppColors.deepNavy,
                               letterSpacing: -0.5,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          SizedBox(height: 2.h),
                           Row(
                             children: [
                               Container(
-                                width: 8,
-                                height: 8,
+                                width: 8.w,
+                                height: 8.h,
                                 decoration: BoxDecoration(
                                   color: Colors.purple.shade400,
                                   shape: BoxShape.circle,
                                 ),
                               ),
-                              const SizedBox(width: 6),
+                              SizedBox(width: 6.w),
                               Text(
                                 'Architect',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 12.sp,
                                   color: AppColors.textSecondary,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -189,14 +190,14 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                 ),
                 actions: [
                   Container(
-                    margin: const EdgeInsets.only(right: 4),
+                    margin: EdgeInsets.only(right: 4.w),
                     child: Stack(
                       children: [
                         IconButton(
                           icon: Icon(
                             _showFilters ? Icons.filter_alt : Icons.filter_alt_outlined,
                             color: AppColors.deepNavy,
-                            size: 26,
+                            size: 26.sp,
                           ),
                           onPressed: () => setState(() => _showFilters = !_showFilters),
                         ),
@@ -205,8 +206,8 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                             right: 10,
                             top: 10,
                             child: Container(
-                              width: 8,
-                              height: 8,
+                              width: 8.w,
+                              height: 8.h,
                               decoration: BoxDecoration(
                                 color: Colors.purple.shade600,
                                 shape: BoxShape.circle,
@@ -217,10 +218,10 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.logout_rounded, color: AppColors.deepNavy, size: 24),
+                    icon: Icon(Icons.logout_rounded, color: AppColors.deepNavy, size: 24.sp),
                     onPressed: _logout,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                 ],
               ),
 
@@ -228,13 +229,13 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
               SliverToBoxAdapter(
                 child: Container(
                   color: AppColors.cleanWhite,
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
                   child: Column(
                     children: [
                       Container(
                         decoration: BoxDecoration(
                           color: AppColors.lightSlate,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(16.r),
                         ),
                         child: TextField(
                           controller: _searchController,
@@ -243,9 +244,9 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                             hintText: 'Search sites, areas, streets...',
                             hintStyle: TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 15,
+                              fontSize: 15.sp,
                             ),
-                            prefixIcon: const Icon(Icons.search, color: AppColors.deepNavy, size: 24),
+                            prefixIcon: Icon(Icons.search, color: AppColors.deepNavy, size: 24.sp),
                             suffixIcon: _searchQuery.isNotEmpty
                                 ? IconButton(
                                     icon: const Icon(Icons.clear, color: AppColors.textSecondary),
@@ -256,18 +257,18 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                                   )
                                 : null,
                             border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
                           ),
                         ),
                       ),
-                      
+
                       if (_showFilters) ...[
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12.h),
                         _buildFilterSection(uniqueAreas, uniqueStreets),
                       ],
-                      
+
                       if (_selectedArea != null || _selectedStreet != null || _searchQuery.isNotEmpty) ...[
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12.h),
                         _buildActiveFilters(),
                       ],
                     ],
@@ -279,13 +280,13 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
               if (allSites.isNotEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
                     child: Row(
                       children: [
                         Text(
                           '${filteredSites.length} ${filteredSites.length == 1 ? 'Site' : 'Sites'}',
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.deepNavy,
                           ),
@@ -294,7 +295,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                           Text(
                             ' of ${allSites.length}',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -312,39 +313,39 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 100,
-                          height: 100,
+                          width: 100.w,
+                          height: 100.h,
                           decoration: BoxDecoration(
                             color: AppColors.lightSlate,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             allSites.isEmpty ? Icons.location_city_outlined : Icons.search_off,
-                            size: 50,
+                            size: 50.sp,
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: 24.h),
                         Text(
                           allSites.isEmpty ? 'No Sites Available' : 'No Sites Found',
-                          style: const TextStyle(
-                            fontSize: 20,
+                          style: TextStyle(
+                            fontSize: 20.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.deepNavy,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8.h),
                         Text(
-                          allSites.isEmpty 
+                          allSites.isEmpty
                               ? 'Sites will appear here once assigned'
                               : 'Try adjusting your filters',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.sp,
                             color: AppColors.textSecondary,
                           ),
                         ),
                         if (allSites.isNotEmpty) ...[
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16.h),
                           TextButton.icon(
                             onPressed: _clearFilters,
                             icon: const Icon(Icons.clear_all),
@@ -360,7 +361,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.r),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -380,22 +381,22 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
 
   Widget _buildFilterSection(Set<String> areas, Set<String> streets) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: AppColors.lightSlate.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.filter_list, size: 18, color: AppColors.deepNavy),
-              const SizedBox(width: 8),
-              const Text(
+              Icon(Icons.filter_list, size: 18.sp, color: AppColors.deepNavy),
+              SizedBox(width: 8.w),
+              Text(
                 'Filters',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.deepNavy,
                 ),
@@ -412,7 +413,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                   child: Text(
                     'Clear All',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 12.sp,
                       color: Colors.purple.shade600,
                       fontWeight: FontWeight.bold,
                     ),
@@ -420,17 +421,17 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                 ),
             ],
           ),
-          const SizedBox(height: 12),
-          
-          const Text(
+          SizedBox(height: 12.h),
+
+          Text(
             'Area',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 12.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -451,18 +452,18 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
               )),
             ],
           ),
-          
-          const SizedBox(height: 16),
-          
-          const Text(
+
+          SizedBox(height: 16.h),
+
+          Text(
             'Street',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 12.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -486,10 +487,10 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
         decoration: BoxDecoration(
           color: isSelected ? Colors.purple.shade600 : AppColors.cleanWhite,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(20.r),
           border: Border.all(
             color: isSelected ? Colors.purple.shade600 : AppColors.textSecondary.withValues(alpha: 0.3),
             width: 1.5,
@@ -498,7 +499,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 13.sp,
             fontWeight: FontWeight.w600,
             color: isSelected ? AppColors.cleanWhite : AppColors.deepNavy,
           ),
@@ -509,15 +510,15 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
 
   Widget _buildActiveFilters() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
         color: Colors.purple.shade50,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
       ),
       child: Row(
         children: [
-          Icon(Icons.filter_alt, size: 16, color: Colors.purple.shade600),
-          const SizedBox(width: 8),
+          Icon(Icons.filter_alt, size: 16.sp, color: Colors.purple.shade600),
+          SizedBox(width: 8.w),
           Expanded(
             child: Wrap(
               spacing: 6,
@@ -549,10 +550,10 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
 
   Widget _buildActiveFilterChip(String label, VoidCallback onRemove) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: Colors.purple.shade600,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -560,20 +561,20 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
           Flexible(
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
               ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: 4.w),
           GestureDetector(
             onTap: onRemove,
-            child: const Icon(
+            child: Icon(
               Icons.close,
-              size: 14,
+              size: 14.sp,
               color: Colors.white,
             ),
           ),
@@ -586,10 +587,10 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
     return GestureDetector(
       onTap: () => _openSiteDetail(site),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
+        margin: EdgeInsets.only(bottom: 20.h),
         decoration: BoxDecoration(
           color: AppColors.cleanWhite,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(20.r),
           boxShadow: [
             BoxShadow(
               color: AppColors.deepNavy.withValues(alpha: 0.08),
@@ -603,44 +604,44 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               child: Row(
                 children: [
                   Container(
-                    width: 42,
-                    height: 42,
+                    width: 42.w,
+                    height: 42.h,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.purple.shade600, Colors.purple.shade400],
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
-                    child: const Icon(Icons.location_city, color: Colors.white, size: 22),
+                    child: Icon(Icons.location_city, color: Colors.white, size: 22.sp),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           site['display_name'] ?? 'Site ${index + 1}',
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.deepNavy,
                             letterSpacing: -0.3,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        SizedBox(height: 3.h),
                         Row(
                           children: [
-                            Icon(Icons.location_on, size: 14, color: AppColors.textSecondary),
-                            const SizedBox(width: 4),
+                            Icon(Icons.location_on, size: 14.sp, color: AppColors.textSecondary),
+                            SizedBox(width: 4.w),
                             Expanded(
                               child: Text(
                                 '${site['area']} • ${site['street']}',
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 13.sp,
                                   color: AppColors.textSecondary,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -658,7 +659,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
 
             // Image Placeholder
             Container(
-              height: 220,
+              height: 220.h,
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -675,7 +676,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                   Center(
                     child: Icon(
                       Icons.architecture,
-                      size: 80,
+                      size: 80.sp,
                       color: Colors.purple.shade200,
                     ),
                   ),
@@ -683,10 +684,10 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                     top: 16,
                     right: 16,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                       decoration: BoxDecoration(
                         color: AppColors.cleanWhite,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(20.r),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.1),
@@ -698,18 +699,18 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 8,
-                            height: 8,
+                            width: 8.w,
+                            height: 8.h,
                             decoration: BoxDecoration(
                               color: Colors.purple.shade400,
                               shape: BoxShape.circle,
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          const Text(
+                          SizedBox(width: 6.w),
+                          Text(
                             'Active',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.bold,
                               color: AppColors.deepNavy,
                             ),
@@ -724,12 +725,12 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
 
             // Tap to Enter Indicator
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: EdgeInsets.symmetric(vertical: 12.h),
                 decoration: BoxDecoration(
                   color: Colors.purple.shade50,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -737,13 +738,13 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                     Text(
                       'Tap to manage site',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.purple.shade600,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Icon(Icons.arrow_forward, size: 18, color: Colors.purple.shade600),
+                    SizedBox(width: 8.w),
+                    Icon(Icons.arrow_forward, size: 18.sp, color: Colors.purple.shade600),
                   ],
                 ),
               ),
@@ -762,14 +763,14 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
   }) {
     return ElevatedButton.icon(
       onPressed: onTap,
-      icon: Icon(icon, size: 20),
+      icon: Icon(icon, size: 20.sp),
       label: Text(label),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,
         elevation: 0,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
       ),
     );
   }
@@ -854,9 +855,9 @@ class _EstimationSheetState extends State<_EstimationSheet> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
+        left: 24.w,
+        right: 24.w,
+        top: 24.h,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
@@ -866,25 +867,25 @@ class _EstimationSheetState extends State<_EstimationSheet> {
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 40.w,
+                height: 40.h,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Colors.blue.shade600, Colors.blue.shade400],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
-                child: const Icon(Icons.calculate, color: Colors.white, size: 22),
+                child: Icon(Icons.calculate, color: Colors.white, size: 22.sp),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Site Estimation',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 20.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.deepNavy,
                       ),
@@ -892,7 +893,7 @@ class _EstimationSheetState extends State<_EstimationSheet> {
                     Text(
                       widget.site['display_name'] ?? 'Site',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -901,57 +902,57 @@ class _EstimationSheetState extends State<_EstimationSheet> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           TextField(
             controller: _amountController,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
               labelText: 'Estimation Amount (₹)',
               prefixIcon: const Icon(Icons.currency_rupee),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
               filled: true,
               fillColor: AppColors.lightSlate,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           TextField(
             controller: _notesController,
             maxLines: 3,
             decoration: InputDecoration(
               labelText: 'Notes',
               prefixIcon: const Icon(Icons.notes),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
               filled: true,
               fillColor: AppColors.lightSlate,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           CheckboxListTile(
             value: _isPlanExtended,
             onChanged: (value) => setState(() => _isPlanExtended = value ?? false),
             title: const Text('Plan Extended'),
             subtitle: const Text('Will notify client & owner'),
             activeColor: Colors.blue.shade600,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             tileColor: AppColors.lightSlate,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           ElevatedButton(
             onPressed: _isSubmitting ? null : _submit,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue.shade600,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: EdgeInsets.symmetric(vertical: 16.h),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
             child: _isSubmitting
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                ? SizedBox(
+                    height: 20.h,
+                    width: 20.w,
+                    child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
-                : const Text(
+                : Text(
                     'Upload Estimation',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
           ),
         ],
@@ -1026,9 +1027,9 @@ class _PlansSheetState extends State<_PlansSheet> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
+        left: 24.w,
+        right: 24.w,
+        top: 24.h,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
@@ -1038,25 +1039,25 @@ class _PlansSheetState extends State<_PlansSheet> {
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 40.w,
+                height: 40.h,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Colors.purple.shade600, Colors.purple.shade400],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
-                child: const Icon(Icons.architecture, color: Colors.white, size: 22),
+                child: Icon(Icons.architecture, color: Colors.white, size: 22.sp),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Floor Plans & Designs',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 20.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.deepNavy,
                       ),
@@ -1064,7 +1065,7 @@ class _PlansSheetState extends State<_PlansSheet> {
                     Text(
                       widget.site['display_name'] ?? 'Site',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -1073,12 +1074,12 @@ class _PlansSheetState extends State<_PlansSheet> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             decoration: BoxDecoration(
               color: AppColors.lightSlate,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
               border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.3)),
             ),
             child: DropdownButtonHideUnderline(
@@ -1092,46 +1093,46 @@ class _PlansSheetState extends State<_PlansSheet> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           TextField(
             controller: _titleController,
             decoration: InputDecoration(
               labelText: 'Title',
               prefixIcon: const Icon(Icons.title),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
               filled: true,
               fillColor: AppColors.lightSlate,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           TextField(
             controller: _descriptionController,
             maxLines: 3,
             decoration: InputDecoration(
               labelText: 'Description / Changes',
               prefixIcon: const Icon(Icons.description),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
               filled: true,
               fillColor: AppColors.lightSlate,
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           ElevatedButton(
             onPressed: _isSubmitting ? null : _submit,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.purple.shade600,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: EdgeInsets.symmetric(vertical: 16.h),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
             child: _isSubmitting
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                ? SizedBox(
+                    height: 20.h,
+                    width: 20.w,
+                    child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
-                : const Text(
+                : Text(
                     'Upload Plan',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
           ),
         ],
@@ -1196,9 +1197,9 @@ class _ComplaintsSheetState extends State<_ComplaintsSheet> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
+        left: 24.w,
+        right: 24.w,
+        top: 24.h,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
@@ -1208,25 +1209,25 @@ class _ComplaintsSheetState extends State<_ComplaintsSheet> {
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 40.w,
+                height: 40.h,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Colors.orange.shade600, Colors.orange.shade400],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
-                child: const Icon(Icons.report_problem, color: Colors.white, size: 22),
+                child: Icon(Icons.report_problem, color: Colors.white, size: 22.sp),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Raise Client Complaint',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 20.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.deepNavy,
                       ),
@@ -1234,7 +1235,7 @@ class _ComplaintsSheetState extends State<_ComplaintsSheet> {
                     Text(
                       widget.site['display_name'] ?? 'Site',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -1243,35 +1244,35 @@ class _ComplaintsSheetState extends State<_ComplaintsSheet> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           TextField(
             controller: _titleController,
             decoration: InputDecoration(
               labelText: 'Complaint Title',
               prefixIcon: const Icon(Icons.title),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
               filled: true,
               fillColor: AppColors.lightSlate,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           TextField(
             controller: _descriptionController,
             maxLines: 4,
             decoration: InputDecoration(
               labelText: 'Description',
               prefixIcon: const Icon(Icons.description),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
               filled: true,
               fillColor: AppColors.lightSlate,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             decoration: BoxDecoration(
               color: AppColors.lightSlate,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
               border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.3)),
             ),
             child: DropdownButtonHideUnderline(
@@ -1284,14 +1285,14 @@ class _ComplaintsSheetState extends State<_ComplaintsSheet> {
                     child: Row(
                       children: [
                         Container(
-                          width: 8,
-                          height: 8,
+                          width: 8.w,
+                          height: 8.h,
                           decoration: BoxDecoration(
                             color: _getPriorityColor(priority),
                             shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8.w),
                         Text(priority),
                       ],
                     ),
@@ -1301,23 +1302,23 @@ class _ComplaintsSheetState extends State<_ComplaintsSheet> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           ElevatedButton(
             onPressed: _isSubmitting ? null : _submit,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange.shade600,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: EdgeInsets.symmetric(vertical: 16.h),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
             child: _isSubmitting
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                ? SizedBox(
+                    height: 20.h,
+                    width: 20.w,
+                    child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
-                : const Text(
+                : Text(
                     'Raise Complaint',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
           ),
         ],

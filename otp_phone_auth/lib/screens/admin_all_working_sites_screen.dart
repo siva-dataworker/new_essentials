@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../services/construction_service.dart';
 import '../services/cache_service.dart';
 
@@ -14,7 +15,7 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
   List<Map<String, dynamic>> _allWorkingSites = [];
   List<Map<String, dynamic>> _filteredSites = [];
   bool _isLoading = false;
-  
+
   // Filter state
   final TextEditingController _searchController = TextEditingController();
   String? _selectedArea;
@@ -160,27 +161,27 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
 
   void _applyFilters() {
     final query = _searchController.text.toLowerCase();
-    
+
     setState(() {
       _filteredSites = _allWorkingSites.where((site) {
         // Search filter
         final displayName = (site['display_name'] ?? site['site_name'] ?? '').toString().toLowerCase();
         final siteName = (site['site_name'] ?? '').toString().toLowerCase();
         final customerName = (site['customer_name'] ?? '').toString().toLowerCase();
-        final matchesSearch = query.isEmpty || 
-            displayName.contains(query) || 
-            siteName.contains(query) || 
+        final matchesSearch = query.isEmpty ||
+            displayName.contains(query) ||
+            siteName.contains(query) ||
             customerName.contains(query);
-        
+
         // Area filter
         final matchesArea = _selectedArea == null || site['area'] == _selectedArea;
-        
+
         // Street filter
         final matchesStreet = _selectedStreet == null || site['street'] == _selectedStreet;
-        
+
         return matchesSearch && matchesArea && matchesStreet;
       }).toList();
-      
+
       // Update available streets based on selected area
       if (_selectedArea != null) {
         _availableStreets = _allWorkingSites
@@ -208,10 +209,10 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
 
   @override
   Widget build(BuildContext context) {
-    final hasActiveFilters = _searchController.text.isNotEmpty || 
-                            _selectedArea != null || 
+    final hasActiveFilters = _searchController.text.isNotEmpty ||
+                            _selectedArea != null ||
                             _selectedStreet != null;
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -240,7 +241,7 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
         children: [
           // Search Bar (always visible)
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             color: Colors.white,
             child: TextField(
               controller: _searchController,
@@ -256,18 +257,18 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                 filled: true,
                 fillColor: const Color(0xFFF8F9FA),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
               ),
             ),
           ),
-          
+
           // Filter Section (collapsible)
           if (_showFilters)
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
               color: Colors.white,
               child: Column(
                 children: [
@@ -276,14 +277,14 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                     value: _selectedArea,
                     decoration: InputDecoration(
                       labelText: 'Filter by Area',
-                      prefixIcon: const Icon(Icons.location_city, color: Color(0xFF1A1A2E), size: 20),
+                      prefixIcon: Icon(Icons.location_city, color: const Color(0xFF1A1A2E), size: 20.sp),
                       filled: true,
                       fillColor: const Color(0xFFF8F9FA),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                     ),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('All Areas')),
@@ -300,22 +301,22 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                       _applyFilters();
                     },
                   ),
-                  
+
                   // Street Filter (only show if area is selected)
                   if (_selectedArea != null) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     DropdownButtonFormField<String>(
                       value: _selectedStreet,
                       decoration: InputDecoration(
                         labelText: 'Filter by Street',
-                        prefixIcon: const Icon(Icons.route, color: Color(0xFF1A1A2E), size: 20),
+                        prefixIcon: Icon(Icons.route, color: const Color(0xFF1A1A2E), size: 20.sp),
                         filled: true,
                         fillColor: const Color(0xFFF8F9FA),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12.r),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                       ),
                       items: [
                         const DropdownMenuItem(value: null, child: Text('All Streets')),
@@ -330,23 +331,23 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                       },
                     ),
                   ],
-                  
+
                   // Clear Filters Button
                   if (hasActiveFilters) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: _clearFilters,
-                        icon: const Icon(Icons.clear_all, size: 18),
+                        icon: Icon(Icons.clear_all, size: 18.sp),
                         label: const Text('Clear All Filters'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF1A1A2E),
                           side: const BorderSide(color: Color(0xFF1A1A2E)),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12.r),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
                         ),
                       ),
                     ),
@@ -354,35 +355,35 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                 ],
               ),
             ),
-          
+
           // Results Count
           if (!_isLoading)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
               color: const Color(0xFFF8F9FA),
               child: Row(
                 children: [
                   Text(
                     '${_filteredSites.length} site${_filteredSites.length != 1 ? 's' : ''} found',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6B7280),
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: const Color(0xFF6B7280),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   if (hasActiveFilters) ...[
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Filtered',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF1A1A2E),
+                          fontSize: 12.sp,
+                          color: const Color(0xFF1A1A2E),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -391,9 +392,9 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                 ],
               ),
             ),
-          
+
           const Divider(height: 1),
-          
+
           // Sites List
           Expanded(
             child: _isLoading
@@ -406,8 +407,8 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              width: 100,
-                              height: 100,
+                              width: 100.w,
+                              height: 100.h,
                               decoration: const BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
@@ -418,42 +419,42 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                               ),
                               child: Icon(
                                 hasActiveFilters ? Icons.search_off : Icons.work_off,
-                                size: 50,
+                                size: 50.sp,
                                 color: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            SizedBox(height: 24.h),
                             Text(
                               hasActiveFilters ? 'No Sites Found' : 'No Working Sites',
-                              style: const TextStyle(
-                                fontSize: 20,
+                              style: TextStyle(
+                                fontSize: 20.sp,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A1A2E),
+                                color: const Color(0xFF1A1A2E),
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8.h),
                             Text(
-                              hasActiveFilters 
+                              hasActiveFilters
                                   ? 'Try adjusting your filters'
                                   : 'Sites assigned by accountants\nwill appear here',
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF6B7280),
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                color: const Color(0xFF6B7280),
                               ),
                             ),
                             if (hasActiveFilters) ...[
-                              const SizedBox(height: 16),
+                              SizedBox(height: 16.h),
                               ElevatedButton.icon(
                                 onPressed: _clearFilters,
-                                icon: const Icon(Icons.clear_all, size: 18),
+                                icon: Icon(Icons.clear_all, size: 18.sp),
                                 label: const Text('Clear Filters'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF1A1A2E),
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(12.r),
                                   ),
                                 ),
                               ),
@@ -465,9 +466,9 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                         onRefresh: _refreshWorkingSites,
                         color: const Color(0xFF1A1A2E),
                         child: ListView.separated(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(16.r),
                           itemCount: _filteredSites.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          separatorBuilder: (context, index) => SizedBox(height: 12.h),
                           itemBuilder: (context, index) {
                             final site = _filteredSites[index];
                             return _buildSiteCard(site);
@@ -486,7 +487,7 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
     final area = site['area'] ?? '';
     final street = site['street'] ?? '';
     final displayName = site['display_name'] ?? (customerName.isNotEmpty ? '$customerName $siteName' : siteName);
-    
+
     // Get update counts
     final labourCount = site['labour_count'] ?? 0;
     final materialCount = site['material_count'] ?? 0;
@@ -496,37 +497,37 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
+        contentPadding: EdgeInsets.all(16.r),
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(10.r),
           decoration: BoxDecoration(
             color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r),
           ),
-          child: const Icon(Icons.construction, color: Color(0xFF1A1A2E), size: 24),
+          child: Icon(Icons.construction, color: const Color(0xFF1A1A2E), size: 24.sp),
         ),
         title: Text(
           displayName,
-          style: const TextStyle(
-            fontSize: 15,
+          style: TextStyle(
+            fontSize: 15.sp,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A2E),
+            color: const Color(0xFF1A1A2E),
           ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             // Area Badge
             if (area.isNotEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A1A2E).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(6.r),
                   border: Border.all(
                     color: const Color(0xFF1A1A2E).withValues(alpha: 0.3),
                     width: 1,
@@ -535,39 +536,39 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.location_city, size: 12, color: Color(0xFF1A1A2E)),
-                    const SizedBox(width: 4),
+                    Icon(Icons.location_city, size: 12.sp, color: const Color(0xFF1A1A2E)),
+                    SizedBox(width: 4.w),
                     Text(
                       area,
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: TextStyle(
+                        fontSize: 12.sp,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A2E),
+                        color: const Color(0xFF1A1A2E),
                       ),
                     ),
                   ],
                 ),
               ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6.h),
             // Street
             Row(
               children: [
-                const Icon(Icons.route, size: 14, color: Color(0xFF6B7280)),
-                const SizedBox(width: 4),
+                Icon(Icons.route, size: 14.sp, color: const Color(0xFF6B7280)),
+                SizedBox(width: 4.w),
                 Expanded(
                   child: Text(
                     street.isNotEmpty ? street : 'No street',
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                    style: TextStyle(fontSize: 13.sp, color: const Color(0xFF6B7280)),
                   ),
                 ),
               ],
             ),
-            
+
             // Update counts and last update
             if (labourCount > 0 || materialCount > 0 || photoCount > 0) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               const Divider(height: 1),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Row(
                 children: [
                   if (labourCount > 0) ...[
@@ -576,7 +577,7 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                       count: labourCount,
                       color: Colors.blue,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8.w),
                   ],
                   if (materialCount > 0) ...[
                     _buildCountBadge(
@@ -584,7 +585,7 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                       count: materialCount,
                       color: Colors.green,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8.w),
                   ],
                   if (photoCount > 0) ...[
                     _buildCountBadge(
@@ -596,18 +597,18 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
                 ],
               ),
             ],
-            
+
             if (lastUpdate.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Row(
                 children: [
-                  const Icon(Icons.access_time, size: 12, color: Color(0xFF6B7280)),
-                  const SizedBox(width: 4),
+                  Icon(Icons.access_time, size: 12.sp, color: const Color(0xFF6B7280)),
+                  SizedBox(width: 4.w),
                   Text(
                     lastUpdate,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF6B7280),
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: const Color(0xFF6B7280),
                     ),
                   ),
                 ],
@@ -615,7 +616,7 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
             ],
           ],
         ),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF6B7280)),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16.sp, color: const Color(0xFF6B7280)),
         onTap: () {
           // TODO: Navigate to site detail screen if needed
         },
@@ -629,21 +630,21 @@ class _AdminAllWorkingSitesScreenState extends State<AdminAllWorkingSitesScreen>
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(6.r),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: 12.sp, color: color),
+          SizedBox(width: 4.w),
           Text(
             '$count',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 12.sp,
               fontWeight: FontWeight.bold,
               color: color,
             ),

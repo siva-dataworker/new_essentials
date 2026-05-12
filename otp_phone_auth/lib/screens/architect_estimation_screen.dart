@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ArchitectEstimationScreen extends StatefulWidget {
   final String siteId;
@@ -92,14 +93,6 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
     setState(() => _isLoading = true);
     try {
       // TODO: Submit to backend
-      // final service = ConstructionService();
-      // await service.uploadEstimation(
-      //   siteId: widget.siteId,
-      //   amount: _estimationController.text,
-      //   notes: _notesController.text,
-      //   isPlanExtended: _isPlanExtended,
-      //   file: _selectedFile,
-      // );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -133,17 +126,17 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
         backgroundColor: Colors.black,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: Colors.white, size: 24.sp),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Site Estimation',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -151,7 +144,7 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
               widget.siteName,
               style: TextStyle(
                 color: Colors.grey[400],
-                fontSize: 12,
+                fontSize: 12.sp,
               ),
             ),
           ],
@@ -161,13 +154,13 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
           ? const Center(child: CircularProgressIndicator(color: Colors.blue))
           : SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(16.r),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Upload Form
                     _buildUploadForm(),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
 
                     // History
                     _buildHistorySection(),
@@ -180,10 +173,10 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
 
   Widget _buildUploadForm() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
         color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: Colors.grey[800]!, width: 1),
       ),
       child: Form(
@@ -191,15 +184,15 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Upload Estimation',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
 
             // Estimation Amount
             TextFormField(
@@ -212,15 +205,15 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
                 filled: true,
                 fillColor: Colors.black,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide(color: Colors.grey[800]!),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide(color: Colors.grey[800]!),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: const BorderSide(color: Colors.blue),
                 ),
               ),
@@ -231,14 +224,14 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
 
             // Plan Extended Checkbox
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
                 color: Colors.black,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
                 border: Border.all(color: Colors.grey[800]!),
               ),
               child: Row(
@@ -254,11 +247,11 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Plan Extended',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -266,7 +259,7 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
                           'Check if this is a revised estimation due to plan extension',
                           style: TextStyle(
                             color: Colors.grey[400],
-                            fontSize: 12,
+                            fontSize: 12.sp,
                           ),
                         ),
                       ],
@@ -275,16 +268,16 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
 
             // File Upload
             InkWell(
               onTap: _pickFile,
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
                   color: Colors.black,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   border: Border.all(
                     color: _selectedFile != null ? Colors.blue : Colors.grey[800]!,
                     width: 1,
@@ -296,13 +289,13 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
                       _selectedFile != null ? Icons.check_circle : Icons.upload_file,
                       color: _selectedFile != null ? Colors.blue : Colors.grey[400],
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: Text(
                         _selectedFileName ?? 'Upload Estimation Document',
                         style: TextStyle(
                           color: _selectedFile != null ? Colors.white : Colors.grey[400],
-                          fontSize: 14,
+                          fontSize: 14.sp,
                         ),
                       ),
                     ),
@@ -310,7 +303,7 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
 
             // Notes
             TextFormField(
@@ -323,20 +316,20 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
                 filled: true,
                 fillColor: Colors.black,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide(color: Colors.grey[800]!),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide(color: Colors.grey[800]!),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   borderSide: const BorderSide(color: Colors.blue),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
 
             // Submit Button
             SizedBox(
@@ -345,24 +338,24 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
                 onPressed: _isLoading ? null : _submitEstimation,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: 16.h),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
                 child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
+                    ? SizedBox(
+                        height: 20.h,
+                        width: 20.w,
+                        child: const CircularProgressIndicator(
                           color: Colors.white,
                           strokeWidth: 2,
                         ),
                       )
-                    : const Text(
+                    : Text(
                         'Upload Estimation',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -378,28 +371,28 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Estimation History',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         if (_estimationHistory.isEmpty)
           Container(
-            padding: const EdgeInsets.all(40),
+            padding: EdgeInsets.all(40.r),
             decoration: BoxDecoration(
               color: const Color(0xFF1C1C1E),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
               border: Border.all(color: Colors.grey[800]!, width: 1),
             ),
             child: Center(
               child: Column(
                 children: [
-                  Icon(Icons.history, size: 48, color: Colors.grey[600]),
-                  const SizedBox(height: 12),
+                  Icon(Icons.history, size: 48.sp, color: Colors.grey[600]),
+                  SizedBox(height: 12.h),
                   Text(
                     'No estimation history',
                     style: TextStyle(color: Colors.grey[400]),
@@ -416,11 +409,11 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
 
   Widget _buildHistoryCard(Map<String, dynamic> estimation) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: Colors.grey[800]!, width: 1),
       ),
       child: Column(
@@ -431,40 +424,40 @@ class _ArchitectEstimationScreenState extends State<ArchitectEstimationScreen> {
             children: [
               Text(
                 estimation['amount'],
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               if (estimation['isPlanExtended'])
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                   decoration: BoxDecoration(
                     color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(6.r),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Plan Extended',
                     style: TextStyle(
                       color: Colors.orange,
-                      fontSize: 12,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             estimation['date'],
-            style: TextStyle(color: Colors.grey[400], fontSize: 14),
+            style: TextStyle(color: Colors.grey[400], fontSize: 14.sp),
           ),
           if (estimation['notes'] != null) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               estimation['notes'],
-              style: TextStyle(color: Colors.grey[500], fontSize: 13),
+              style: TextStyle(color: Colors.grey[500], fontSize: 13.sp),
             ),
           ],
         ],

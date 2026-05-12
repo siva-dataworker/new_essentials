@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 // Firebase imports kept for safety (not used)
 // import 'package:firebase_core/firebase_core.dart';
@@ -63,13 +64,19 @@ class MyApp extends StatelessWidget {
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
-          return MaterialApp(
-            title: 'Essential Homes',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeProvider.themeMode,
-            home: const AuthChecker(),
-            debugShowCheckedModeBanner: false,
+          return ScreenUtilInit(
+            // Design base: standard Android phone (360×800 dp)
+            designSize: const Size(360, 800),
+            minTextAdapt: true,
+            splitScreenMode: true,
+            builder: (_, __) => MaterialApp(
+              title: 'Essential Homes',
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeProvider.themeMode,
+              home: const AuthChecker(),
+              debugShowCheckedModeBanner: false,
+            ),
           );
         },
       ),

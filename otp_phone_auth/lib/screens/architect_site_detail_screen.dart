@@ -5,6 +5,7 @@ import 'dart:convert';
 import '../utils/app_colors.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ArchitectSiteDetailScreen extends StatefulWidget {
   final Map<String, dynamic> site;
@@ -37,10 +38,10 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
 
   Future<void> _loadProjectFiles() async {
     setState(() => _isLoadingFiles = true);
-    
+
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.get(
         Uri.parse('${AuthService.baseUrl}/construction/project-files/${widget.site['id']}/'),
         headers: {'Authorization': 'Bearer $token'},
@@ -62,10 +63,10 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
 
   Future<void> _loadComplaints() async {
     setState(() => _isLoadingComplaints = true);
-    
+
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.get(
         Uri.parse('${AuthService.baseUrl}/construction/complaints/?site_id=${widget.site['id']}'),
         headers: {'Authorization': 'Bearer $token'},
@@ -92,9 +93,9 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
       appBar: AppBar(
         title: Text(
           widget.site['display_name'] ?? widget.site['site_name'] ?? 'Site Details',
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.deepNavy,
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -115,8 +116,8 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
         backgroundColor: AppColors.cleanWhite,
         selectedItemColor: Colors.purple.shade600,
         unselectedItemColor: AppColors.textSecondary,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
+        selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
+        unselectedLabelStyle: TextStyle(fontSize: 12.sp),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.folder),
@@ -136,22 +137,22 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
       children: [
         // Upload Button
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           color: AppColors.cleanWhite,
           child: ElevatedButton.icon(
             onPressed: () => _showUploadDialog(),
-            icon: const Icon(Icons.upload_file, size: 20),
-            label: const Text('Upload File', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            icon: Icon(Icons.upload_file, size: 20.sp),
+            label: Text('Upload File', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.purple.shade600,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              minimumSize: const Size(double.infinity, 0),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: EdgeInsets.symmetric(vertical: 14.h),
+              minimumSize: Size(double.infinity, 0),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
           ),
         ),
-        
+
         // Files List
         Expanded(
           child: _isLoadingFiles
@@ -162,7 +163,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
                       onRefresh: _loadProjectFiles,
                       color: Colors.purple.shade600,
                       child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16.r),
                         itemCount: _projectFiles.length,
                         itemBuilder: (context, index) => _buildFileCard(_projectFiles[index]),
                       ),
@@ -177,22 +178,22 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
       children: [
         // Raise Complaint Button
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           color: AppColors.cleanWhite,
           child: ElevatedButton.icon(
             onPressed: () => _showComplaintDialog(),
-            icon: const Icon(Icons.add, size: 20),
-            label: const Text('Raise Complaint', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            icon: Icon(Icons.add, size: 20.sp),
+            label: Text('Raise Complaint', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange.shade600,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              minimumSize: const Size(double.infinity, 0),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: EdgeInsets.symmetric(vertical: 14.h),
+              minimumSize: Size(double.infinity, 0),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
           ),
         ),
-        
+
         // Complaints List
         Expanded(
           child: _isLoadingComplaints
@@ -203,7 +204,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
                       onRefresh: _loadComplaints,
                       color: Colors.orange.shade600,
                       child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16.r),
                         itemCount: _complaints.length,
                         itemBuilder: (context, index) => _buildComplaintCard(_complaints[index]),
                       ),
@@ -217,61 +218,61 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
     final fileType = file['file_type'] ?? 'OTHER';
     final icon = _getFileIcon(fileType);
     final color = _getFileColor(fileType);
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [AppColors.cardShadow],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: Icon(icon, color: color, size: 20),
+                  child: Icon(icon, color: color, size: 20.sp),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         file['title'] ?? fileType,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text(
                         fileType.replaceAll('_', ' '),
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20.r),
                     border: Border.all(color: color),
                   ),
                   child: Text(
                     fileType,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.bold,
                       color: color,
                     ),
@@ -280,44 +281,44 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
               ],
             ),
             if (file['description'] != null && file['description'].toString().isNotEmpty) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Text(
                 file['description'],
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
               ),
             ],
             if (file['amount'] != null) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.currency_rupee, size: 16, color: Colors.blue.shade600),
-                    const SizedBox(width: 6),
+                    Icon(Icons.currency_rupee, size: 16.sp, color: Colors.blue.shade600),
+                    SizedBox(width: 6.w),
                     Text(
                       'Amount: ₹${file['amount']}',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.blue.shade600,
                       ),
                     ),
                     if (file['is_plan_extended'] == true) ...[
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12.w),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                         decoration: BoxDecoration(
                           color: Colors.orange.shade100,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12.r),
                         ),
                         child: Text(
                           'Plan Extended',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 11.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.orange.shade700,
                           ),
@@ -328,21 +329,21 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
-                Icon(Icons.person, size: 14, color: AppColors.textSecondary),
-                const SizedBox(width: 4),
+                Icon(Icons.person, size: 14.sp, color: AppColors.textSecondary),
+                SizedBox(width: 4.w),
                 Text(
                   file['uploaded_by'] ?? 'Unknown',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
                 ),
                 const Spacer(),
-                Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary),
-                const SizedBox(width: 4),
+                Icon(Icons.calendar_today, size: 14.sp, color: AppColors.textSecondary),
+                SizedBox(width: 4.w),
                 Text(
                   _formatDate(file['uploaded_at']),
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -357,52 +358,52 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
     final status = complaint['status'] ?? 'OPEN';
     final priorityColor = _getPriorityColor(priority);
     final statusColor = status == 'RESOLVED' ? AppColors.statusCompleted : Colors.orange;
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [AppColors.cardShadow],
         border: Border.all(color: priorityColor.withValues(alpha: 0.3), width: 2),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  width: 8,
-                  height: 8,
+                  width: 8.w,
+                  height: 8.h,
                   decoration: BoxDecoration(
                     color: priorityColor,
                     shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 Expanded(
                   child: Text(
                     complaint['title'] ?? 'Complaint',
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.deepNavy,
                     ),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20.r),
                     border: Border.all(color: statusColor),
                   ),
                   child: Text(
                     status,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.bold,
                       color: statusColor,
                     ),
@@ -410,47 +411,47 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Text(
               complaint['description'] ?? '',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                   decoration: BoxDecoration(
                     color: priorityColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Text(
                     priority,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.bold,
                       color: priorityColor,
                     ),
                   ),
                 ),
                 const Spacer(),
-                Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary),
-                const SizedBox(width: 4),
+                Icon(Icons.calendar_today, size: 14.sp, color: AppColors.textSecondary),
+                SizedBox(width: 4.w),
                 Text(
                   _formatDate(complaint['created_at']),
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
                 ),
               ],
             ),
             if (complaint['assigned_to_name'] != null) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Row(
                 children: [
-                  Icon(Icons.person_outline, size: 14, color: AppColors.textSecondary),
-                  const SizedBox(width: 4),
+                  Icon(Icons.person_outline, size: 14.sp, color: AppColors.textSecondary),
+                  SizedBox(width: 4.w),
                   Text(
                     'Assigned to: ${complaint['assigned_to_name']}',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -464,20 +465,20 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
   Widget _buildEmptyFilesState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32.r),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_open, size: 80, color: AppColors.textSecondary.withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
-            const Text(
+            Icon(Icons.folder_open, size: 80.sp, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+            SizedBox(height: 16.h),
+            Text(
               'No Project Files',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               'Upload estimation files, plans, and designs',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -489,20 +490,20 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
   Widget _buildEmptyComplaintsState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32.r),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_outline, size: 80, color: AppColors.statusCompleted.withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
-            const Text(
+            Icon(Icons.check_circle_outline, size: 80.sp, color: AppColors.statusCompleted.withValues(alpha: 0.5)),
+            SizedBox(height: 16.h),
+            Text(
               'No Complaints',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               'All clear! No complaints raised yet',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -548,7 +549,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // File Type Dropdown
                 DropdownButtonFormField<String>(
                   value: selectedFileType,
@@ -567,7 +568,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
                   onChanged: (value) => setState(() => selectedFileType = value),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Title
                 TextField(
                   controller: titleController,
@@ -577,7 +578,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Description
                 TextField(
                   controller: descriptionController,
@@ -587,7 +588,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
                   ),
                   maxLines: 3,
                 ),
-                
+
                 // Estimation-specific fields
                 if (selectedFileType == 'ESTIMATION') ...[
                   const SizedBox(height: 16),
@@ -651,7 +652,6 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
     bool isPlanExtended,
   ) async {
     try {
-      // Show loading
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Uploading file...'), duration: Duration(seconds: 30)),
@@ -659,11 +659,10 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
 
       final token = await _authService.getToken();
       final uri = Uri.parse('${AuthService.baseUrl}/construction/upload-project-file/');
-      
+
       final request = http.MultipartRequest('POST', uri);
       request.headers['Authorization'] = 'Bearer $token';
-      
-      // Add fields
+
       request.fields['site_id'] = widget.site['id'].toString();
       request.fields['file_type'] = fileType;
       if (title.isNotEmpty) request.fields['title'] = title;
@@ -672,8 +671,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
         request.fields['amount'] = amount;
         request.fields['is_plan_extended'] = isPlanExtended.toString();
       }
-      
-      // Add file
+
       if (file.bytes != null) {
         request.files.add(http.MultipartFile.fromBytes(
           'file',
@@ -683,18 +681,18 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
       } else if (file.path != null) {
         request.files.add(await http.MultipartFile.fromPath('file', file.path!));
       }
-      
+
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
-      
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      
+
       if (response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('File uploaded successfully!'), backgroundColor: Colors.green),
         );
-        _loadProjectFiles(); // Refresh list
+        _loadProjectFiles();
       } else {
         final data = json.decode(responseBody);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -794,7 +792,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
   Future<void> _raiseComplaint(String title, String description, String priority) async {
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.post(
         Uri.parse('${AuthService.baseUrl}/construction/raise-complaint/'),
         headers: {
@@ -810,7 +808,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
       );
 
       if (!mounted) return;
-      
+
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -819,7 +817,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        _loadComplaints(); // Refresh list
+        _loadComplaints();
       } else {
         final data = json.decode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(

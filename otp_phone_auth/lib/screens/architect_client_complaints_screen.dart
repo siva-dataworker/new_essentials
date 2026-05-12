@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../services/construction_service.dart';
 import '../utils/app_colors.dart';
 
@@ -29,20 +30,20 @@ class _ArchitectClientComplaintsScreenState extends State<ArchitectClientComplai
   Future<void> _loadComplaints() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-    
+
     try {
       final response = await _constructionService.getClientComplaintsForArchitect(
         siteId: widget.siteId,
         status: _selectedStatus,
       );
-      
+
       if (mounted) {
         setState(() {
           _complaints = response['complaints'] as List? ?? [];
           _isLoading = false;
         });
       }
-      
+
       print('✅ [ARCHITECT] Loaded ${_complaints.length} complaints for site ${widget.siteId}');
     } catch (e) {
       print('❌ [ARCHITECT] Error loading complaints: $e');
@@ -88,7 +89,7 @@ class _ArchitectClientComplaintsScreenState extends State<ArchitectClientComplai
       backgroundColor: AppColors.lightSlate,
       appBar: AppBar(
         backgroundColor: AppColors.deepNavy,
-        title: const Text('Client Complaints', style: TextStyle(color: Colors.white)),
+        title: Text('Client Complaints', style: TextStyle(color: Colors.white, fontSize: 16.sp)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           PopupMenuButton<String>(
@@ -117,7 +118,7 @@ class _ArchitectClientComplaintsScreenState extends State<ArchitectClientComplai
             : _complaints.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16.r),
                     itemCount: _complaints.length,
                     itemBuilder: (context, index) {
                       final complaint = _complaints[index];
@@ -133,18 +134,18 @@ class _ArchitectClientComplaintsScreenState extends State<ArchitectClientComplai
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
+          Icon(Icons.chat_bubble_outline, size: 64.sp, color: Colors.grey[300]),
+          SizedBox(height: 16.h),
           Text(
-            _selectedStatus != null 
+            _selectedStatus != null
                 ? 'No ${_selectedStatus!.toLowerCase()} complaints'
                 : 'No client complaints yet',
-            style: const TextStyle(fontSize: 16, color: Colors.grey),
+            style: TextStyle(fontSize: 16.sp, color: Colors.grey),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             'Client complaints will appear here',
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            style: TextStyle(fontSize: 14.sp, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -162,14 +163,14 @@ class _ArchitectClientComplaintsScreenState extends State<ArchitectClientComplai
     final messageCount = complaint['message_count'] as int? ?? 0;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 16.h),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
+              blurRadius: 10.r,
               offset: const Offset(0, 2),
             ),
           ],
@@ -179,10 +180,10 @@ class _ArchitectClientComplaintsScreenState extends State<ArchitectClientComplai
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: AppColors.deepNavy.withOpacity(0.05),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
               ),
               child: Row(
                 children: [
@@ -192,20 +193,20 @@ class _ArchitectClientComplaintsScreenState extends State<ArchitectClientComplai
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.deepNavy,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4.h),
                         Row(
                           children: [
-                            Icon(Icons.person_outline, size: 14, color: Colors.grey[600]),
-                            const SizedBox(width: 4),
+                            Icon(Icons.person_outline, size: 14.sp, color: Colors.grey[600]),
+                            SizedBox(width: 4.w),
                             Text(
                               clientName,
-                              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                              style: TextStyle(fontSize: 13.sp, color: Colors.grey[600]),
                             ),
                           ],
                         ),
@@ -213,16 +214,16 @@ class _ArchitectClientComplaintsScreenState extends State<ArchitectClientComplai
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                     decoration: BoxDecoration(
                       color: _getPriorityColor(priority),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
                     child: Text(
                       priority,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 11,
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -230,61 +231,61 @@ class _ArchitectClientComplaintsScreenState extends State<ArchitectClientComplai
                 ],
               ),
             ),
-            
+
             // Body
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (description.isNotEmpty) ...[
                     Text(
                       description,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                      style: TextStyle(fontSize: 14.sp, color: Colors.grey[700]),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                   ],
-                  
+
                   // Status and Messages
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                         decoration: BoxDecoration(
                           color: _getStatusColor(status).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(4.r),
                         ),
                         child: Text(
                           status.replaceAll('_', ' '),
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.sp,
                             fontWeight: FontWeight.bold,
                             color: _getStatusColor(status),
                           ),
                         ),
                       ),
                       const Spacer(),
-                      Icon(Icons.chat_bubble_outline, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
+                      Icon(Icons.chat_bubble_outline, size: 16.sp, color: Colors.grey[600]),
+                      SizedBox(width: 4.w),
                       Text(
                         '$messageCount ${messageCount == 1 ? 'message' : 'messages'}',
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 13.sp, color: Colors.grey[600]),
                       ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 8),
-                  
+
+                  SizedBox(height: 8.h),
+
                   // Created date
                   Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
+                      Icon(Icons.calendar_today, size: 14.sp, color: Colors.grey[600]),
+                      SizedBox(width: 4.w),
                       Text(
                         'Reported: ${_formatDateTime(createdAt)}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -309,7 +310,7 @@ class _ArchitectClientComplaintsScreenState extends State<ArchitectClientComplai
       } else if (checkDate == yesterday) {
         return 'Yesterday';
       }
-      
+
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
     } catch (e) {
@@ -317,4 +318,3 @@ class _ArchitectClientComplaintsScreenState extends State<ArchitectClientComplai
     }
   }
 }
-

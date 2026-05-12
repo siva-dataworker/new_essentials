@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../utils/admin_theme.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_provider.dart';
@@ -45,39 +46,39 @@ class _AdminSitesTestScreenState extends State<AdminSitesTestScreen> {
 
   Widget _buildBody(AdminProvider provider) {
     if (provider.isLoadingSites) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: AdminTheme.primaryBlue),
-            SizedBox(height: 16),
-            Text('Loading sites...', style: AdminTheme.bodyMedium),
+            const CircularProgressIndicator(color: AdminTheme.primaryBlue),
+            SizedBox(height: 16.h),
+            const Text('Loading sites...', style: AdminTheme.bodyMedium),
           ],
         ),
       );
     }
 
     if (provider.sites.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.location_city_outlined, size: 64, color: AdminTheme.neutralGray),
-            SizedBox(height: 16),
-            Text('No sites found', style: AdminTheme.bodyLarge),
+            Icon(Icons.location_city_outlined, size: 64.sp, color: AdminTheme.neutralGray),
+            SizedBox(height: 16.h),
+            const Text('No sites found', style: AdminTheme.bodyLarge),
           ],
         ),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       itemCount: provider.sites.length,
       itemBuilder: (context, index) {
         final site = provider.sites[index];
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
+          margin: EdgeInsets.only(bottom: 12.h),
+          padding: EdgeInsets.all(16.r),
           decoration: AdminTheme.modernCard(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,18 +86,18 @@ class _AdminSitesTestScreenState extends State<AdminSitesTestScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: EdgeInsets.all(10.r),
                     decoration: BoxDecoration(
                       color: AdminTheme.primaryBlue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(10.r),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.location_city,
                       color: AdminTheme.primaryBlue,
-                      size: 24,
+                      size: 24.sp,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,7 +106,7 @@ class _AdminSitesTestScreenState extends State<AdminSitesTestScreen> {
                           site['site_name'] ?? 'Unnamed Site',
                           style: AdminTheme.heading3,
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4.h),
                         Text(
                           site['location'] ?? 'No location',
                           style: AdminTheme.bodySmall,
@@ -115,12 +116,12 @@ class _AdminSitesTestScreenState extends State<AdminSitesTestScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                 decoration: BoxDecoration(
                   color: AdminTheme.lightGray,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Text(
                   'ID: ${site['id']}',

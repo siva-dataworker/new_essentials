@@ -4,6 +4,7 @@ import '../utils/app_colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'admin_site_full_view.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class SimpleBudgetScreen extends StatefulWidget {
   const SimpleBudgetScreen({Key? key}) : super(key: key);
@@ -15,17 +16,17 @@ class SimpleBudgetScreen extends StatefulWidget {
 class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
   final _authService = AuthService();
   static const String baseUrl = 'http://187.127.164.22/api';
-  
+
   // Cascading dropdown state
   String? _selectedArea;
   String? _selectedStreet;
   String? _selectedSiteId;
-  
+
   // Data lists
   List<String> _areas = [];
   List<String> _streets = [];
   List<Map<String, dynamic>> _sites = [];
-  
+
   // Loading states
   bool _isLoadingAreas = false;
   bool _isLoadingStreets = false;
@@ -39,7 +40,7 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
 
   Future<void> _loadAreas() async {
     setState(() => _isLoadingAreas = true);
-    
+
     try {
       final token = await _authService.getToken();
       if (token == null) {
@@ -64,7 +65,7 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
         setState(() {
           _areas = List<String>.from(data['areas'] ?? []);
         });
-        
+
         if (_areas.isEmpty && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('No areas found. Please create an area first.')),
@@ -96,7 +97,7 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
       _streets = [];
       _sites = [];
     });
-    
+
     try {
       final token = await _authService.getToken();
       final response = await http.get(
@@ -126,7 +127,7 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
       _selectedSiteId = null;
       _sites = [];
     });
-    
+
     try {
       final token = await _authService.getToken();
       final response = await http.get(
@@ -153,7 +154,7 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -167,19 +168,19 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Loading indicator
             if (_isLoadingAreas)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Center(
+              Padding(
+                padding: EdgeInsets.all(16.r),
+                child: const Center(
                   child: CircularProgressIndicator(),
                 ),
               ),
-            
+
             // Area Dropdown
             DropdownButtonFormField<String>(
               value: _areas.isEmpty ? null : (_areas.contains(_selectedArea) ? _selectedArea : null),
@@ -190,8 +191,8 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
               ),
               hint: const Text('Select Area'),
               isExpanded: true,
-              items: _areas.isEmpty 
-                  ? null 
+              items: _areas.isEmpty
+                  ? null
                   : _areas.map((area) {
                       return DropdownMenuItem<String>(
                         value: area,
@@ -213,18 +214,18 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
                       }
                     },
             ),
-            
-            const SizedBox(height: 16),
-            
+
+            SizedBox(height: 16.h),
+
             // Street Dropdown
             if (_isLoadingStreets)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Center(
+              Padding(
+                padding: EdgeInsets.all(16.r),
+                child: const Center(
                   child: CircularProgressIndicator(),
                 ),
               ),
-            
+
             DropdownButtonFormField<String>(
               value: _streets.isEmpty ? null : (_streets.contains(_selectedStreet) ? _selectedStreet : null),
               decoration: const InputDecoration(
@@ -234,8 +235,8 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
               ),
               hint: const Text('Select Street'),
               isExpanded: true,
-              items: _streets.isEmpty 
-                  ? null 
+              items: _streets.isEmpty
+                  ? null
                   : _streets.map((street) {
                       return DropdownMenuItem<String>(
                         value: street,
@@ -255,18 +256,18 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
                       }
                     },
             ),
-            
-            const SizedBox(height: 16),
-            
+
+            SizedBox(height: 16.h),
+
             // Site Dropdown
             if (_isLoadingSites)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Center(
+              Padding(
+                padding: EdgeInsets.all(16.r),
+                child: const Center(
                   child: CircularProgressIndicator(),
                 ),
               ),
-            
+
             DropdownButtonFormField<String>(
               value: _sites.isEmpty ? null : (_sites.any((s) => s['id'] == _selectedSiteId) ? _selectedSiteId : null),
               decoration: const InputDecoration(
@@ -276,8 +277,8 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
               ),
               hint: const Text('Select Site'),
               isExpanded: true,
-              items: _sites.isEmpty 
-                  ? null 
+              items: _sites.isEmpty
+                  ? null
                   : _sites.map((site) {
                       return DropdownMenuItem<String>(
                         value: site['id'],
@@ -301,9 +302,9 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
                       }
                     },
             ),
-            
-            const SizedBox(height: 16),
-            
+
+            SizedBox(height: 16.h),
+
             // Create New Button
             ElevatedButton.icon(
               onPressed: () => _showCreateDialog(),
@@ -312,7 +313,7 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.safetyOrange,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 16.h),
               ),
             ),
           ],
@@ -361,7 +362,7 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
 
   void _showCreateAreaDialog() {
     final controller = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -399,9 +400,9 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
       );
       return;
     }
-    
+
     final controller = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -439,10 +440,10 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
       );
       return;
     }
-    
+
     final nameController = TextEditingController();
     final cityController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -457,7 +458,7 @@ class _SimpleBudgetScreenState extends State<SimpleBudgetScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             TextField(
               controller: cityController,
               decoration: const InputDecoration(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../models/user_model.dart';
 import '../utils/app_colors.dart';
 import 'google_auth_screen.dart';
@@ -11,87 +12,87 @@ class RoleSelectionScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 40),
-                
-                // Title
-                const Text(
-                  'Select Your Role',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
+        child: Padding(
+          padding: EdgeInsets.all(24.r),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(height: 40.h),
+
+              // Title
+              Text(
+                'Select Your Role',
+                style: TextStyle(
+                  fontSize: 28.sp,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.deepNavy,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              SizedBox(height: 8.h),
+
+              Text(
+                'Choose your role to continue',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              SizedBox(height: 40.h),
+
+              // Role Cards - 2x2 Grid (Only Supervisor Active)
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 20,
+                mainAxisSpacing: 20,
+                childAspectRatio: 0.9,
+                padding: EdgeInsets.zero,
+                children: [
+                  _buildRoleCard(
+                    context,
+                    'Admin',
+                    Icons.business_center_rounded,
+                    AppColors.deepNavy,
+                    UserRole.owner,
+                    isEnabled: false,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                
-                const SizedBox(height: 8),
-                
-                const Text(
-                  'Choose your role to continue',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.textSecondary,
+                  _buildRoleCard(
+                    context,
+                    'Supervisor',
+                    Icons.construction_rounded,
+                    AppColors.safetyOrange,
+                    UserRole.supervisor,
+                    isEnabled: true,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                
-                const SizedBox(height: 40),
-                
-                // Role Cards - 2x2 Grid (Only Supervisor Active)
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 20,
-                  mainAxisSpacing: 20,
-                  childAspectRatio: 0.9,
-                  padding: EdgeInsets.zero,
-                  children: [
-                    _buildRoleCard(
-                      context,
-                      'Admin',
-                      Icons.business_center_rounded,
-                      AppColors.deepNavy,
-                      UserRole.owner,
-                      isEnabled: false,
-                    ),
-                    _buildRoleCard(
-                      context,
-                      'Supervisor',
-                      Icons.construction_rounded,
-                      AppColors.safetyOrange,
-                      UserRole.supervisor,
-                      isEnabled: true,
-                    ),
-                    _buildRoleCard(
-                      context,
-                      'Site Engineer',
-                      Icons.engineering_rounded,
-                      AppColors.engineerColor,
-                      UserRole.siteEngineer,
-                      isEnabled: false,
-                    ),
-                    _buildRoleCard(
-                      context,
-                      'Junior Accountant',
-                      Icons.account_balance_wallet_rounded,
-                      AppColors.accountantColor,
-                      UserRole.accountant,
-                      isEnabled: false,
-                    ),
-                  ],
-                ),
-                
-                const Spacer(),
-              ],
-            ),
+                  _buildRoleCard(
+                    context,
+                    'Site Engineer',
+                    Icons.engineering_rounded,
+                    AppColors.engineerColor,
+                    UserRole.siteEngineer,
+                    isEnabled: false,
+                  ),
+                  _buildRoleCard(
+                    context,
+                    'Junior Accountant',
+                    Icons.account_balance_wallet_rounded,
+                    AppColors.accountantColor,
+                    UserRole.accountant,
+                    isEnabled: false,
+                  ),
+                ],
+              ),
+
+              const Spacer(),
+            ],
           ),
         ),
+      ),
     );
   }
 
@@ -104,31 +105,31 @@ class RoleSelectionScreen extends StatelessWidget {
     required bool isEnabled,
   }) {
     final displayColor = isEnabled ? roleColor : Colors.grey.shade400;
-    
+
     return Material(
       color: displayColor,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(16.r),
       elevation: isEnabled ? 2 : 0,
       shadowColor: isEnabled ? roleColor.withValues(alpha: 0.3) : Colors.transparent,
       child: InkWell(
         onTap: isEnabled ? () => _navigateToGoogleAuth(context, role) : null,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         child: Stack(
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20.r),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsets.all(20.r),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: isEnabled ? 0.2 : 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                     child: Icon(
                       icon,
-                      size: 48,
+                      size: 48.sp,
                       color: Colors.white.withValues(alpha: isEnabled ? 1.0 : 0.5),
                     ),
                   ),
@@ -136,7 +137,7 @@ class RoleSelectionScreen extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
                       color: Colors.white.withValues(alpha: isEnabled ? 1.0 : 0.6),
                     ),
@@ -152,15 +153,15 @@ class RoleSelectionScreen extends StatelessWidget {
                 top: 8,
                 right: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Coming Soon',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 10.sp,
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),

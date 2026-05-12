@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
 import '../services/construction_service.dart';
@@ -15,7 +16,7 @@ class ClientDashboard extends StatefulWidget {
 class _ClientDashboardState extends State<ClientDashboard> {
   final _authService = AuthService();
   final _constructionService = ConstructionService();
-  
+
   int _selectedIndex = 0;
   Map<String, dynamic>? _siteData;
   Map<String, dynamic>? _materialsData;
@@ -44,7 +45,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
     try {
       final response = await _constructionService.getClientSiteDetails();
       final sites = response['sites'] as List? ?? [];
-      
+
       setState(() {
         _siteData = response;
         _currentSiteId = sites.isNotEmpty ? sites[0]['site_id'] : null;
@@ -67,7 +68,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
   Future<void> _loadMaterials() async {
     if (_currentSiteId == null) return;
-    
+
     try {
       final response = await _constructionService.getClientMaterials(_currentSiteId!);
       setState(() {
@@ -80,7 +81,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
   Future<void> _loadPhotos({String? filterDate}) async {
     if (_currentSiteId == null) return;
-    
+
     try {
       final response = await _constructionService.getClientPhotosByDate(
         siteId: _currentSiteId!,
@@ -137,14 +138,14 @@ class _ClientDashboardState extends State<ClientDashboard> {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
+            blurRadius: 10.r,
             offset: const Offset(0, -2),
           ),
         ],
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -164,10 +165,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
     return GestureDetector(
       onTap: () => setState(() => _selectedIndex = index),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.deepNavy.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -175,13 +176,13 @@ class _ClientDashboardState extends State<ClientDashboard> {
             Icon(
               icon,
               color: isSelected ? AppColors.deepNavy : Colors.grey,
-              size: 24,
+              size: 24.sp,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4.h),
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 11.sp,
                 color: isSelected ? AppColors.deepNavy : Colors.grey,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
@@ -230,19 +231,19 @@ class ClientProgressTab extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSiteInfo(),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24.h),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Daily Timeline',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 20.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
@@ -250,7 +251,7 @@ class ClientProgressTab extends StatelessWidget {
                       _buildDateFilter(context),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   _buildTimeline(context),
                 ],
               ),
@@ -264,7 +265,7 @@ class ClientProgressTab extends StatelessWidget {
   Widget _buildDateFilter(BuildContext context) {
     final today = DateTime.now();
     final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-    
+
     // Determine display text
     String displayText;
     if (selectedDate == null) {
@@ -281,15 +282,15 @@ class ClientProgressTab extends StatelessWidget {
         displayText = _formatDateShort(selectedDate!);
       }
     }
-    
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
+            blurRadius: 4.r,
             offset: const Offset(0, 2),
           ),
         ],
@@ -298,22 +299,22 @@ class ClientProgressTab extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _selectDate(context),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.calendar_today,
-                  size: 16,
+                  size: 16.sp,
                   color: AppColors.deepNavy,
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: 6.w),
                 Text(
                   displayText,
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: TextStyle(
+                    fontSize: 13.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.deepNavy,
                   ),
@@ -329,8 +330,8 @@ class ClientProgressTab extends StatelessWidget {
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: selectedDate != null 
-          ? DateTime.parse(selectedDate!) 
+      initialDate: selectedDate != null
+          ? DateTime.parse(selectedDate!)
           : DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
@@ -347,7 +348,7 @@ class ClientProgressTab extends StatelessWidget {
         );
       },
     );
-    
+
     if (picked != null) {
       final pickedStr = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
       onDateFilter(filterDate: pickedStr);
@@ -359,10 +360,10 @@ class ClientProgressTab extends StatelessWidget {
     final sites = siteData?['sites'] as List? ?? [];
     if (sites.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(20.r),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
         ),
         child: const Center(
           child: Text('No site assigned', style: TextStyle(color: Colors.grey)),
@@ -372,16 +373,16 @@ class ClientProgressTab extends StatelessWidget {
 
     final site = sites[0];
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [AppColors.deepNavy, AppColors.deepNavy.withOpacity(0.8)],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.deepNavy.withOpacity(0.3),
-            blurRadius: 10,
+            blurRadius: 10.r,
             offset: const Offset(0, 4),
           ),
         ],
@@ -392,22 +393,22 @@ class ClientProgressTab extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
-                child: const Icon(Icons.home_work, color: Colors.white, size: 28),
+                child: Icon(Icons.home_work, color: Colors.white, size: 28.sp),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       site['site_name'] ?? 'Project',
-                      style: const TextStyle(
-                        fontSize: 20,
+                      style: TextStyle(
+                        fontSize: 20.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -415,7 +416,7 @@ class ClientProgressTab extends StatelessWidget {
                     Text(
                       '${site['area']} • ${site['street']}',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         color: Colors.white.withOpacity(0.9),
                       ),
                     ),
@@ -479,34 +480,34 @@ class ClientProgressTab extends StatelessWidget {
     final timeColor = isEvening ? Colors.indigo : Colors.orange;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 1),
+      margin: EdgeInsets.only(bottom: 1.h),
       color: Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header (like Instagram post header) ──
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 18,
+                  radius: 18.r,
                   backgroundColor: AppColors.deepNavy.withValues(alpha: 0.1),
                   child: Icon(
                     role == 'Supervisor' ? Icons.person : Icons.engineering,
-                    size: 18,
+                    size: 18.sp,
                     color: AppColors.deepNavy,
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         uploadedBy,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
@@ -514,24 +515,24 @@ class ClientProgressTab extends StatelessWidget {
                       Text(
                         role.isNotEmpty ? role : 'Site Team',
                         style: TextStyle(
-                            fontSize: 11, color: Colors.grey.shade500),
+                            fontSize: 11.sp, color: Colors.grey.shade500),
                       ),
                     ],
                   ),
                 ),
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                   decoration: BoxDecoration(
                     color: timeColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                     border: Border.all(
                         color: timeColor.withValues(alpha: 0.4)),
                   ),
                   child: Text(
                     timeLabel,
                     style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.bold,
                         color: timeColor),
                   ),
@@ -551,19 +552,19 @@ class ClientProgressTab extends StatelessWidget {
                     width: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
-                      height: 200,
+                      height: 200.h,
                       color: Colors.grey.shade100,
-                      child: const Center(
+                      child: Center(
                           child: Icon(Icons.broken_image,
-                              size: 48, color: Colors.grey)),
+                              size: 48.sp, color: Colors.grey)),
                     ),
                   )
                 : Container(
-                    height: 200,
+                    height: 200.h,
                     color: Colors.grey.shade100,
-                    child: const Center(
+                    child: Center(
                         child: Icon(Icons.photo_camera,
-                            size: 48, color: Colors.grey)),
+                            size: 48.sp, color: Colors.grey)),
                   ),
           ),
 
@@ -571,10 +572,10 @@ class ClientProgressTab extends StatelessWidget {
           if (date.isNotEmpty)
             Padding(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
               child: Text(
                 date,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade500),
               ),
             ),
 
@@ -586,19 +587,19 @@ class ClientProgressTab extends StatelessWidget {
 
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.all(40),
+      padding: EdgeInsets.all(40.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.photo_library, size: 64, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            const Text(
+            Icon(Icons.photo_library, size: 64.sp, color: Colors.grey[300]),
+            SizedBox(height: 16.h),
+            Text(
               'No photos yet',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(fontSize: 16.sp, color: Colors.grey),
             ),
           ],
         ),
@@ -612,7 +613,7 @@ class ClientProgressTab extends StatelessWidget {
     final uploadedBy = photo['uploaded_by'] as String? ?? 'Unknown';
     final role = photo['uploaded_by_role'] as String? ?? '';
     final timeOfDay = photo['time_of_day'] as String? ?? '';
-    
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => Scaffold(
@@ -625,11 +626,11 @@ class ClientProgressTab extends StatelessWidget {
               children: [
                 Text(
                   timeOfDay,
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  style: TextStyle(color: Colors.white, fontSize: 16.sp),
                 ),
                 Text(
                   '$uploadedBy${role.isNotEmpty ? ' ($role)' : ''}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: Colors.white70, fontSize: 12.sp),
                 ),
               ],
             ),
@@ -641,13 +642,13 @@ class ClientProgressTab extends StatelessWidget {
               child: Image.network(
                 imageUrl,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Center(
+                errorBuilder: (_, __, ___) => Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.broken_image, size: 64, color: Colors.white54),
-                      SizedBox(height: 16),
-                      Text(
+                      Icon(Icons.broken_image, size: 64.sp, color: Colors.white54),
+                      SizedBox(height: 16.h),
+                      const Text(
                         'Failed to load image',
                         style: TextStyle(color: Colors.white70),
                       ),
@@ -682,7 +683,7 @@ class ClientProgressTab extends StatelessWidget {
 
       if (checkDate == today) return 'Today';
       if (checkDate == yesterday) return 'Yesterday';
-      
+
       final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
     } catch (e) {
@@ -722,18 +723,18 @@ class ClientMaterialsTab extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.inventory_2, size: 64, color: Colors.grey[300]),
-                        const SizedBox(height: 16),
-                        const Text(
+                        Icon(Icons.inventory_2, size: 64.sp, color: Colors.grey[300]),
+                        SizedBox(height: 16.h),
+                        Text(
                           'No materials used yet',
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                          style: TextStyle(fontSize: 16.sp, color: Colors.grey),
                         ),
                       ],
                     ),
                   ),
                 )
               : SliverPadding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.r),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -764,19 +765,19 @@ class ClientMaterialsTab extends StatelessWidget {
       'brick': Icons.view_module,
       'gravel': Icons.landscape,
     };
-    
+
     final icon = iconMap[materialType.toLowerCase()] ?? Icons.inventory_2;
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            blurRadius: 10.r,
             offset: const Offset(0, 2),
           ),
         ],
@@ -784,64 +785,64 @@ class ClientMaterialsTab extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12.r),
             decoration: BoxDecoration(
               color: AppColors.deepNavy.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
             ),
-            child: Icon(icon, color: AppColors.deepNavy, size: 28),
+            child: Icon(icon, color: AppColors.deepNavy, size: 28.sp),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   materialType,
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: TextStyle(
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.deepNavy,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Row(
                   children: [
                     Text(
                       '${totalUsed.toStringAsFixed(totalUsed % 1 == 0 ? 0 : 1)} $unit',
-                      style: const TextStyle(
-                        fontSize: 18,
+                      style: TextStyle(
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.statusCompleted,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8.w),
                     Text(
                       'used',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
                     ),
                   ],
                 ),
                 if (lastUsedDate.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Text(
                     'Last used: $lastUsedDate',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    style: TextStyle(fontSize: 12.sp, color: Colors.grey[500]),
                   ),
                 ],
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
             decoration: BoxDecoration(
               color: AppColors.deepNavy.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8.r),
             ),
             child: Text(
               '$usageCount ${usageCount == 1 ? 'entry' : 'entries'}',
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: 12.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
@@ -887,15 +888,15 @@ class ClientDesignsTab extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.architecture, size: 64, color: Colors.grey[300]),
-                        const SizedBox(height: 16),
+                        Icon(Icons.architecture, size: 64.sp, color: Colors.grey[300]),
+                        SizedBox(height: 16.h),
                         const Text('No designs uploaded yet', style: TextStyle(color: Colors.grey)),
                       ],
                     ),
                   ),
                 )
               : SliverPadding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.r),
                   sliver: SliverGrid(
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
@@ -928,11 +929,11 @@ class ClientDesignsTab extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
+              blurRadius: 10.r,
               offset: const Offset(0, 2),
             ),
           ],
@@ -944,38 +945,38 @@ class ClientDesignsTab extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: AppColors.lightSlate,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
                 ),
                 child: Center(
-                  child: Icon(Icons.insert_drive_file, size: 48, color: Colors.grey[400]),
+                  child: Icon(Icons.insert_drive_file, size: 48.sp, color: Colors.grey[400]),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.deepNavy,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Text(
                     docType,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
                   ),
                   if (uploadDate.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4.h),
                     Text(
                       uploadDate,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                      style: TextStyle(fontSize: 11.sp, color: Colors.grey[500]),
                     ),
                   ],
                 ],
@@ -1001,7 +1002,7 @@ class ClientDesignsTab extends StatelessWidget {
     try {
       final fullUrl = ConstructionService.getFullImageUrl(documentUrl);
       final uri = Uri.parse(fullUrl);
-      
+
       if (await canLaunchUrl(uri)) {
         await launchUrl(
           uri,
@@ -1059,7 +1060,7 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
   Future<void> _loadComplaints() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-    
+
     try {
       final sites = widget.siteData?['sites'] as List? ?? [];
       if (sites.isEmpty) {
@@ -1071,10 +1072,10 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
         }
         return;
       }
-      
+
       final siteId = sites[0]['site_id'] as String;
       final response = await _constructionService.getClientComplaints(siteId: siteId);
-      
+
       if (mounted) {
         setState(() {
           _complaints = response['complaints'] as List? ?? [];
@@ -1097,7 +1098,7 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
       );
       return;
     }
-    
+
     final siteId = sites[0]['site_id'] as String;
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
@@ -1122,7 +1123,7 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
                   ),
                   maxLength: 100,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 TextField(
                   controller: descriptionController,
                   decoration: const InputDecoration(
@@ -1133,9 +1134,9 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
                   maxLines: 4,
                   maxLength: 500,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 const Text('Priority', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Wrap(
                   spacing: 8,
                   children: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((priority) {
@@ -1173,16 +1174,16 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
                   );
                   return;
                 }
-                
+
                 Navigator.pop(context);
-                
+
                 // Show loading
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Creating complaint...')),
                   );
                 }
-                
+
                 // Create complaint
                 final response = await _constructionService.createClientComplaint(
                   siteId: siteId,
@@ -1190,9 +1191,9 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
                   description: descriptionController.text.trim(),
                   priority: selectedPriority,
                 );
-                
+
                 if (!mounted) return;
-                
+
                 if (response['success'] == true) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -1283,16 +1284,16 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.report_problem, size: 64, color: Colors.grey[300]),
-                    const SizedBox(height: 16),
-                    const Text(
+                    Icon(Icons.report_problem, size: 64.sp, color: Colors.grey[300]),
+                    SizedBox(height: 16.h),
+                    Text(
                       'No issues reported',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                      style: TextStyle(fontSize: 16.sp, color: Colors.grey),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.h),
                     Text(
                       'Tap + to report an issue',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                      style: TextStyle(fontSize: 14.sp, color: Colors.grey[500]),
                     ),
                   ],
                 ),
@@ -1300,7 +1301,7 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -1324,14 +1325,14 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
     final createdAt = complaint['created_at'] as String? ?? '';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 16.h),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
+              blurRadius: 10.r,
               offset: const Offset(0, 2),
             ),
           ],
@@ -1341,34 +1342,34 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: AppColors.deepNavy.withOpacity(0.05),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.deepNavy,
                       ),
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                     decoration: BoxDecoration(
                       color: _getPriorityColor(priority),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
                     child: Text(
                       priority,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 11,
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1376,42 +1377,42 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
                 ],
               ),
             ),
-            
+
             // Body
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (description.isNotEmpty) ...[
                     Text(
                       description,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                      style: TextStyle(fontSize: 14.sp, color: Colors.grey[700]),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                   ],
-                  
+
                   // Status
                   Row(
                     children: [
-                      Icon(Icons.info_outline, size: 16, color: _getStatusColor(status)),
-                      const SizedBox(width: 4),
+                      Icon(Icons.info_outline, size: 16.sp, color: _getStatusColor(status)),
+                      SizedBox(width: 4.w),
                       Text(
                         'Status: ',
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 13.sp, color: Colors.grey[600]),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
                         decoration: BoxDecoration(
                           color: _getStatusColor(status).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(4.r),
                         ),
                         child: Text(
                           status.replaceAll('_', ' '),
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.sp,
                             fontWeight: FontWeight.bold,
                             color: _getStatusColor(status),
                           ),
@@ -1419,17 +1420,17 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
                       ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 8),
-                  
+
+                  SizedBox(height: 8.h),
+
                   // Created date
                   Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
+                      Icon(Icons.calendar_today, size: 16.sp, color: Colors.grey[600]),
+                      SizedBox(width: 4.w),
                       Text(
                         'Reported: ${_formatDateTime(createdAt)}',
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 13.sp, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -1454,7 +1455,7 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
       } else if (checkDate == yesterday) {
         return 'Yesterday ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
       }
-      
+
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
     } catch (e) {
@@ -1494,7 +1495,7 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
 
   Future<void> _loadBudgetAllocation() async {
     if (widget.siteId == null) return;
-    
+
     setState(() => _isLoadingBudget = true);
     try {
       final response = await ConstructionService().getClientBudgetAllocation(widget.siteId!);
@@ -1537,46 +1538,46 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             child: Column(
               children: [
                 // User Profile Card
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(24.r),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16.r),
                   ),
                   child: Column(
                     children: [
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 80.w,
+                        height: 80.h,
                         decoration: BoxDecoration(
                           color: AppColors.deepNavy.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.person, size: 40, color: AppColors.deepNavy),
+                        child: Icon(Icons.person, size: 40.sp, color: AppColors.deepNavy),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16.h),
                       Text(
                         widget.userName ?? 'Client',
-                        style: const TextStyle(
-                          fontSize: 22,
+                        style: TextStyle(
+                          fontSize: 22.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      const Text(
+                      SizedBox(height: 4.h),
+                      Text(
                         'Project Owner',
-                        style: TextStyle(fontSize: 14, color: Colors.grey),
+                        style: TextStyle(fontSize: 14.sp, color: Colors.grey),
                       ),
                     ],
                   ),
                 ),
-                
-                const SizedBox(height: 24),
+
+                SizedBox(height: 24.h),
                 _buildLogoutButton(context),
               ],
             ),
@@ -1588,23 +1589,23 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
 
   Widget _buildBudgetCard(String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
         color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(8.r),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8.r),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(icon, color: color, size: 24.sp),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1612,15 +1613,15 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     color: Colors.grey[600],
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
@@ -1635,14 +1636,14 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: 4.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 13,
+            style: TextStyle(
+              fontSize: 13.sp,
               color: Colors.grey,
             ),
           ),
@@ -1650,8 +1651,8 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 13,
+              style: TextStyle(
+                fontSize: 13.sp,
                 fontWeight: FontWeight.w500,
                 color: AppColors.deepNavy,
               ),
@@ -1680,11 +1681,10 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.red,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: EdgeInsets.symmetric(vertical: 16.h),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
         ),
       ),
     );
   }
 }
-

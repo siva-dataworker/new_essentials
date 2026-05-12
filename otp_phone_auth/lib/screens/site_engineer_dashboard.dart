@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../providers/construction_provider.dart';
 import '../services/auth_service.dart';
 import '../services/construction_service.dart';
@@ -56,7 +57,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
   Future<void> _loadSiteUploadStatus(String siteId) async {
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.get(
         Uri.parse('${AuthService.baseUrl}/construction/today-upload-status/$siteId/'),
         headers: {'Authorization': 'Bearer $token'},
@@ -80,8 +81,8 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Text(
           'Sign Out',
           style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.deepNavy),
         ),
@@ -95,9 +96,9 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.statusOverdue,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
-            child: const Text('Sign Out', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Sign Out', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -157,30 +158,30 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
             context,
             currentIndex: _currentBottomIndex,
             onTap: (index) => setState(() => _currentBottomIndex = index),
-            items: const [
+            items: [
               BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard),
-                activeIcon: Icon(Icons.dashboard, size: 28),
+                icon: const Icon(Icons.dashboard),
+                activeIcon: Icon(Icons.dashboard, size: 28.sp),
                 label: 'Dashboard',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.location_city),
-                activeIcon: Icon(Icons.location_city, size: 28),
+                icon: const Icon(Icons.location_city),
+                activeIcon: Icon(Icons.location_city, size: 28.sp),
                 label: 'Sites',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.bar_chart),
-                activeIcon: Icon(Icons.bar_chart, size: 28),
+                icon: const Icon(Icons.bar_chart),
+                activeIcon: Icon(Icons.bar_chart, size: 28.sp),
                 label: 'Reports',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.notifications),
-                activeIcon: Icon(Icons.notifications, size: 28),
+                icon: const Icon(Icons.notifications),
+                activeIcon: Icon(Icons.notifications, size: 28.sp),
                 label: 'Notifications',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                activeIcon: Icon(Icons.person, size: 28),
+                icon: const Icon(Icons.person),
+                activeIcon: Icon(Icons.person, size: 28.sp),
                 label: 'Profile',
               ),
             ],
@@ -222,16 +223,16 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
       color: AppColors.deepNavy,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Welcome Card
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20.r),
               decoration: BoxDecoration(
                 gradient: AppColors.navyGradient,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(20.r),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.deepNavy.withValues(alpha: 0.3),
@@ -243,33 +244,33 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
               child: Row(
                 children: [
                   Container(
-                    width: 60,
-                    height: 60,
+                    width: 60.w,
+                    height: 60.h,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.engineering, color: Colors.white, size: 30),
+                    child: Icon(Icons.engineering, color: Colors.white, size: 30.sp),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 16.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Welcome, ${widget.user.name ?? "Engineer"}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4.h),
                         Text(
                           'Site Engineer Dashboard',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 14,
+                            fontSize: 14.sp,
                           ),
                         ),
                       ],
@@ -278,14 +279,14 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
 
             // Summary Cards
-            const Text(
+            Text(
               'Today\'s Overview',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -320,14 +321,14 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
 
             // Quick Actions
-            const Text(
+            Text(
               'Quick Actions',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
                 Expanded(
@@ -337,7 +338,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                     () => setState(() => _currentBottomIndex = 1),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: _buildQuickActionButton(
                     'Notifications',
@@ -347,7 +348,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
                 Expanded(
@@ -357,7 +358,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                     _openMaterialInventory,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: _buildQuickActionButton(
                     'Labor Entry',
@@ -367,7 +368,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
                 Expanded(
@@ -377,7 +378,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                     _openDocuments,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: _buildQuickActionButton(
                     'Budget',
@@ -396,22 +397,22 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
   Widget _buildQuickActionButton(String label, IconData icon, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(12.r),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: EdgeInsets.symmetric(vertical: 16.h),
         decoration: BoxDecoration(
           color: AppColors.cleanWhite,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
           border: Border.all(color: AppColors.deepNavy.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: AppColors.deepNavy, size: 20),
-            const SizedBox(width: 8),
+            Icon(icon, color: AppColors.deepNavy, size: 20.sp),
+            SizedBox(width: 8.w),
             Text(
               label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
             ),
           ],
         ),
@@ -447,34 +448,34 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
       color: AppColors.deepNavy,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            const Text(
+            Text(
               'Select Site',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               'Choose a site to view details and upload photos',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 color: AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
 
             // Search Bar
             Container(
               decoration: BoxDecoration(
                 color: AppColors.cleanWhite,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.deepNavy.withValues(alpha: 0.06),
@@ -498,21 +499,21 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                         )
                       : null,
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
                 ),
                 onChanged: (value) => setState(() => _searchQuery = value),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
 
             // Results count
             if (_searchQuery.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: EdgeInsets.only(bottom: 16.h),
                 child: Text(
                   'Found ${filteredSites.length} site(s)',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                     color: AppColors.deepNavy,
                   ),
@@ -544,12 +545,12 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
     final status = _uploadStatus[siteId] ?? {'morning': false, 'evening': false};
     final siteName = site['display_name'] ?? site['site_name'] ?? 'Unknown Site';
     final location = '${site['area'] ?? ''}, ${site['street'] ?? ''}';
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
           color: AppColors.deepNavy.withValues(alpha: 0.1),
           width: 1,
@@ -564,27 +565,27 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
       ),
       child: InkWell(
         onTap: () => _openSiteDetail(site),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           child: Row(
             children: [
               // Site Icon
               Container(
-                width: 48,
-                height: 48,
+                width: 48.w,
+                height: 48.h,
                 decoration: BoxDecoration(
                   gradient: AppColors.navyGradient,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.location_city,
                   color: Colors.white,
-                  size: 24,
+                  size: 24.sp,
                 ),
               ),
-              const SizedBox(width: 16),
-              
+              SizedBox(width: 16.w),
+
               // Site Info
               Expanded(
                 child: Column(
@@ -592,34 +593,34 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                   children: [
                     Text(
                       siteName,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.deepNavy,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4.h),
                     Row(
                       children: [
                         Icon(
                           Icons.location_on,
-                          size: 14,
+                          size: 14.sp,
                           color: AppColors.textSecondary,
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4.w),
                         Expanded(
                           child: Text(
                             location,
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 13.sp,
                               color: AppColors.textSecondary,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    
+                    SizedBox(height: 8.h),
+
                     // Photo Status Row
                     Row(
                       children: [
@@ -628,7 +629,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                           'Morning',
                           status['morning'] ?? false,
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8.w),
                         _buildCompactStatusChip(
                           '🌆',
                           'Evening',
@@ -639,17 +640,17 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                   ],
                 ),
               ),
-              
+
               // Arrow Icon
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(8.r),
                 decoration: BoxDecoration(
                   color: AppColors.deepNavy.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_forward_ios,
-                  size: 16,
+                  size: 16.sp,
                   color: AppColors.deepNavy,
                 ),
               ),
@@ -662,12 +663,12 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
 
   Widget _buildCompactStatusChip(String icon, String label, bool uploaded) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
-        color: uploaded 
-            ? AppColors.statusCompleted.withValues(alpha: 0.1) 
+        color: uploaded
+            ? AppColors.statusCompleted.withValues(alpha: 0.1)
             : AppColors.statusOverdue.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8.r),
         border: Border.all(
           color: uploaded ? AppColors.statusCompleted : AppColors.statusOverdue,
           width: 1,
@@ -676,20 +677,20 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(icon, style: const TextStyle(fontSize: 12)),
-          const SizedBox(width: 4),
+          Text(icon, style: TextStyle(fontSize: 12.sp)),
+          SizedBox(width: 4.w),
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 11.sp,
               fontWeight: FontWeight.w600,
               color: uploaded ? AppColors.statusCompleted : AppColors.statusOverdue,
             ),
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: 4.w),
           Icon(
             uploaded ? Icons.check_circle : Icons.pending,
-            size: 12,
+            size: 12.sp,
             color: uploaded ? AppColors.statusCompleted : AppColors.statusOverdue,
           ),
         ],
@@ -709,51 +710,51 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
   // Profile Tab
   Widget _buildProfileTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       child: Column(
         children: [
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
           // Profile Avatar
           Container(
-            width: 100,
-            height: 100,
+            width: 100.w,
+            height: 100.h,
             decoration: BoxDecoration(
               gradient: AppColors.navyGradient,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.person, size: 50, color: Colors.white),
+            child: Icon(Icons.person, size: 50.sp, color: Colors.white),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Text(
             widget.user.name ?? 'Site Engineer',
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+            style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4.h),
           Text(
             widget.user.email ?? '',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
             decoration: BoxDecoration(
               color: AppColors.deepNavy.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(20.r),
             ),
-            child: const Text(
+            child: Text(
               'Site Engineer',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
             ),
           ),
-          const SizedBox(height: 32),
-          
+          SizedBox(height: 32.h),
+
           // Profile Options
           _buildProfileOption(Icons.person_outline, 'Edit Profile', () {}),
           _buildProfileOption(Icons.lock_outline, 'Change Password', () {}),
           _buildProfileOption(Icons.settings_outlined, 'Settings', () {}),
           _buildProfileOption(Icons.help_outline, 'Help & Support', () {}),
           _buildProfileOption(Icons.info_outline, 'About', () {}),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           _buildProfileOption(Icons.logout, 'Sign Out', _logout, isDestructive: true),
         ],
       ),
@@ -762,10 +763,10 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
 
   Widget _buildProfileOption(IconData icon, String title, VoidCallback onTap, {bool isDestructive = false}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.deepNavy.withValues(alpha: 0.06),
@@ -779,14 +780,14 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
         title: Text(
           title,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 16.sp,
             fontWeight: FontWeight.w600,
             color: isDestructive ? AppColors.statusOverdue : AppColors.deepNavy,
           ),
         ),
         trailing: Icon(
           Icons.arrow_forward_ios,
-          size: 16,
+          size: 16.sp,
           color: isDestructive ? AppColors.statusOverdue : AppColors.textSecondary,
         ),
         onTap: onTap,
@@ -804,7 +805,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
         ),
       ),
     );
-    
+
     // Reload status if returned from detail screen
     if (result == true) {
       await _loadSiteUploadStatus(site['id']);
@@ -813,7 +814,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
 
   void _openMaterialInventory() {
     final sites = context.read<ConstructionProvider>().sites;
-    
+
     if (sites.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -858,7 +859,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
 
   void _openLaborEntry() {
     final sites = context.read<ConstructionProvider>().sites;
-    
+
     if (sites.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -903,7 +904,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
 
   void _openDocuments() {
     final sites = context.read<ConstructionProvider>().sites;
-    
+
     if (sites.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -948,7 +949,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
 
   void _openBudget() {
     final sites = context.read<ConstructionProvider>().sites;
-    
+
     if (sites.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -971,7 +972,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
   Future<void> _showBudgetDetails(Map<String, dynamic> site) async {
     final siteId = site['id'].toString();
     final siteName = site['display_name'] ?? site['site_name'] ?? 'Unknown Site';
-    
+
     // Show loading dialog
     showDialog(
       context: context,
@@ -980,14 +981,14 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
         child: CircularProgressIndicator(color: AppColors.deepNavy),
       ),
     );
-    
+
     // Fetch budget data
     final budgetService = BudgetManagementService();
     final budget = await budgetService.getBudgetAllocation(siteId);
-    
+
     // Close loading dialog
     if (mounted) Navigator.pop(context);
-    
+
     if (budget == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -999,7 +1000,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
       }
       return;
     }
-    
+
     // Show budget details dialog
     if (mounted) {
       showDialog(
@@ -1009,14 +1010,14 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
           title: Row(
             children: [
               const Icon(Icons.account_balance_wallet, color: AppColors.deepNavy),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Text(
                   siteName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.deepNavy,
                     fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    fontSize: 18.sp,
                   ),
                 ),
               ),
@@ -1029,65 +1030,65 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
               children: [
                 // Total Budget Card
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.r),
                   decoration: BoxDecoration(
                     gradient: AppColors.navyGradient,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Total Project Budget',
                         style: TextStyle(
                           color: Colors.white70,
-                          fontSize: 14,
+                          fontSize: 14.sp,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8.h),
                       Text(
                         _formatCurrency(budget['total_budget']),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 28,
+                          fontSize: 28.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                
+                SizedBox(height: 16.h),
+
                 // Budget Details
-                const Text(
+                Text(
                   'Budget Details',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.deepNavy,
                   ),
                 ),
-                const SizedBox(height: 12),
-                
+                SizedBox(height: 12.h),
+
                 _buildBudgetDetailRow('Allocated By', budget['allocated_by'] ?? 'N/A'),
                 _buildBudgetDetailRow('Date', budget['allocated_date']?.substring(0, 10) ?? 'N/A'),
                 _buildBudgetDetailRow('Status', budget['status'] ?? 'N/A'),
-                
+
                 if (budget['notes'] != null && budget['notes'].toString().isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  const Text(
+                  SizedBox(height: 12.h),
+                  Text(
                     'Notes',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.deepNavy,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Text(
                     budget['notes'],
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -1098,7 +1099,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
+              child: Text(
                 'Close',
                 style: TextStyle(color: AppColors.deepNavy, fontWeight: FontWeight.bold),
               ),
@@ -1111,21 +1112,21 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
 
   Widget _buildBudgetDetailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 8.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
             ),
           ),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.deepNavy,
             ),
@@ -1154,7 +1155,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
     required Function(Map<String, dynamic>) onSiteSelected,
   }) {
     final sites = context.read<ConstructionProvider>().sites;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1172,16 +1173,16 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
               final site = sites[index];
               final siteName = site['display_name'] ?? site['site_name'] ?? 'Unknown Site';
               final location = '${site['area'] ?? ''}, ${site['street'] ?? ''}';
-              
+
               return ListTile(
                 leading: Container(
-                  width: 40,
-                  height: 40,
+                  width: 40.w,
+                  height: 40.h,
                   decoration: BoxDecoration(
                     gradient: AppColors.navyGradient,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: const Icon(Icons.location_city, color: Colors.white, size: 20),
+                  child: Icon(Icons.location_city, color: Colors.white, size: 20.sp),
                 ),
                 title: Text(
                   siteName,
@@ -1193,7 +1194,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                 subtitle: Text(
                   location,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -1315,14 +1316,14 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25.r)),
       ),
       padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
+        left: 24.w,
+        right: 24.w,
+        top: 24.h,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
@@ -1331,66 +1332,66 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 '👷 Labor Entry',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
               ),
               const Spacer(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                     decoration: BoxDecoration(
                       gradient: AppColors.orangeGradient,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(16.r),
                     ),
                     child: Text(
                       'Workers: $_totalCount',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                     decoration: BoxDecoration(
                       color: Colors.green.shade700,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(16.r),
                     ),
                     child: Text(
                       '₹${_totalSalary.toStringAsFixed(0)}',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             widget.siteName,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 16),
-          
+          SizedBox(height: 16.h),
+
           SizedBox(
-            height: 300,
+            height: 300.h,
             child: ListView(
               children: _labourCounts.keys.map((type) => _buildLabourTypeRow(type)).toList(),
             ),
           ),
-          const SizedBox(height: 16),
-          
+          SizedBox(height: 16.h),
+
           // Extra Cost Section
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
               color: Colors.orange.shade50,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
               border: Border.all(color: Colors.orange.shade200),
             ),
             child: Column(
@@ -1398,19 +1399,19 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.attach_money, size: 20, color: Colors.orange.shade700),
-                    const SizedBox(width: 8),
+                    Icon(Icons.attach_money, size: 20.sp, color: Colors.orange.shade700),
+                    SizedBox(width: 8.w),
                     Text(
                       'Extra Cost (Optional)',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.orange.shade900,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 TextField(
                   controller: _extraCostController,
                   keyboardType: TextInputType.number,
@@ -1419,13 +1420,13 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       borderSide: BorderSide(color: Colors.orange.shade200),
                     ),
                     prefixIcon: Icon(Icons.currency_rupee, color: Colors.orange.shade700),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 TextField(
                   controller: _extraCostNotesController,
                   maxLines: 2,
@@ -1434,7 +1435,7 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       borderSide: BorderSide(color: Colors.orange.shade200),
                     ),
                   ),
@@ -1442,23 +1443,23 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           ElevatedButton(
             onPressed: _totalCount > 0 && !_isSubmitting ? _submit : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.safetyOrange,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: EdgeInsets.symmetric(vertical: 16.h),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
             child: _isSubmitting
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                ? SizedBox(
+                    height: 20.h,
+                    width: 20.w,
+                    child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
-                : const Text(
+                : Text(
                     'Submit Labor Entry',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
           ),
         ],
@@ -1473,11 +1474,11 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
     final rowTotal = count * rate;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
         color: count > 0 ? AppColors.deepNavy.withValues(alpha: 0.05) : AppColors.lightSlate,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: count > 0 ? AppColors.deepNavy.withValues(alpha: 0.2) : Colors.transparent,
           width: 2,
@@ -1486,15 +1487,15 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 40.w,
+            height: 40.h,
             decoration: BoxDecoration(
               color: count > 0 ? AppColors.deepNavy : AppColors.textSecondary,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(10.r),
             ),
-            child: Icon(icon, color: Colors.white, size: 20),
+            child: Icon(icon, color: Colors.white, size: 20.sp),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1502,7 +1503,7 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
                 Text(
                   type,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 15.sp,
                     fontWeight: count > 0 ? FontWeight.bold : FontWeight.w500,
                     color: count > 0 ? AppColors.deepNavy : AppColors.textSecondary,
                   ),
@@ -1512,7 +1513,7 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
                       ? '₹${rate.toStringAsFixed(0)}/day × $count = ₹${rowTotal.toStringAsFixed(0)}'
                       : '₹${rate.toStringAsFixed(0)}/day',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     color: count > 0 ? Colors.green.shade700 : AppColors.textSecondary,
                     fontWeight: count > 0 ? FontWeight.w600 : FontWeight.normal,
                   ),
@@ -1524,22 +1525,22 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
             children: [
               IconButton(
                 onPressed: () => setState(() => _labourCounts[type] = (count - 1).clamp(0, 50)),
-                icon: const Icon(Icons.remove_circle_outline, size: 32),
+                icon: Icon(Icons.remove_circle_outline, size: 32.sp),
                 color: count > 0 ? AppColors.safetyOrange : AppColors.textSecondary,
               ),
               Container(
-                width: 50,
-                height: 40,
+                width: 50.w,
+                height: 40.h,
                 decoration: BoxDecoration(
                   gradient: count > 0 ? AppColors.orangeGradient : null,
                   color: count == 0 ? AppColors.lightSlate : null,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
                 child: Center(
                   child: Text(
                     '$count',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.bold,
                       color: count > 0 ? Colors.white : AppColors.textSecondary,
                     ),
@@ -1548,7 +1549,7 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
               ),
               IconButton(
                 onPressed: () => setState(() => _labourCounts[type] = (count + 1).clamp(0, 50)),
-                icon: const Icon(Icons.add_circle_outline, size: 32),
+                icon: Icon(Icons.add_circle_outline, size: 32.sp),
                 color: AppColors.safetyOrange,
               ),
             ],
@@ -1577,10 +1578,10 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
 
   Future<void> _submit() async {
     setState(() => _isSubmitting = true);
-    
+
     final extraCost = double.tryParse(_extraCostController.text.trim()) ?? 0;
     final extraCostNotes = _extraCostNotesController.text.trim();
-    
+
     // Submit each labour type with count > 0
     for (final entry in _labourCounts.entries) {
       if (entry.value > 0) {
@@ -1594,9 +1595,9 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
         );
       }
     }
-    
+
     setState(() => _isSubmitting = false);
-    
+
     if (mounted) {
       Navigator.pop(context);
       widget.onSuccess();
@@ -1622,10 +1623,10 @@ class SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.1),
@@ -1638,28 +1639,28 @@ class SummaryCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 48.w,
+            height: 48.h,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(icon, color: color, size: 24.sp),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Text(
             value,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 24.sp,
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4.h),
           Text(
             title,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 12.sp,
               color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
@@ -1669,4 +1670,3 @@ class SummaryCard extends StatelessWidget {
     );
   }
 }
-

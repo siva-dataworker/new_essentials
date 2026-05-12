@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../services/budget_management_service.dart';
 import '../services/construction_service.dart';
 
@@ -202,12 +203,12 @@ class _AdminLocalLabourRatesScreenState extends State<AdminLocalLabourRatesScree
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Local Labour Rates',
           style: TextStyle(
-            color: Color(0xFF1A1A2E),
+            color: const Color(0xFF1A1A2E),
             fontWeight: FontWeight.bold,
-            fontSize: 18,
+            fontSize: 18.sp,
           ),
         ),
         backgroundColor: Colors.white,
@@ -218,30 +219,30 @@ class _AdminLocalLabourRatesScreenState extends State<AdminLocalLabourRatesScree
         children: [
           // Area Selection
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             color: Colors.white,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Select Area',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF6B7280),
+                    color: const Color(0xFF6B7280),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedArea,
                   decoration: InputDecoration(
                     hintText: 'Choose an area',
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 12.h,
                     ),
                   ),
                   items: _areas.map((area) {
@@ -271,8 +272,8 @@ class _AdminLocalLabourRatesScreenState extends State<AdminLocalLabourRatesScree
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 100,
-                          height: 100,
+                          width: 100.w,
+                          height: 100.h,
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
                               colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
@@ -281,28 +282,28 @@ class _AdminLocalLabourRatesScreenState extends State<AdminLocalLabourRatesScree
                             ),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.location_on,
-                            size: 50,
+                            size: 50.sp,
                             color: Colors.white,
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        const Text(
+                        SizedBox(height: 24.h),
+                        Text(
                           'Select an Area',
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 20.sp,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A1A2E),
+                            color: const Color(0xFF1A1A2E),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
+                        SizedBox(height: 8.h),
+                        Text(
                           'Choose an area to set local labour rates',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF6B7280),
+                            fontSize: 16.sp,
+                            color: const Color(0xFF6B7280),
                           ),
                         ),
                       ],
@@ -332,8 +333,8 @@ class _AdminLocalLabourRatesScreenState extends State<AdminLocalLabourRatesScree
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 100,
-              height: 100,
+              width: 100.w,
+              height: 100.h,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
@@ -342,28 +343,28 @@ class _AdminLocalLabourRatesScreenState extends State<AdminLocalLabourRatesScree
                 ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.engineering,
-                size: 50,
+                size: 50.sp,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: 24.h),
+            Text(
               'No Labour Types',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A2E),
+                color: const Color(0xFF1A1A2E),
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8.h),
+            Text(
               'Add labour types from the global rates screen',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 16,
-                color: Color(0xFF6B7280),
+                fontSize: 16.sp,
+                color: const Color(0xFF6B7280),
               ),
             ),
           ],
@@ -372,80 +373,80 @@ class _AdminLocalLabourRatesScreenState extends State<AdminLocalLabourRatesScree
     }
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       children: [
         // Info Card
         Container(
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.only(bottom: 16),
+          padding: EdgeInsets.all(16.r),
+          margin: EdgeInsets.only(bottom: 16.h),
           decoration: BoxDecoration(
             color: const Color(0xFF1A1A2E).withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
               color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
             ),
           ),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.info_outline,
-                color: Color(0xFF1A1A2E),
-                size: 20,
+                color: const Color(0xFF1A1A2E),
+                size: 20.sp,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Text(
                   'Setting local rates for: $_selectedArea',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF1A1A2E),
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: const Color(0xFF1A1A2E),
                   ),
                 ),
               ),
             ],
           ),
         ),
-        
+
         // Labour Type Cards
         ...labourTypes.map((labourType) {
           final localRate = _localRates.firstWhere(
             (rate) => rate['labour_type'] == labourType,
             orElse: () => {},
           );
-          
+
           final hasLocalRate = localRate.isNotEmpty;
           final rate = hasLocalRate ? localRate['daily_rate'] : null;
-          
+
           return Card(
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: EdgeInsets.only(bottom: 12.h),
             elevation: 2,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
             ),
             child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
+              contentPadding: EdgeInsets.all(16.r),
               leading: Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(10.r),
                 decoration: BoxDecoration(
                   color: hasLocalRate
                       ? const Color(0xFF059669).withValues(alpha: 0.1)
                       : const Color(0xFF6B7280).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
                 child: Icon(
                   Icons.person,
                   color: hasLocalRate
                       ? const Color(0xFF059669)
                       : const Color(0xFF6B7280),
-                  size: 24,
+                  size: 24.sp,
                 ),
               ),
               title: Text(
                 labourType,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A2E),
+                  color: const Color(0xFF1A1A2E),
                 ),
               ),
               subtitle: Text(
@@ -453,7 +454,7 @@ class _AdminLocalLabourRatesScreenState extends State<AdminLocalLabourRatesScree
                     ? 'Local rate set for $_selectedArea'
                     : 'Using global rate',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   color: hasLocalRate
                       ? const Color(0xFF059669)
                       : const Color(0xFF6B7280),
@@ -464,24 +465,24 @@ class _AdminLocalLabourRatesScreenState extends State<AdminLocalLabourRatesScree
                 children: [
                   if (hasLocalRate)
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 6.h,
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1A1A2E),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(20.r),
                       ),
                       child: Text(
                         '₹${rate?.toStringAsFixed(0)}/day',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   IconButton(
                     icon: Icon(
                       hasLocalRate ? Icons.edit : Icons.add,

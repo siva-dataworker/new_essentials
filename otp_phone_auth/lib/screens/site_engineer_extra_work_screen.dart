@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../providers/site_engineer_provider.dart';
 import '../utils/app_colors.dart';
 
@@ -78,28 +79,28 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 48.w,
+              height: 48.h,
               decoration: BoxDecoration(
                 color: AppColors.statusCompleted.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.check_circle,
                 color: AppColors.statusCompleted,
-                size: 26,
+                size: 26.sp,
               ),
             ),
-            const SizedBox(width: 16),
-            const Expanded(
+            SizedBox(width: 16.w),
+            Expanded(
               child: Text(
                 'Submitted Successfully',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.deepNavy,
                 ),
@@ -107,9 +108,9 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Extra work has been recorded. Would you like to share this with the accountant via WhatsApp?',
-          style: TextStyle(fontSize: 14),
+          style: TextStyle(fontSize: 14.sp),
         ),
         actions: [
           TextButton(
@@ -140,7 +141,7 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
   Future<void> _shareViaWhatsApp(String message) async {
     // WhatsApp group or accountant number (you can configure this)
     final whatsappUrl = Uri.parse('whatsapp://send?text=${Uri.encodeComponent(message)}');
-    
+
     try {
       if (await canLaunchUrl(whatsappUrl)) {
         await launchUrl(whatsappUrl);
@@ -177,13 +178,13 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
           icon: const Icon(Icons.arrow_back, color: AppColors.deepNavy),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Extra Work',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepNavy,
               ),
@@ -191,7 +192,7 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
             Text(
               'Record extra work & labour',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.normal,
               ),
@@ -200,7 +201,7 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Form(
           key: _formKey,
           child: Column(
@@ -208,10 +209,10 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
             children: [
               // Info Card
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
                   color: AppColors.deepNavy.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                   border: Border.all(
                     color: AppColors.deepNavy.withValues(alpha: 0.1),
                     width: 1.5,
@@ -220,24 +221,24 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
                 child: Row(
                   children: [
                     Container(
-                      width: 48,
-                      height: 48,
+                      width: 48.w,
+                      height: 48.h,
                       decoration: BoxDecoration(
                         color: AppColors.deepNavy,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.info_outline,
                         color: Colors.white,
-                        size: 26,
+                        size: 26.sp,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(width: 16.w),
                     Expanded(
                       child: Text(
                         'This information will be sent to the accountant via WhatsApp',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 13.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -245,13 +246,13 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24.h),
 
               // Description Field
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.cleanWhite,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.deepNavy.withValues(alpha: 0.05),
@@ -267,12 +268,12 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
                     labelText: 'Work Description *',
                     hintText: 'Describe the extra work done...',
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(16.r),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
                     fillColor: AppColors.cleanWhite,
-                    contentPadding: const EdgeInsets.all(16),
+                    contentPadding: EdgeInsets.all(16.r),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -282,13 +283,13 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
                   },
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
 
               // Amount Field
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.cleanWhite,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.deepNavy.withValues(alpha: 0.05),
@@ -305,12 +306,12 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
                     hintText: 'Enter amount',
                     prefixIcon: const Icon(Icons.currency_rupee),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(16.r),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
                     fillColor: AppColors.cleanWhite,
-                    contentPadding: const EdgeInsets.all(16),
+                    contentPadding: EdgeInsets.all(16.r),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -323,13 +324,13 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
                   },
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
 
               // Labour Count Field
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.cleanWhite,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.deepNavy.withValues(alpha: 0.05),
@@ -346,12 +347,12 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
                     hintText: 'Enter number of labourers',
                     prefixIcon: const Icon(Icons.people_outline),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(16.r),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
                     fillColor: AppColors.cleanWhite,
-                    contentPadding: const EdgeInsets.all(16),
+                    contentPadding: EdgeInsets.all(16.r),
                   ),
                   validator: (value) {
                     if (value != null && value.trim().isNotEmpty) {
@@ -363,7 +364,7 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
                   },
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32.h),
 
               // Submit Button
               ElevatedButton(
@@ -371,30 +372,30 @@ Submitted by: ${context.read<SiteEngineerProvider>().selectedSite?['engineer_nam
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.deepNavy,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: 16.h),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16.r),
                   ),
                   elevation: 0,
                 ),
                 child: _isSubmitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
+                    ? SizedBox(
+                        height: 20.h,
+                        width: 20.w,
+                        child: const CircularProgressIndicator(
                           color: Colors.white,
                           strokeWidth: 2,
                         ),
                       )
-                    : const Row(
+                    : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.send, size: 22),
-                          SizedBox(width: 12),
+                          Icon(Icons.send, size: 22.sp),
+                          SizedBox(width: 12.w),
                           Text(
                             'Submit Extra Work',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

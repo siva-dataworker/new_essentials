@@ -64,6 +64,9 @@ dependencies:
   # Excel export
   excel: ^4.0.6
   path_provider: ^2.1.5
+
+  # Responsive UI
+  flutter_screenutil: ^5.9.3
   
   # Supabase
   supabase_flutter: ^2.8.0

@@ -4,6 +4,7 @@ import '../models/site_model.dart';
 import '../utils/app_colors.dart';
 import 'supervisor_dashboard.dart';
 import 'supervisor_profile_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class SiteSelectionScreen extends StatelessWidget {
   final String phoneNumber;
@@ -53,7 +54,7 @@ class SiteSelectionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Get mock sites
     final sites = _getMockSites();
-    
+
     // Create mock user from phone number
     final user = UserModel(
       uid: 'mock-uid-${phoneNumber.hashCode}',
@@ -76,7 +77,7 @@ class SiteSelectionScreen extends StatelessWidget {
           elevation: 0,
           actions: [
             IconButton(
-              icon: const Icon(Icons.account_circle_outlined, size: 28),
+              icon: Icon(Icons.account_circle_outlined, size: 28.sp),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -94,54 +95,54 @@ class SiteSelectionScreen extends StatelessWidget {
               // Header
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(24.r),
                 decoration: BoxDecoration(
                   color: AppColors.deepNavy,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(30.r),
+                    bottomRight: Radius.circular(30.r),
                   ),
                 ),
                 child: Column(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16.r),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.location_city_rounded,
-                        size: 48,
+                        size: 48.sp,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     Text(
                       'Welcome, ${user.name ?? "Supervisor"}!',
-                      style: const TextStyle(
-                        fontSize: 22,
+                      style: TextStyle(
+                        fontSize: 22.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    SizedBox(height: 8.h),
+                    Text(
                       'Select a site to continue',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         color: Colors.white70,
                       ),
                     ),
                   ],
                 ),
               ),
-              
+
               // Sites List
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(20.r),
                   itemCount: sites.length,
                   itemBuilder: (context, index) {
                     final site = sites[index];
@@ -158,10 +159,10 @@ class SiteSelectionScreen extends StatelessWidget {
 
   Widget _buildSiteCard(BuildContext context, SiteModel site, UserModel user) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: AppColors.borderColor, width: 1),
         boxShadow: [
           BoxShadow(
@@ -182,28 +183,28 @@ class SiteSelectionScreen extends StatelessWidget {
               ),
             );
           },
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20.r),
             child: Row(
               children: [
                 // Site Icon
                 Container(
-                  width: 60,
-                  height: 60,
+                  width: 60.w,
+                  height: 60.h,
                   decoration: BoxDecoration(
                     color: AppColors.safetyOrange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.apartment_rounded,
-                    size: 32,
+                    size: 32.sp,
                     color: AppColors.safetyOrange,
                   ),
                 ),
-                
-                const SizedBox(width: 16),
-                
+
+                SizedBox(width: 16.w),
+
                 // Site Info
                 Expanded(
                   child: Column(
@@ -211,34 +212,34 @@ class SiteSelectionScreen extends StatelessWidget {
                     children: [
                       Text(
                         site.name,
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: 18.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text(
                         '${site.builtUpArea.toInt()} sq ft',
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8.h),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 4.h,
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.statusCompleted.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12.r),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Active',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.sp,
                             fontWeight: FontWeight.w600,
                             color: AppColors.statusCompleted,
                           ),
@@ -247,17 +248,17 @@ class SiteSelectionScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 // Arrow Icon
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: AppColors.deepNavy.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.arrow_forward_ios_rounded,
-                    size: 16,
+                    size: 16.sp,
                     color: AppColors.deepNavy,
                   ),
                 ),

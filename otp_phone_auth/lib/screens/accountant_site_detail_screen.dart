@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../providers/construction_provider.dart';
 import '../providers/change_request_provider.dart';
 import '../utils/app_colors.dart';
@@ -90,12 +91,12 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
               .where((entry) => entry['site_id'] == siteId || entry['site_name'] == widget.site['site_name'])
               .toList()
         );
-        
+
         // Filter change requests for this site
         final siteChangeRequests = changeRequestProvider.pendingChangeRequests
             .where((req) => req['site_id'] == siteId)
             .toList();
-        
+
         final isLoading = provider.isLoadingAccountantData;
 
         return Scaffold(
@@ -103,9 +104,9 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
           appBar: AppBar(
             title: Text(
               widget.site['display_name'] ?? widget.site['site_name'] ?? 'Site Details',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.deepNavy,
-                fontSize: 18,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -118,7 +119,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
               unselectedLabelColor: AppColors.textSecondary,
               indicatorColor: AppColors.deepNavy,
               indicatorWeight: 3,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp),
               tabs: [
                 const Tab(text: 'Labour'),
                 const Tab(text: 'Material'),
@@ -128,18 +129,18 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                     children: [
                       const Text('Requests'),
                       if (siteChangeRequests.isNotEmpty) ...[
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6.w),
                         Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: EdgeInsets.all(6.r),
                           decoration: const BoxDecoration(
                             color: AppColors.statusOverdue,
                             shape: BoxShape.circle,
                           ),
                           child: Text(
                             '${siteChangeRequests.length}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 11,
+                              fontSize: 11.sp,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -186,7 +187,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
 
   Widget _buildRoleFilter() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -199,24 +200,24 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
       ),
       child: Row(
         children: [
-          const Text(
+          Text(
             'Filter by Role:',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.deepNavy,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
                   _buildFilterChip('All', null),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   _buildFilterChip('Supervisor', 'Supervisor'),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   _buildFilterChip('Site Engineer', 'Site Engineer'),
                 ],
               ),
@@ -242,17 +243,17 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
       labelStyle: TextStyle(
         color: AppColors.deepNavy,
         fontWeight: FontWeight.w600,
-        fontSize: 13,
+        fontSize: 13.sp,
       ),
       backgroundColor: AppColors.cleanWhite,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
         side: BorderSide(
           color: isSelected ? AppColors.deepNavy : AppColors.deepNavy.withValues(alpha: 0.3),
           width: isSelected ? 2 : 1,
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
     );
   }
 
@@ -272,7 +273,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       itemCount: groupedEntries.length,
       itemBuilder: (context, index) {
         final date = groupedEntries.keys.elementAt(index);
@@ -282,11 +283,11 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.symmetric(vertical: 12.h),
               child: Text(
                 date,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.deepNavy,
                 ),
@@ -315,7 +316,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       itemCount: groupedEntries.length,
       itemBuilder: (context, index) {
         final date = groupedEntries.keys.elementAt(index);
@@ -325,11 +326,11 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.symmetric(vertical: 12.h),
               child: Text(
                 date,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.deepNavy,
                 ),
@@ -346,13 +347,13 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
     final extraCost = entry['extra_cost'] != null ? double.tryParse(entry['extra_cost'].toString()) ?? 0 : 0;
     final hasExtraCost = extraCost > 0;
     final submittedByRole = entry['submitted_by_role'] ?? entry['user_role'] ?? 'Supervisor';
-    final roleColor = submittedByRole == 'Site Engineer' ? Color(0xFF1A1A2E) : AppColors.deepNavy;
-    
+    final roleColor = submittedByRole == 'Site Engineer' ? const Color(0xFF1A1A2E) : AppColors.deepNavy;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: roleColor.withValues(alpha: 0.3),
           width: 1.5,
@@ -366,46 +367,46 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: roleColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
-                  child: Icon(Icons.person, size: 18, color: roleColor),
+                  child: Icon(Icons.person, size: 18.sp, color: roleColor),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         entry['supervisor_name'] ?? 'Unknown',
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2.h),
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
                             decoration: BoxDecoration(
                               color: roleColor,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(8.r),
                             ),
                             child: Text(
                               submittedByRole,
-                              style: const TextStyle(
-                                fontSize: 11,
+                              style: TextStyle(
+                                fontSize: 11.sp,
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -421,12 +422,12 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.access_time, size: 12, color: AppColors.textSecondary),
-                        const SizedBox(width: 4),
+                        Icon(Icons.access_time, size: 12.sp, color: AppColors.textSecondary),
+                        SizedBox(width: 4.w),
                         Text(
                           _formatTime(entry['entry_time'] ?? entry['entry_date']),
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.sp,
                             color: AppColors.textSecondary,
                             fontWeight: FontWeight.w500,
                           ),
@@ -437,7 +438,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
                 Expanded(
@@ -447,7 +448,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                     AppColors.deepNavy,
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 Expanded(
                   child: _buildInfoChip(
                     Icons.groups,
@@ -458,37 +459,37 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
               ],
             ),
             if (hasExtraCost) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
-                  color: Color(0xFF1A1A2E).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Color(0xFF1A1A2E).withValues(alpha: 0.3)),
+                  color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(color: const Color(0xFF1A1A2E).withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.attach_money, size: 16, color: Color(0xFF1A1A2E)),
-                        const SizedBox(width: 4),
+                        Icon(Icons.attach_money, size: 16.sp, color: const Color(0xFF1A1A2E)),
+                        SizedBox(width: 4.w),
                         Text(
                           'Extra Cost: ₹${extraCost.toStringAsFixed(0)}',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A1A2E),
+                            color: const Color(0xFF1A1A2E),
                           ),
                         ),
                       ],
                     ),
                     if (entry['extra_cost_notes'] != null && entry['extra_cost_notes'].toString().isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text(
                         entry['extra_cost_notes'].toString(),
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           color: Colors.grey.shade700,
                         ),
                       ),
@@ -507,13 +508,13 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
     final extraCost = entry['extra_cost'] != null ? double.tryParse(entry['extra_cost'].toString()) ?? 0 : 0;
     final hasExtraCost = extraCost > 0;
     final submittedByRole = entry['submitted_by_role'] ?? entry['user_role'] ?? 'Supervisor';
-    final roleColor = submittedByRole == 'Site Engineer' ? Color(0xFF1A1A2E) : AppColors.deepNavy;
-    
+    final roleColor = submittedByRole == 'Site Engineer' ? const Color(0xFF1A1A2E) : AppColors.deepNavy;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: roleColor.withValues(alpha: 0.3),
           width: 1.5,
@@ -527,46 +528,46 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: roleColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
-                  child: Icon(Icons.person, size: 18, color: roleColor),
+                  child: Icon(Icons.person, size: 18.sp, color: roleColor),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         entry['supervisor_name'] ?? 'Unknown',
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2.h),
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
                             decoration: BoxDecoration(
                               color: roleColor,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(8.r),
                             ),
                             child: Text(
                               submittedByRole,
-                              style: const TextStyle(
-                                fontSize: 11,
+                              style: TextStyle(
+                                fontSize: 11.sp,
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -582,12 +583,12 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.access_time, size: 12, color: AppColors.textSecondary),
-                        const SizedBox(width: 4),
+                        Icon(Icons.access_time, size: 12.sp, color: AppColors.textSecondary),
+                        SizedBox(width: 4.w),
                         Text(
                           _formatTime(entry['updated_at'] ?? entry['entry_date']),
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.sp,
                             color: AppColors.textSecondary,
                             fontWeight: FontWeight.w500,
                           ),
@@ -598,7 +599,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
                 Expanded(
@@ -608,7 +609,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                     AppColors.deepNavy,
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 Expanded(
                   child: _buildInfoChip(
                     Icons.straighten,
@@ -619,37 +620,37 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
               ],
             ),
             if (hasExtraCost) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
-                  color: Color(0xFF1A1A2E).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Color(0xFF1A1A2E).withValues(alpha: 0.3)),
+                  color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(color: const Color(0xFF1A1A2E).withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.attach_money, size: 16, color: Color(0xFF1A1A2E)),
-                        const SizedBox(width: 4),
+                        Icon(Icons.attach_money, size: 16.sp, color: const Color(0xFF1A1A2E)),
+                        SizedBox(width: 4.w),
                         Text(
                           'Extra Cost: ₹${extraCost.toStringAsFixed(0)}',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A1A2E),
+                            color: const Color(0xFF1A1A2E),
                           ),
                         ),
                       ],
                     ),
                     if (entry['extra_cost_notes'] != null && entry['extra_cost_notes'].toString().isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text(
                         entry['extra_cost_notes'].toString(),
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           color: Colors.grey.shade700,
                         ),
                       ),
@@ -666,21 +667,21 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
 
   Widget _buildInfoChip(IconData icon, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(10.r),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
+          Icon(icon, size: 14.sp, color: color),
+          SizedBox(width: 6.w),
           Flexible(
             child: Text(
               text,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
                 color: color,
               ),
@@ -702,7 +703,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       itemCount: changeRequests.length,
       itemBuilder: (context, index) {
         final request = changeRequests[index];
@@ -714,12 +715,12 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
   Widget _buildChangeRequestCard(Map<String, dynamic> request, ChangeRequestProvider provider) {
     final entryDetails = request['entry_details'] as Map<String, dynamic>?;
     final entryType = request['entry_type'] as String?;
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: AppColors.statusOverdue.withValues(alpha: 0.3),
           width: 2,
@@ -733,26 +734,26 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Request badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
               decoration: BoxDecoration(
                 color: AppColors.statusOverdue.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.pending_actions, size: 14, color: AppColors.statusOverdue),
-                  SizedBox(width: 4),
+                  Icon(Icons.pending_actions, size: 14.sp, color: AppColors.statusOverdue),
+                  SizedBox(width: 4.w),
                   Text(
                     'PENDING REQUEST',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.statusOverdue,
                       letterSpacing: 0.5,
@@ -761,34 +762,34 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             // Requested by
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: AppColors.deepNavy.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
-                  child: const Icon(Icons.person, size: 18, color: AppColors.deepNavy),
+                  child: Icon(Icons.person, size: 18.sp, color: AppColors.deepNavy),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Requested by',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
                       Text(
                         request['requested_by_name'] ?? 'Unknown',
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.deepNavy,
                         ),
@@ -798,32 +799,32 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             // Entry details
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.r),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     entryType == 'LABOUR' ? 'Labour Entry' : 'Material Entry',
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: TextStyle(
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Text(
                     entryType == 'LABOUR'
                         ? '${entryDetails?['labour_type']}: ${entryDetails?['labour_count']} workers'
                         : '${entryDetails?['material_type']}: ${entryDetails?['quantity']} ${entryDetails?['unit']}',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.deepNavy,
                     ),
@@ -831,55 +832,55 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             // Request message
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
                 color: AppColors.statusOverdue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.r),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.message, size: 16, color: AppColors.statusOverdue),
-                      SizedBox(width: 6),
+                      Icon(Icons.message, size: 16.sp, color: AppColors.statusOverdue),
+                      SizedBox(width: 6.w),
                       Text(
                         'Request Message',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.statusOverdue,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6.h),
                   Text(
                     request['request_message'] ?? '',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 13.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             // Handle button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () => _handleRequest(request, provider),
-                icon: const Icon(Icons.edit, size: 18),
+                icon: Icon(Icons.edit, size: 18.sp),
                 label: const Text('Handle Request'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:const Color(0xFF1A1A2E),
+                  backgroundColor: const Color(0xFF1A1A2E),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
                 ),
               ),
             ),
@@ -892,14 +893,14 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
   Future<void> _handleRequest(Map<String, dynamic> request, ChangeRequestProvider provider) async {
     final newValueController = TextEditingController();
     final responseController = TextEditingController();
-    
+
     final entryDetails = request['entry_details'] as Map<String, dynamic>?;
     final entryType = request['entry_type'] as String?;
-    
+
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: const Text(
           'Handle Change Request',
           style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.deepNavy),
@@ -911,61 +912,61 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
             children: [
               // Request details
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.person, size: 16, color: AppColors.deepNavy),
-                        const SizedBox(width: 6),
+                        Icon(Icons.person, size: 16.sp, color: AppColors.deepNavy),
+                        SizedBox(width: 6.w),
                         Text(
                           request['requested_by_name'] ?? 'Unknown',
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.deepNavy,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.h),
                     Text(
                       request['request_message'] ?? '',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 13.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               // Current value
               Text(
                 'Current Value:',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4.h),
               Text(
                 entryType == 'LABOUR'
                     ? '${entryDetails?['labour_type']}: ${entryDetails?['labour_count']} workers'
                     : '${entryDetails?['material_type']}: ${entryDetails?['quantity']} ${entryDetails?['unit']}',
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.deepNavy,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               // New value input
               TextField(
                 controller: newValueController,
@@ -974,15 +975,15 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                   labelText: 'New Value',
                   hintText: 'Enter new count/quantity',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                     borderSide: const BorderSide(color: AppColors.deepNavy, width: 2),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               // Response message
               TextField(
                 controller: responseController,
@@ -991,10 +992,10 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
                   labelText: 'Response Message',
                   hintText: 'Explain the change...',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                     borderSide: const BorderSide(color: AppColors.deepNavy, width: 2),
                   ),
                 ),
@@ -1022,7 +1023,7 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.deepNavy,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
             child: const Text(
               'Apply Change',
@@ -1071,23 +1072,23 @@ class _AccountantSiteDetailScreenState extends State<AccountantSiteDetailScreen>
         children: [
           Icon(
             icon,
-            size: 80,
+            size: 80.sp,
             color: AppColors.textSecondary.withValues(alpha: 0.5),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 18,
+            style: TextStyle(
+              fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.deepNavy,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             subtitle,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
             ),
           ),

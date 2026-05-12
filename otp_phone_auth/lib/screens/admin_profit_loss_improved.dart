@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_provider.dart';
 import '../utils/admin_theme.dart';
@@ -89,7 +90,7 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
             children: [
               // Site selector
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   boxShadow: [
@@ -104,7 +105,7 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Select Site', style: AdminTheme.bodySmall),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     DropdownButtonFormField<String>(
                       value: _selectedSiteId,
                       decoration: AdminTheme.inputDecoration(
@@ -151,23 +152,23 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(32),
+            padding: EdgeInsets.all(32.r),
             decoration: BoxDecoration(
               gradient: AdminTheme.blueGradient,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.account_balance,
-              size: 64,
+              size: 64.sp,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           const Text(
             'Select a site to view accounts',
             style: AdminTheme.heading3,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             'Choose from the dropdown above',
             style: AdminTheme.bodyMedium,
@@ -179,30 +180,30 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
 
   Widget _buildLoadingState() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       child: Column(
         children: [
           AdminTheme.shimmerLoading(
             width: double.infinity,
-            height: 200,
-            borderRadius: BorderRadius.circular(20),
+            height: 200.h,
+            borderRadius: BorderRadius.circular(20.r),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Row(
             children: [
               Expanded(
                 child: AdminTheme.shimmerLoading(
                   width: double.infinity,
-                  height: 120,
-                  borderRadius: BorderRadius.circular(16),
+                  height: 120.h,
+                  borderRadius: BorderRadius.circular(16.r),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: AdminTheme.shimmerLoading(
                   width: double.infinity,
-                  height: 120,
-                  borderRadius: BorderRadius.circular(16),
+                  height: 120.h,
+                  borderRadius: BorderRadius.circular(16.r),
                 ),
               ),
             ],
@@ -227,16 +228,16 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
         return FadeTransition(
           opacity: _fadeAnimation,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildProfitLossCard(data, isProfit),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 _buildMetricsGrid(data),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 _buildCostBreakdown(data),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 _buildQuickActions(),
               ],
             ),
@@ -250,7 +251,7 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
     final profitLoss = double.tryParse(data['profit_loss']?.toString() ?? '0') ?? 0;
     
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24.r),
       decoration: AdminTheme.gradientCard(
         isProfit ? AdminTheme.greenGradient : AdminTheme.pinkGradient,
       ),
@@ -266,7 +267,7 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
                       _selectedSiteName ?? 'Site',
                       style: AdminTheme.heading2.copyWith(color: Colors.white),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.h),
                     Text(
                       isProfit ? 'PROFIT' : 'LOSS',
                       style: AdminTheme.caption.copyWith(
@@ -278,24 +279,24 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
                 ),
               ),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Icon(
                   isProfit ? Icons.trending_up : Icons.trending_down,
                   color: Colors.white,
-                  size: 32,
+                  size: 32.sp,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           Text(
             '₹${_formatAmount(profitLoss)}',
-            style: const TextStyle(
-              fontSize: 42,
+            style: TextStyle(
+              fontSize: 42.sp,
               fontWeight: FontWeight.bold,
               color: Colors.white,
               letterSpacing: -1,
@@ -317,7 +318,7 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
             color: AdminTheme.primaryBlue,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12.w),
         Expanded(
           child: AdminTheme.metricCard(
             label: 'Project Value',
@@ -332,20 +333,20 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
 
   Widget _buildCostBreakdown(Map<String, dynamic> data) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20.r),
       decoration: AdminTheme.modernCard(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Cost Breakdown', style: AdminTheme.heading3),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
           _buildCostRow(
             'Labour Cost',
             data['labour_cost'],
             Icons.people,
             AdminTheme.successGreen,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           _buildCostRow(
             'Material Cost',
             data['material_cost'],
@@ -369,14 +370,14 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(10.r),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r),
           ),
-          child: Icon(icon, color: color, size: 20),
+          child: Icon(icon, color: color, size: 20.sp),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12.w),
         Expanded(
           child: Text(
             label,
@@ -396,7 +397,7 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text('Quick Actions', style: AdminTheme.heading3),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         _buildActionButton(
           'Material Purchases',
           Icons.shopping_cart,
@@ -413,7 +414,7 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
             );
           },
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         _buildActionButton(
           'Site Documents',
           Icons.folder,
@@ -439,21 +440,21 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           decoration: AdminTheme.modernCard(),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
-                child: Icon(icon, color: color, size: 24),
+                child: Icon(icon, color: color, size: 24.sp),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16.w),
               Expanded(
                 child: Text(
                   label,
@@ -463,7 +464,7 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
                   ),
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, color: color, size: 18),
+              Icon(Icons.arrow_forward_ios, color: color, size: 18.sp),
             ],
           ),
         ),

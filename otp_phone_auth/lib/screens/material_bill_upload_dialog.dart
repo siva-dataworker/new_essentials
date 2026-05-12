@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import '../services/accountant_bills_service.dart';
 import '../utils/app_colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class MaterialBillUploadDialog extends StatefulWidget {
   final String siteId;
@@ -29,7 +30,7 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
   final _taxController = TextEditingController();
   final _discountController = TextEditingController();
   final _notesController = TextEditingController();
-  
+
   String _vendorType = 'Tiles Shop';
   String _materialType = 'Tiles';
   String _unit = 'sqft';
@@ -170,24 +171,23 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(widget.siteName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.deepNavy)),
-            const SizedBox(height: 24),
-            
+            Text(widget.siteName, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy)),
+            SizedBox(height: 24.h),
+
             // Bill Number
-            TextField(
-              controller: _billNumberController,
-              decoration: const InputDecoration(
+            const TextField(
+              decoration: InputDecoration(
                 labelText: 'Bill Number *',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.numbers),
               ),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Bill Date
             InkWell(
               onTap: () async {
@@ -208,8 +208,8 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                 child: Text('${_billDate.day}/${_billDate.month}/${_billDate.year}'),
               ),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Vendor Name
             TextField(
               controller: _vendorNameController,
@@ -219,8 +219,8 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                 prefixIcon: Icon(Icons.store),
               ),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Vendor Type
             DropdownButtonFormField<String>(
               value: _vendorType,
@@ -231,8 +231,8 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
               items: _vendorTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
               onChanged: (value) => setState(() => _vendorType = value!),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Material Type
             DropdownButtonFormField<String>(
               value: _materialType,
@@ -243,8 +243,8 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
               items: _materialTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
               onChanged: (value) => setState(() => _materialType = value!),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Quantity and Unit
             Row(
               children: [
@@ -260,7 +260,7 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     value: _unit,
@@ -274,8 +274,8 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Unit Price
             TextField(
               controller: _unitPriceController,
@@ -287,26 +287,26 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
               ),
               onChanged: (_) => setState(() {}),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Total Amount (calculated)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
                 border: Border.all(color: Colors.blue.shade200),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Total Amount:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  Text('₹${_totalAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
+                  Text('Total Amount:', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                  Text('₹${_totalAmount.toStringAsFixed(2)}', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.blue)),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Tax and Discount
             Row(
               children: [
@@ -321,7 +321,7 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: TextField(
                     controller: _discountController,
@@ -335,26 +335,26 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Final Amount (calculated)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
                 border: Border.all(color: Colors.green.shade200),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Final Amount:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  Text('₹${_finalAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
+                  Text('Final Amount:', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                  Text('₹${_finalAmount.toStringAsFixed(2)}', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: Colors.green)),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Payment Status
             DropdownButtonFormField<String>(
               value: _paymentStatus,
@@ -365,8 +365,8 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
               items: _paymentStatuses.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
               onChanged: (value) => setState(() => _paymentStatus = value!),
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // Notes
             TextField(
               controller: _notesController,
@@ -376,34 +376,34 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
               ),
               maxLines: 3,
             ),
-            const SizedBox(height: 16),
-            
+            SizedBox(height: 16.h),
+
             // File Picker
             OutlinedButton.icon(
               onPressed: _pickFile,
               icon: const Icon(Icons.attach_file),
               label: Text(_selectedFile == null ? 'Select PDF File *' : 'PDF Selected'),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 16.h),
               ),
             ),
             if (_selectedFile != null) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   border: Border.all(color: Colors.green.shade200),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                    const SizedBox(width: 8),
+                    Icon(Icons.check_circle, color: Colors.green, size: 20.sp),
+                    SizedBox(width: 8.w),
                     Expanded(
                       child: Text(
                         _selectedFile!.path.split('/').last,
-                        style: const TextStyle(fontSize: 12),
+                        style: TextStyle(fontSize: 12.sp),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -411,23 +411,23 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
                 ),
               ),
             ],
-            const SizedBox(height: 24),
-            
+            SizedBox(height: 24.h),
+
             // Upload Button
             ElevatedButton(
               onPressed: _isUploading ? null : _upload,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.deepNavy,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 16.h),
               ),
               child: _isUploading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  ? SizedBox(
+                      width: 20.w,
+                      height: 20.h,
+                      child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     )
-                  : const Text('Upload Material Bill', style: TextStyle(fontSize: 16)),
+                  : Text('Upload Material Bill', style: TextStyle(fontSize: 16.sp)),
             ),
           ],
         ),

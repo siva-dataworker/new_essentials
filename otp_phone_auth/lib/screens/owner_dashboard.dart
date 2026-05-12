@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../models/user_model.dart';
 
 class OwnerDashboard extends StatelessWidget {
@@ -16,13 +17,13 @@ class OwnerDashboard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.business_center, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
+            Icon(Icons.business_center, size: 64.sp, color: Colors.red),
+            SizedBox(height: 16.h),
             Text(
               'Owner Dashboard',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text('Coming soon...'),
           ],
         ),
