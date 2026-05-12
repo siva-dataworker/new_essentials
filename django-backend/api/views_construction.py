@@ -1908,21 +1908,17 @@ def get_entries_by_date(request):
                           status=status.HTTP_400_BAD_REQUEST)
         
         # Build WHERE clause based on user role
-        # Supervisor/Site Engineer: Only see their own entries
-        # Accountant: See all entries
-        if user_role in ['Supervisor', 'Site Engineer']:
-            user_filter = "AND l.supervisor_id = %s"
-            labour_params = (site_id, entry_date, user_id)
-            print(f"🔍 [ENTRIES_BY_DATE] Filtering for {user_role} (user_id: {user_id})")
-        else:
-            user_filter = ""
-            labour_params = (site_id, entry_date)
-            print(f"🔍 [ENTRIES_BY_DATE] No filter for {user_role}")
+        # All roles see all entries for the site/date
+        # The Flutter app handles the lockedByOther detection client-side
+        user_filter = ""
+        labour_params = (site_id, entry_date)
+        print(f"🔍 [ENTRIES_BY_DATE] Loading all entries for site (role: {user_role})")
         
         # Get labour entries for this site and date
         labour_query = f"""
             SELECT
                 l.id,
+                l.supervisor_id,
                 l.labour_type,
                 l.labour_count,
                 l.entry_date,
@@ -1965,6 +1961,7 @@ def get_entries_by_date(request):
             'labour_entries': [
                 {
                     'id': str(e['id']),
+                    'supervisor_id': str(e['supervisor_id']) if e.get('supervisor_id') else None,
                     'labour_type': e['labour_type'],
                     'labour_count': e['labour_count'],
                     'entry_date': e['entry_date'].isoformat() if e['entry_date'] else None,
