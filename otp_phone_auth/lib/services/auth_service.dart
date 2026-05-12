@@ -10,23 +10,23 @@ class AuthService {
   // Django backend URL
   static const String baseUrl = 'http://187.127.164.22/api';
   static const Duration requestTimeout = Duration(seconds: 10);
-  
+
   String? _token;
   Map<String, dynamic>? _currentUser;
-  
+
   // Get stored token
   Future<String?> getToken() async {
     if (_token != null) return _token;
-    
+
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('auth_token');
     return _token;
   }
-  
+
   // Get current user data
   Future<Map<String, dynamic>?> getCurrentUser() async {
     if (_currentUser != null) return _currentUser;
-    
+
     final prefs = await SharedPreferences.getInstance();
     final userJson = prefs.getString('current_user');
     if (userJson != null) {
@@ -34,27 +34,27 @@ class AuthService {
     }
     return _currentUser;
   }
-  
+
   // Store token and user data
   Future<void> _storeAuthData(String token, Map<String, dynamic> user) async {
     _token = token;
     _currentUser = user;
-    
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);
     await prefs.setString('current_user', json.encode(user));
   }
-  
+
   // Clear auth data
   Future<void> clearAuthData() async {
     _token = null;
     _currentUser = null;
-    
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     await prefs.remove('current_user');
   }
-  
+
   // Register new user
   Future<Map<String, dynamic>> register({
     required String username,
@@ -65,21 +65,23 @@ class AuthService {
     required String role,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/auth/register/'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'username': username,
-          'email': email,
-          'phone': phone,
-          'password': password,
-          'full_name': fullName,
-          'role': role,
-        }),
-      ).timeout(requestTimeout);
-      
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/auth/register/'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'username': username,
+              'email': email,
+              'phone': phone,
+              'password': password,
+              'full_name': fullName,
+              'role': role,
+            }),
+          )
+          .timeout(requestTimeout);
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 201) {
         return {
           'success': true,
@@ -96,38 +98,34 @@ class AuthService {
     } catch (e) {
       return {
         'success': false,
-        'error': e.toString().contains('TimeoutException') 
+        'error': e.toString().contains('TimeoutException')
             ? 'Connection timeout - please check your internet'
             : 'Network error: $e',
       };
     }
   }
-  
+
   // Login
   Future<Map<String, dynamic>> login({
     required String username,
     required String password,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/auth/login/'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'username': username,
-          'password': password,
-        }),
-      ).timeout(requestTimeout);
-      
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/auth/login/'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'username': username, 'password': password}),
+          )
+          .timeout(requestTimeout);
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200) {
         // Store token and user data
         await _storeAuthData(data['access_token'], data['user']);
-        
-        return {
-          'success': true,
-          'user': data['user'],
-        };
+
+        return {'success': true, 'user': data['user']};
       } else if (response.statusCode == 403) {
         // Pending or rejected
         return {
@@ -136,10 +134,7 @@ class AuthService {
           'status': data['status'],
         };
       } else {
-        return {
-          'success': false,
-          'error': data['error'] ?? 'Login failed',
-        };
+        return {'success': false, 'error': data['error'] ?? 'Login failed'};
       }
     } catch (e) {
       return {
@@ -150,7 +145,7 @@ class AuthService {
       };
     }
   }
-  
+
   // Check approval status
   Future<Map<String, dynamic>> checkApprovalStatus(String username) async {
     try {
@@ -158,9 +153,9 @@ class AuthService {
         Uri.parse('$baseUrl/auth/status/?username=$username'),
         headers: {'Content-Type': 'application/json'},
       );
-      
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200) {
         return {
           'success': true,
@@ -174,13 +169,10 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {
-        'success': false,
-        'error': 'Network error: $e',
-      };
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
-  
+
   // Get available roles
   Future<List<String>> getRoles() async {
     try {
@@ -188,23 +180,92 @@ class AuthService {
         Uri.parse('$baseUrl/auth/roles/'),
         headers: {'Content-Type': 'application/json'},
       );
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return List<String>.from(data['roles']);
       }
-      return ['Supervisor', 'Site Engineer', 'Accountant', 'Architect', 'Owner'];
+      return [
+        'Supervisor',
+        'Site Engineer',
+        'Accountant',
+        'Architect',
+        'Owner',
+      ];
     } catch (e) {
-      return ['Supervisor', 'Site Engineer', 'Accountant', 'Architect', 'Owner'];
+      return [
+        'Supervisor',
+        'Site Engineer',
+        'Accountant',
+        'Architect',
+        'Owner',
+      ];
     }
   }
-  
+
+  // Update user profile
+  Future<Map<String, dynamic>> updateProfile({
+    required String name,
+    required String email,
+    required String phone,
+    String? address,
+  }) async {
+    try {
+      final token = await getToken();
+      final response = await http
+          .put(
+            Uri.parse('$baseUrl/user/profile/update/'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: json.encode({
+              'full_name': name,
+              'email': email,
+              'phone': phone,
+              if (address != null && address.isNotEmpty) 'address': address,
+            }),
+          )
+          .timeout(requestTimeout);
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        // Update locally cached user data
+        if (_currentUser != null) {
+          _currentUser = {
+            ..._currentUser!,
+            'name': name,
+            'email': email,
+            'phone': phone,
+            if (address != null) 'address': address,
+          };
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('current_user', json.encode(_currentUser));
+        }
+        return {'success': true};
+      } else {
+        return {
+          'success': false,
+          'error': data['error'] ?? data['detail'] ?? 'Update failed',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString().contains('TimeoutException')
+            ? 'Connection timeout - please check your internet'
+            : 'Network error: $e',
+      };
+    }
+  }
+
   // Check if user is logged in
   Future<bool> isLoggedIn() async {
     final token = await getToken();
     return token != null;
   }
-  
+
   // Logout (clear token only, no server call - one-time login)
   Future<void> logout() async {
     await clearAuthData();

@@ -4,8 +4,8 @@ import '../services/export_service.dart';
 import '../utils/app_colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
 import 'package:open_filex/open_filex.dart';
-import 'accountant_bills_screen.dart';
 import 'admin_budget_management_screen.dart';
 import '../utils/smooth_animations.dart';
 
@@ -23,33 +23,38 @@ class AdminSiteFullView extends StatefulWidget {
   State<AdminSiteFullView> createState() => _AdminSiteFullViewState();
 }
 
-class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTickerProviderStateMixin {
+class _AdminSiteFullViewState extends State<AdminSiteFullView>
+    with SingleTickerProviderStateMixin {
   final _authService = AuthService();
   final _exportService = ExportService();
   static const String baseUrl = 'http://187.127.164.22/api';
-  
+
   late TabController _tabController;
-  
+
   // Dashboard data
   Map<String, dynamic>? _dashboardData;
   bool _isLoadingDashboard = false;
-  
+
   // Labour data
   List<Map<String, dynamic>> _labourEntries = [];
   bool _isLoadingLabour = false;
-  
+
   // Material data
   List<Map<String, dynamic>> _materialBalances = [];
   bool _isLoadingMaterial = false;
-  
+
   // Photos data
   List<Map<String, dynamic>> _photos = [];
   bool _isLoadingPhotos = false;
-  
+
   // Documents data
   List<Map<String, dynamic>> _documents = [];
   bool _isLoadingDocuments = false;
-  
+
+  // Bills data
+  List<Map<String, dynamic>> _bills = [];
+  bool _isLoadingBills = false;
+
   // Expanded dates tracking
   final Set<String> _expandedDates = {};
 
@@ -87,7 +92,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
         _loadMaterialBalances();
         break;
       case 4: // Bills
-        // Bills screen handles its own loading
+        _loadBills();
         break;
       case 5: // Photos
         _loadPhotos();
@@ -100,7 +105,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
 
   Future<void> _loadDashboardData() async {
     setState(() => _isLoadingDashboard = true);
-    
+
     try {
       final token = await _authService.getToken();
       final response = await http.get(
@@ -124,7 +129,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
 
   Future<void> _loadLabourEntries() async {
     setState(() => _isLoadingLabour = true);
-    
+
     try {
       final token = await _authService.getToken();
       // Use accountant endpoint to see modified/verified data
@@ -142,18 +147,20 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
       if (response.statusCode == 200) {
         try {
           final data = json.decode(response.body);
-          
+
           // The API returns 'labour_entries', not 'entries'
           if (data.containsKey('labour_entries')) {
-            final allEntries = List<Map<String, dynamic>>.from(data['labour_entries'] ?? []);
-            
+            final allEntries = List<Map<String, dynamic>>.from(
+              data['labour_entries'] ?? [],
+            );
+
             // Filter for this site
             final siteIdStr = widget.siteId.toString();
             final filtered = allEntries.where((entry) {
               final entrySiteId = entry['site_id']?.toString() ?? '';
               return entrySiteId == siteIdStr;
             }).toList();
-            
+
             setState(() {
               _labourEntries = filtered;
             });
@@ -171,10 +178,10 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
 
   Future<void> _loadMaterialBalances() async {
     setState(() => _isLoadingMaterial = true);
-    
+
     try {
       final token = await _authService.getToken();
-      
+
       // Use the accountant all-entries endpoint which returns material_entries
       final response = await http.get(
         Uri.parse('$baseUrl/construction/accountant/all-entries/'),
@@ -186,18 +193,20 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         // The API returns 'material_entries'
         if (data.containsKey('material_entries')) {
-          final allEntries = List<Map<String, dynamic>>.from(data['material_entries'] ?? []);
-          
+          final allEntries = List<Map<String, dynamic>>.from(
+            data['material_entries'] ?? [],
+          );
+
           // Filter for this site
           final siteIdStr = widget.siteId.toString();
           final filtered = allEntries.where((entry) {
             final entrySiteId = entry['site_id']?.toString() ?? '';
             return entrySiteId == siteIdStr;
           }).toList();
-          
+
           setState(() {
             _materialBalances = filtered;
           });
@@ -212,11 +221,13 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
 
   Future<void> _loadPhotos() async {
     setState(() => _isLoadingPhotos = true);
-    
+
     try {
       final token = await _authService.getToken();
       final response = await http.get(
-        Uri.parse('$baseUrl/construction/accountant/all-photos/?site_id=${widget.siteId}'),
+        Uri.parse(
+          '$baseUrl/construction/accountant/all-photos/?site_id=${widget.siteId}',
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',
@@ -238,11 +249,13 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
 
   Future<void> _loadDocuments() async {
     setState(() => _isLoadingDocuments = true);
-    
+
     try {
       final token = await _authService.getToken();
       final response = await http.get(
-        Uri.parse('$baseUrl/construction/all-documents/?site_id=${widget.siteId}&role=all'),
+        Uri.parse(
+          '$baseUrl/construction/all-documents/?site_id=${widget.siteId}&role=all',
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',
@@ -251,11 +264,15 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         // Combine both site engineer and architect documents
-        final siteEngineerDocs = List<Map<String, dynamic>>.from(data['site_engineer_documents'] ?? []);
-        final architectDocs = List<Map<String, dynamic>>.from(data['architect_documents'] ?? []);
-        
+        final siteEngineerDocs = List<Map<String, dynamic>>.from(
+          data['site_engineer_documents'] ?? [],
+        );
+        final architectDocs = List<Map<String, dynamic>>.from(
+          data['architect_documents'] ?? [],
+        );
+
         setState(() {
           _documents = [...siteEngineerDocs, ...architectDocs];
           // Sort by upload date (most recent first)
@@ -273,10 +290,38 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
     }
   }
 
+  Future<void> _loadBills() async {
+    setState(() => _isLoadingBills = true);
+
+    try {
+      final token = await _authService.getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/admin/sites/${widget.siteId}/bills/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${token ?? ''}',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _bills = List<Map<String, dynamic>>.from(data['bills'] ?? []);
+        });
+      }
+    } catch (e) {
+      print('Error loading bills: $e');
+    } finally {
+      setState(() => _isLoadingBills = false);
+    }
+  }
+
   String _formatCurrency(dynamic amount) {
     if (amount == null) return '₹0';
-    double value = amount is String ? double.tryParse(amount) ?? 0 : amount.toDouble();
-    
+    double value = amount is String
+        ? double.tryParse(amount) ?? 0
+        : amount.toDouble();
+
     if (value >= 10000000) {
       return '₹${(value / 10000000).toStringAsFixed(2)} Cr';
     } else if (value >= 100000) {
@@ -398,7 +443,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
     );
 
     Map<String, dynamic> result;
-    
+
     switch (type) {
       case 'labour':
         result = await _exportService.exportLabourEntries(widget.siteId);
@@ -427,7 +472,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
         final fileOpened = result['fileOpened'] as bool? ?? false;
         final fileSize = result['fileSize'] as int? ?? 0;
         final openMessage = result['openMessage'] as String? ?? '';
-        
+
         // Debug logging
         print('=== EXPORT RESULT ===');
         print('File path: $filePath');
@@ -435,7 +480,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
         print('File size: $fileSize bytes');
         print('File opened: $fileOpened');
         print('Open message: $openMessage');
-        
+
         // Show success dialog with Open button
         showDialog(
           context: context,
@@ -452,10 +497,13 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  fileOpened 
-                      ? 'File opened successfully!' 
+                  fileOpened
+                      ? 'File opened successfully!'
                       : 'Your file has been downloaded!',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Container(
@@ -470,7 +518,11 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.insert_drive_file, size: 20, color: Colors.blue),
+                          const Icon(
+                            Icons.insert_drive_file,
+                            size: 20,
+                            color: Colors.blue,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -486,12 +538,19 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(Icons.folder, size: 16, color: Colors.grey),
+                          const Icon(
+                            Icons.folder,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               'Downloads folder (${(fileSize / 1024).toStringAsFixed(1)} KB)',
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                             ),
                           ),
                         ],
@@ -520,12 +579,20 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                       children: [
                         const Row(
                           children: [
-                            Icon(Icons.info_outline, size: 16, color: Colors.orange),
+                            Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: Colors.orange,
+                            ),
                             SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'File could not open automatically',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.orange),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange,
+                                ),
                               ),
                             ),
                           ],
@@ -534,7 +601,10 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                           const SizedBox(height: 4),
                           Text(
                             'Reason: $openMessage',
-                            style: TextStyle(fontSize: 10, color: Colors.grey[700]),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey[700],
+                            ),
                           ),
                         ],
                       ],
@@ -543,7 +613,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                   const SizedBox(height: 12),
                 ],
                 Text(
-                  fileOpened 
+                  fileOpened
                       ? 'You can also find this file in your Downloads folder'
                       : 'Tap "Open File" below or use your file manager to open the file',
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
@@ -563,10 +633,13 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                     print('Manual open attempt for: $filePath');
                     final openResult = await OpenFilex.open(
                       filePath,
-                      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                      type:
+                          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                     );
-                    print('Manual open result: ${openResult.type}, ${openResult.message}');
-                    
+                    print(
+                      'Manual open result: ${openResult.type}, ${openResult.message}',
+                    );
+
                     if (mounted) {
                       if (openResult.type == ResultType.done) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -671,7 +744,11 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                             color: Colors.blue,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(Icons.account_balance_wallet, color: Colors.white, size: 24),
+                          child: const Icon(
+                            Icons.account_balance_wallet,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         const Text(
@@ -692,10 +769,15 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                           children: [
                             Text(
                               'Total Budget',
-                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
                             ),
                             Text(
-                              _formatCurrency(_dashboardData?['allocated_budget']),
+                              _formatCurrency(
+                                _dashboardData?['allocated_budget'],
+                              ),
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -709,7 +791,10 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                           children: [
                             Text(
                               'Utilized',
-                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
                             ),
                             Text(
                               '${(_dashboardData?['utilization_percentage'] ?? 0).toStringAsFixed(1)}%',
@@ -729,7 +814,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
             ),
             const SizedBox(height: 12),
           ],
-          
+
           // Budget Card
           _buildDashboardCard(
             'Budget',
@@ -738,7 +823,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
             Colors.blue,
           ),
           const SizedBox(height: 12),
-          
+
           // Workers Card
           _buildDashboardCard(
             'Total Workers',
@@ -747,7 +832,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
             const Color(0xFF1A1A2E),
           ),
           const SizedBox(height: 12),
-          
+
           // Bills Card
           _buildDashboardCard(
             'Total Bills',
@@ -756,7 +841,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
             Colors.purple,
           ),
           const SizedBox(height: 12),
-          
+
           // Utilization Card
           Card(
             elevation: 2,
@@ -767,21 +852,20 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                 children: [
                   const Text(
                     'Budget Utilization',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
                   LinearProgressIndicator(
-                    value: (_dashboardData?['utilization_percentage'] ?? 0) / 100,
+                    value:
+                        (_dashboardData?['utilization_percentage'] ?? 0) / 100,
                     backgroundColor: Colors.grey[300],
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      (_dashboardData?['utilization_percentage'] ?? 0) > 90 
-                          ? Colors.red 
-                          : (_dashboardData?['utilization_percentage'] ?? 0) > 75 
-                              ? Colors.orange 
-                              : Colors.green
+                      (_dashboardData?['utilization_percentage'] ?? 0) > 90
+                          ? Colors.red
+                          : (_dashboardData?['utilization_percentage'] ?? 0) >
+                                75
+                          ? Colors.orange
+                          : Colors.green,
                     ),
                     minHeight: 10,
                   ),
@@ -802,7 +886,12 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
     );
   }
 
-  Widget _buildDashboardCard(String title, String value, IconData icon, Color color) {
+  Widget _buildDashboardCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       elevation: 2,
       child: Padding(
@@ -824,10 +913,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -897,11 +983,15 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
     }).toList();
   }
 
-  Widget _buildDateDropdown(String date, List<Map<String, dynamic>> entries, bool isLabour) {
+  Widget _buildDateDropdown(
+    String date,
+    List<Map<String, dynamic>> entries,
+    bool isLabour,
+  ) {
     final dateKey = '${isLabour ? 'labour' : 'material'}_$date';
     final isExpanded = _expandedDates.contains(dateKey);
     final formattedDate = _formatDateForDropdown(date);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -938,14 +1028,16 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: isLabour 
+                        color: isLabour
                             ? const Color(0xFF1A1A2E).withValues(alpha: 0.1)
                             : Colors.brown.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
                         isLabour ? Icons.people : Icons.inventory_2,
-                        color: isLabour ? const Color(0xFF1A1A2E) : Colors.brown,
+                        color: isLabour
+                            ? const Color(0xFF1A1A2E)
+                            : Colors.brown,
                         size: 20,
                       ),
                     ),
@@ -986,7 +1078,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
               ),
             ),
           ),
-          
+
           // Expandable Content
           if (isExpanded) ...[
             const Divider(height: 1),
@@ -1011,7 +1103,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
   Widget _buildLabourEntryCard(Map<String, dynamic> entry) {
     final isModified = entry['is_modified'] == true;
     final modificationReason = entry['modification_reason'] ?? '';
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 1,
@@ -1023,10 +1115,15 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: isModified ? Colors.orange : const Color(0xFF1A1A2E),
+                  backgroundColor: isModified
+                      ? Colors.orange
+                      : const Color(0xFF1A1A2E),
                   child: Text(
                     '${entry['labour_count'] ?? 0}',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1036,7 +1133,10 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                     children: [
                       Text(
                         entry['labour_type'] ?? 'General',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                       Text(
                         entry['day_of_week'] ?? '',
@@ -1047,7 +1147,10 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                 ),
                 if (isModified)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.orange.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
@@ -1076,23 +1179,33 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                 decoration: BoxDecoration(
                   color: Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: Colors.orange.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, size: 16, color: Colors.orange),
+                    const Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.orange,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Reason: $modificationReason',
-                        style: const TextStyle(fontSize: 12, color: Colors.orange),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ],
-            if (entry['notes'] != null && entry['notes'].toString().isNotEmpty) ...[
+            if (entry['notes'] != null &&
+                entry['notes'].toString().isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
                 'Notes: ${entry['notes']}',
@@ -1227,10 +1340,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                 children: [
                   const Text(
                     'Material Summary',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -1255,12 +1365,12 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Material Type Cards
           ...groupedByType.entries.map((entry) {
             final materialType = entry.key;
             final materials = entry.value;
-            
+
             // Calculate totals
             double totalQuantity = 0;
             String unit = '';
@@ -1268,7 +1378,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
               totalQuantity += (m['quantity'] ?? 0);
               if (unit.isEmpty) unit = m['unit'] ?? '';
             }
-            
+
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               child: ExpansionTile(
@@ -1296,7 +1406,10 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                       backgroundColor: Colors.brown.withValues(alpha: 0.2),
                       child: Text(
                         '${m['quantity'] ?? 0}',
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     title: Text(
@@ -1313,7 +1426,9 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                               _formatCurrency(m['extra_cost']),
                               style: const TextStyle(fontSize: 10),
                             ),
-                            backgroundColor: Colors.orange.withValues(alpha: 0.2),
+                            backgroundColor: Colors.orange.withValues(
+                              alpha: 0.2,
+                            ),
                           )
                         : null,
                   );
@@ -1326,7 +1441,12 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
     );
   }
 
-  Widget _buildSummaryItem(String label, String value, IconData icon, Color color) {
+  Widget _buildSummaryItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       children: [
         Container(
@@ -1346,10 +1466,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
             color: color,
           ),
         ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
-        ),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );
   }
@@ -1378,16 +1495,17 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
   Widget _buildMaterialEntryCard(Map<String, dynamic> material) {
     final createdAt = material['created_at'] ?? material['usage_date'];
     String timeDisplay = 'N/A';
-    
+
     if (createdAt != null) {
       try {
         final dateTime = DateTime.parse(createdAt.toString());
-        timeDisplay = '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+        timeDisplay =
+            '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
       } catch (e) {
         timeDisplay = 'N/A';
       }
     }
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 1,
@@ -1409,7 +1527,10 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                     children: [
                       Text(
                         material['material_type'] ?? 'Unknown',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                       Text(
                         'Quantity: ${material['quantity_used'] ?? material['quantity'] ?? material['current_balance'] ?? 0} ${material['unit'] ?? ''}',
@@ -1451,7 +1572,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
       final today = DateTime(now.year, now.month, now.day);
       final yesterday = today.subtract(const Duration(days: 1));
       final entryDate = DateTime(date.year, date.month, date.day);
-      
+
       if (entryDate == today) {
         return 'Today • ${_formatDateWithDay(date)}';
       } else if (entryDate == yesterday) {
@@ -1466,18 +1587,169 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
 
   String _formatDateWithDay(DateTime date) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
     final dayName = days[date.weekday - 1];
     final monthName = months[date.month - 1];
-    
+
     return '$dayName, $monthName ${date.day}, ${date.year}';
   }
 
   Widget _buildBillsTab() {
-    return AccountantBillsScreen(
-      siteId: widget.siteId,
-      siteName: widget.siteName,
+    if (_isLoadingBills) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_bills.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No bills found',
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadBills,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _bills.length,
+        itemBuilder: (context, index) => _buildBillCard(_bills[index]),
+      ),
+    );
+  }
+
+  Widget _buildBillCard(Map<String, dynamic> bill) {
+    final isVerified = bill['verified'] == true;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A1A2E).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.receipt, color: Color(0xFF1A1A2E), size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        bill['material_name'] ?? 'N/A',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1A2E),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        bill['report_date'] ?? 'N/A',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isVerified
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isVerified ? Icons.check_circle : Icons.pending,
+                        size: 14,
+                        color: isVerified ? Colors.green : Colors.orange,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isVerified ? 'Verified' : 'Pending',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: isVerified ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Amount', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                    const SizedBox(height: 2),
+                    Text(
+                      '₹${bill['bill_amount'] ?? '0.00'}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('Uploaded by', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                    const SizedBox(height: 2),
+                    Text(
+                      bill['uploaded_by'] ?? 'Unknown',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1498,7 +1770,11 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.photo_library_outlined, size: 80, color: Colors.grey[400]),
+            Icon(
+              Icons.photo_library_outlined,
+              size: 80,
+              color: Colors.grey[400],
+            ),
             const SizedBox(height: 16),
             Text(
               'No photos found',
@@ -1522,7 +1798,8 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
     // Group photos by date
     final Map<String, List<Map<String, dynamic>>> groupedPhotos = {};
     for (var photo in _photos) {
-      final date = photo['upload_date'] ?? photo['update_date'] ?? 'Unknown Date';
+      final date =
+          photo['upload_date'] ?? photo['update_date'] ?? 'Unknown Date';
       if (!groupedPhotos.containsKey(date)) {
         groupedPhotos[date] = [];
       }
@@ -1539,11 +1816,14 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
     }).toList();
   }
 
-  Widget _buildPhotoDateDropdown(String date, List<Map<String, dynamic>> photos) {
+  Widget _buildPhotoDateDropdown(
+    String date,
+    List<Map<String, dynamic>> photos,
+  ) {
     final dateKey = 'photos_$date';
     final isExpanded = _expandedDates.contains(dateKey);
     final formattedDate = _formatDateForDropdown(date);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -1626,7 +1906,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
               ),
             ),
           ),
-          
+
           // Expandable Content
           if (isExpanded) ...[
             const Divider(height: 1),
@@ -1656,18 +1936,20 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
 
   Widget _buildPhotoCard(Map<String, dynamic> photo) {
     final imageUrl = 'http://187.127.164.22${photo['image_url']}';
-    final uploadDate = photo['upload_date'] ?? photo['update_date'] ?? photo['created_at'];
+    final uploadDate =
+        photo['upload_date'] ?? photo['update_date'] ?? photo['created_at'];
     String timeDisplay = '';
-    
+
     if (uploadDate != null) {
       try {
         final dateTime = DateTime.parse(uploadDate.toString());
-        timeDisplay = '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+        timeDisplay =
+            '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
       } catch (e) {
         timeDisplay = '';
       }
     }
-    
+
     return GestureDetector(
       onTap: () => _showPhotoDialog(imageUrl, photo),
       child: Card(
@@ -1697,7 +1979,9 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                     children: [
                       Expanded(
                         child: Text(
-                          photo['update_type'] ?? photo['upload_type'] ?? 'Photo',
+                          photo['update_type'] ??
+                              photo['upload_type'] ??
+                              'Photo',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -1707,7 +1991,11 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                         ),
                       ),
                       if (timeDisplay.isNotEmpty) ...[
-                        Icon(Icons.access_time, size: 12, color: Colors.grey[600]),
+                        Icon(
+                          Icons.access_time,
+                          size: 12,
+                          color: Colors.grey[600],
+                        ),
                         const SizedBox(width: 2),
                         Text(
                           timeDisplay,
@@ -1719,23 +2007,18 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                       ],
                     ],
                   ),
-                  if (photo['description'] != null && photo['description'].toString().isNotEmpty)
+                  if (photo['description'] != null &&
+                      photo['description'].toString().isNotEmpty)
                     Text(
                       photo['description'],
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   if (photo['supervisor_name'] != null)
                     Text(
                       'By: ${photo['supervisor_name']}',
-                      style: TextStyle(
-                        fontSize: 9,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 9, color: Colors.grey[500]),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1776,7 +2059,11 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                       child: const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.error_outline, size: 50, color: Colors.red),
+                          Icon(
+                            Icons.error_outline,
+                            size: 50,
+                            color: Colors.red,
+                          ),
                           SizedBox(height: 16),
                           Text('Could not load image'),
                         ],
@@ -1786,7 +2073,8 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                 ),
               ),
             ),
-            if (photo['description'] != null && photo['description'].toString().isNotEmpty)
+            if (photo['description'] != null &&
+                photo['description'].toString().isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(16),
                 width: double.infinity,
@@ -1842,7 +2130,10 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
     // Group documents by date
     final Map<String, List<Map<String, dynamic>>> groupedDocuments = {};
     for (var doc in _documents) {
-      final date = doc['upload_date'] ?? doc['uploaded_at']?.substring(0, 10) ?? 'Unknown Date';
+      final date =
+          doc['upload_date'] ??
+          doc['uploaded_at']?.substring(0, 10) ??
+          'Unknown Date';
       if (!groupedDocuments.containsKey(date)) {
         groupedDocuments[date] = [];
       }
@@ -1859,11 +2150,14 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
     }).toList();
   }
 
-  Widget _buildDocumentDateDropdown(String date, List<Map<String, dynamic>> documents) {
+  Widget _buildDocumentDateDropdown(
+    String date,
+    List<Map<String, dynamic>> documents,
+  ) {
     final dateKey = 'documents_$date';
     final isExpanded = _expandedDates.contains(dateKey);
     final formattedDate = _formatDateForDropdown(date);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -1946,14 +2240,16 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
               ),
             ),
           ),
-          
+
           // Expandable Content
           if (isExpanded) ...[
             const Divider(height: 1),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
-                children: documents.map((doc) => _buildDocumentCard(doc)).toList(),
+                children: documents
+                    .map((doc) => _buildDocumentCard(doc))
+                    .toList(),
               ),
             ),
           ],
@@ -1969,11 +2265,11 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
     final role = document['role'] ?? 'Unknown';
     final fileUrl = document['file_url'] ?? '';
     final fileName = document['file_name'] ?? 'document.pdf';
-    
+
     // Determine icon and color based on document type
     IconData icon;
     Color color;
-    
+
     switch (documentType.toLowerCase()) {
       case 'site plan':
         icon = Icons.map;
@@ -1999,7 +2295,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
         icon = Icons.description;
         color = Colors.grey;
     }
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 1,
@@ -2035,15 +2331,16 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
                     const SizedBox(height: 4),
                     Text(
                       documentType,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.person_outline, size: 14, color: Colors.grey[600]),
+                        Icon(
+                          Icons.person_outline,
+                          size: 14,
+                          color: Colors.grey[600],
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '$uploadedBy ($role)',
@@ -2068,10 +2365,10 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
   void _openDocument(String fileUrl, String fileName) async {
     try {
       // Construct full URL
-      final fullUrl = fileUrl.startsWith('http') 
-          ? fileUrl 
+      final fullUrl = fileUrl.startsWith('http')
+          ? fileUrl
           : 'http://187.127.164.22$fileUrl';
-      
+
       // Show loading dialog
       showDialog(
         context: context,
@@ -2092,13 +2389,13 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
           ),
         ),
       );
-      
+
       // Try to open the document
       final uri = Uri.parse(fullUrl);
-      
+
       // Close loading dialog
       if (mounted) Navigator.pop(context);
-      
+
       // Show info dialog with URL
       showDialog(
         context: context,
@@ -2110,10 +2407,7 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
             children: [
               Text('File: $fileName'),
               const SizedBox(height: 8),
-              Text(
-                'URL: $fullUrl',
-                style: const TextStyle(fontSize: 12),
-              ),
+              Text('URL: $fullUrl', style: const TextStyle(fontSize: 12)),
               const SizedBox(height: 16),
               const Text(
                 'The document URL is ready. You can copy it or open it in a browser.',
@@ -2129,11 +2423,10 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView> with SingleTicker
           ],
         ),
       );
-      
     } catch (e) {
       // Close loading dialog if open
       if (mounted) Navigator.pop(context);
-      
+
       // Show error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

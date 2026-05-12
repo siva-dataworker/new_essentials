@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:excel/excel.dart' as excel;
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
@@ -54,21 +52,39 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
       await provider.loadAccountantData(forceRefresh: true);
 
       // Get the data
-      _labourEntries = List<Map<String, dynamic>>.from(provider.accountantLabourEntries);
-      _materialEntries = List<Map<String, dynamic>>.from(provider.accountantMaterialEntries);
+      _labourEntries = List<Map<String, dynamic>>.from(
+        provider.accountantLabourEntries,
+      );
+      _materialEntries = List<Map<String, dynamic>>.from(
+        provider.accountantMaterialEntries,
+      );
 
-      print('✅ [ACCOUNTANT NEW] Loaded ${_labourEntries.length} labour entries');
-      print('✅ [ACCOUNTANT NEW] Loaded ${_materialEntries.length} material entries');
+      print(
+        '✅ [ACCOUNTANT NEW] Loaded ${_labourEntries.length} labour entries',
+      );
+      print(
+        '✅ [ACCOUNTANT NEW] Loaded ${_materialEntries.length} material entries',
+      );
 
       // Debug: Check for Lakshmi data
-      final lakshmiLabour = _labourEntries.where((entry) =>
-        entry['customer_name']?.toString().toLowerCase().contains('lakshmi') == true).toList();
-      print('📋 [ACCOUNTANT NEW] Lakshmi labour entries: ${lakshmiLabour.length}');
+      final lakshmiLabour = _labourEntries
+          .where(
+            (entry) =>
+                entry['customer_name']?.toString().toLowerCase().contains(
+                  'lakshmi',
+                ) ==
+                true,
+          )
+          .toList();
+      print(
+        '📋 [ACCOUNTANT NEW] Lakshmi labour entries: ${lakshmiLabour.length}',
+      );
 
       if (lakshmiLabour.isNotEmpty) {
-        print('📝 [ACCOUNTANT NEW] Sample Lakshmi: ${lakshmiLabour[0]['customer_name']} ${lakshmiLabour[0]['site_name']}');
+        print(
+          '📝 [ACCOUNTANT NEW] Sample Lakshmi: ${lakshmiLabour[0]['customer_name']} ${lakshmiLabour[0]['site_name']}',
+        );
       }
-
     } catch (e) {
       print('❌ [ACCOUNTANT NEW] Error loading data: $e');
       _error = e.toString();
@@ -85,10 +101,15 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+        ),
         title: const Text(
           'Sign Out',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.deepNavy,
+          ),
         ),
         content: const Text('Are you sure you want to sign out?'),
         actions: [
@@ -103,11 +124,16 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.statusOverdue,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
             ),
             child: const Text(
               'Sign Out',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -156,7 +182,7 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
       backgroundColor: AppColors.lightSlate,
       appBar: AppBar(
         title: Text(
-          'Dashboard - ${widget.user.fullName}',
+          'Dashboard - ${widget.user.name ?? widget.user.phoneNumber}',
           style: TextStyle(
             color: AppColors.deepNavy,
             fontSize: 18.sp,
@@ -197,47 +223,45 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
                 ),
               )
             : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64.sp,
-                          color: AppColors.statusOverdue,
-                        ),
-                        SizedBox(height: 16.h),
-                        Text(
-                          'Error loading data',
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.statusOverdue,
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          _error!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        SizedBox(height: 16.h),
-                        ElevatedButton(
-                          onPressed: _loadAccountantData,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.deepNavy,
-                          ),
-                          child: const Text(
-                            'Retry',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ],
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64.sp,
+                      color: AppColors.statusOverdue,
                     ),
-                  )
-                : _buildDashboardContent(),
+                    SizedBox(height: 16.h),
+                    Text(
+                      'Error loading data',
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.statusOverdue,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                    SizedBox(height: 16.h),
+                    ElevatedButton(
+                      onPressed: _loadAccountantData,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.deepNavy,
+                      ),
+                      child: const Text(
+                        'Retry',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : _buildDashboardContent(),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _loadAccountantData,
@@ -251,7 +275,10 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
     // Calculate totals
     final totalLabourEntries = _labourEntries.length;
     final totalMaterialEntries = _materialEntries.length;
-    final totalWorkers = _labourEntries.fold<int>(0, (sum, entry) => sum + (entry['labour_count'] as int? ?? 0));
+    final totalWorkers = _labourEntries.fold<int>(
+      0,
+      (sum, entry) => sum + (entry['labour_count'] as int? ?? 0),
+    );
 
     // Get unique sites
     final uniqueSites = <String>{};
@@ -350,7 +377,10 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
           if (_labourEntries.isEmpty)
             _buildEmptyState('No labour entries found', Icons.people_outline)
           else
-            ..._labourEntries.take(5).map((entry) => _buildLabourEntryCard(entry)).toList(),
+            ..._labourEntries
+                .take(5)
+                .map((entry) => _buildLabourEntryCard(entry))
+                .toList(),
 
           SizedBox(height: 24.h),
 
@@ -366,9 +396,15 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
           SizedBox(height: 12.h),
 
           if (_materialEntries.isEmpty)
-            _buildEmptyState('No material entries found', Icons.inventory_2_outlined)
+            _buildEmptyState(
+              'No material entries found',
+              Icons.inventory_2_outlined,
+            )
           else
-            ..._materialEntries.take(5).map((entry) => _buildMaterialEntryCard(entry)).toList(),
+            ..._materialEntries
+                .take(5)
+                .map((entry) => _buildMaterialEntryCard(entry))
+                .toList(),
 
           SizedBox(height: 24.h),
 
@@ -406,7 +442,12 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
+  Widget _buildSummaryCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
@@ -459,7 +500,8 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
   }
 
   Widget _buildLabourEntryCard(Map<String, dynamic> entry) {
-    final fullSiteName = '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim();
+    final fullSiteName =
+        '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim();
 
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
@@ -547,7 +589,8 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
   }
 
   Widget _buildMaterialEntryCard(Map<String, dynamic> entry) {
-    final fullSiteName = '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim();
+    final fullSiteName =
+        '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim();
 
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
@@ -666,24 +709,33 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
             ],
           ),
           SizedBox(height: 12.h),
-          ...sites.take(5).map((site) => Padding(
-            padding: EdgeInsets.only(bottom: 4.h),
-            child: Row(
-              children: [
-                Icon(Icons.circle, size: 6.sp, color: AppColors.textSecondary),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    site,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: AppColors.textSecondary,
-                    ),
+          ...sites
+              .take(5)
+              .map(
+                (site) => Padding(
+                  padding: EdgeInsets.only(bottom: 4.h),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.circle,
+                        size: 6.sp,
+                        color: AppColors.textSecondary,
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          site,
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          )).toList(),
+              )
+              .toList(),
           if (sites.length > 5)
             Padding(
               padding: EdgeInsets.only(top: 8.h),
@@ -720,7 +772,10 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
         children: [
           Row(
             children: [
-              const Icon(Icons.supervisor_account, color: AppColors.safetyOrange),
+              const Icon(
+                Icons.supervisor_account,
+                color: AppColors.safetyOrange,
+              ),
               SizedBox(width: 8.w),
               Text(
                 '${supervisors.length} Active Supervisors',
@@ -733,24 +788,32 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
             ],
           ),
           SizedBox(height: 12.h),
-          ...supervisors.map((supervisor) => Padding(
-            padding: EdgeInsets.only(bottom: 4.h),
-            child: Row(
-              children: [
-                Icon(Icons.circle, size: 6.sp, color: AppColors.textSecondary),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    supervisor,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: AppColors.textSecondary,
-                    ),
+          ...supervisors
+              .map(
+                (supervisor) => Padding(
+                  padding: EdgeInsets.only(bottom: 4.h),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.circle,
+                        size: 6.sp,
+                        color: AppColors.textSecondary,
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          supervisor,
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          )).toList(),
+              )
+              .toList(),
         ],
       ),
     );
@@ -811,11 +874,7 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.file_download,
-              size: 64.sp,
-              color: AppColors.deepNavy,
-            ),
+            Icon(Icons.file_download, size: 64.sp, color: AppColors.deepNavy),
             SizedBox(height: 16.h),
             Text(
               'Export to Excel',
@@ -828,9 +887,7 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
             SizedBox(height: 8.h),
             Text(
               'Export ${_labourEntries.length + _materialEntries.length} entries',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-              ),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
             SizedBox(height: 24.h),
             ElevatedButton.icon(
@@ -872,9 +929,14 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
       for (var entry in _labourEntries) {
         labourSheet.appendRow([
           excel.TextCellValue(entry['entry_date'] ?? ''),
-          excel.TextCellValue(_formatTime(entry['entry_time'] ?? entry['entry_date'])),
+          excel.TextCellValue(
+            _formatTime(entry['entry_time'] ?? entry['entry_date']),
+          ),
           excel.TextCellValue(entry['supervisor_name'] ?? ''),
-          excel.TextCellValue('${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim()),
+          excel.TextCellValue(
+            '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'
+                .trim(),
+          ),
           excel.TextCellValue(entry['area'] ?? ''),
           excel.TextCellValue(entry['street'] ?? ''),
           excel.TextCellValue(entry['labour_type'] ?? ''),
@@ -899,9 +961,14 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
       for (var entry in _materialEntries) {
         materialSheet.appendRow([
           excel.TextCellValue(entry['entry_date'] ?? ''),
-          excel.TextCellValue(_formatTime(entry['updated_at'] ?? entry['entry_date'])),
+          excel.TextCellValue(
+            _formatTime(entry['updated_at'] ?? entry['entry_date']),
+          ),
           excel.TextCellValue(entry['supervisor_name'] ?? ''),
-          excel.TextCellValue('${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim()),
+          excel.TextCellValue(
+            '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'
+                .trim(),
+          ),
           excel.TextCellValue(entry['area'] ?? ''),
           excel.TextCellValue(entry['street'] ?? ''),
           excel.TextCellValue(entry['material_type'] ?? ''),
@@ -968,7 +1035,10 @@ class _AccountantDashboardNewState extends State<AccountantDashboardNew> {
         backgroundColor: AppColors.cleanWhite,
         selectedItemColor: AppColors.deepNavy,
         unselectedItemColor: AppColors.textSecondary,
-        selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
+        selectedLabelStyle: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 12.sp,
+        ),
         unselectedLabelStyle: TextStyle(fontSize: 11.sp),
         items: const [
           BottomNavigationBarItem(

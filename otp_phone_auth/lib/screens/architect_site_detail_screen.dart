@@ -107,7 +107,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
         index: _currentIndex,
         children: [
           _buildProjectFilesTab(),
-          _buildComplaintsTab(),
+         
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -123,10 +123,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
             icon: Icon(Icons.folder),
             label: 'Project Files',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.report_problem),
-            label: 'Complaints',
-          ),
+          
         ],
       ),
     );
@@ -173,46 +170,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
     );
   }
 
-  Widget _buildComplaintsTab() {
-    return Column(
-      children: [
-        // Raise Complaint Button
-        Container(
-          padding: EdgeInsets.all(16.r),
-          color: AppColors.cleanWhite,
-          child: ElevatedButton.icon(
-            onPressed: () => _showComplaintDialog(),
-            icon: Icon(Icons.add, size: 20.sp),
-            label: Text('Raise Complaint', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange.shade600,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(vertical: 14.h),
-              minimumSize: Size(double.infinity, 0),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-            ),
-          ),
-        ),
-
-        // Complaints List
-        Expanded(
-          child: _isLoadingComplaints
-              ? const Center(child: CircularProgressIndicator(color: Colors.orange))
-              : _complaints.isEmpty
-                  ? _buildEmptyComplaintsState()
-                  : RefreshIndicator(
-                      onRefresh: _loadComplaints,
-                      color: Colors.orange.shade600,
-                      child: ListView.builder(
-                        padding: EdgeInsets.all(16.r),
-                        itemCount: _complaints.length,
-                        itemBuilder: (context, index) => _buildComplaintCard(_complaints[index]),
-                      ),
-                    ),
-        ),
-      ],
-    );
-  }
+  
 
   Widget _buildFileCard(Map<String, dynamic> file) {
     final fileType = file['file_type'] ?? 'OTHER';
@@ -708,129 +666,7 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
     }
   }
 
-  Future<void> _showComplaintDialog() async {
-    final titleController = TextEditingController();
-    final descriptionController = TextEditingController();
-    String selectedPriority = 'MEDIUM';
 
-    await showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Raise Complaint', style: TextStyle(fontWeight: FontWeight.bold)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Title',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 4,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: selectedPriority,
-                  decoration: const InputDecoration(
-                    labelText: 'Priority',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'LOW', child: Text('Low')),
-                    DropdownMenuItem(value: 'MEDIUM', child: Text('Medium')),
-                    DropdownMenuItem(value: 'HIGH', child: Text('High')),
-                    DropdownMenuItem(value: 'URGENT', child: Text('Urgent')),
-                  ],
-                  onChanged: (value) => setState(() => selectedPriority = value!),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (titleController.text.isEmpty || descriptionController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please fill all fields')),
-                  );
-                  return;
-                }
-                Navigator.pop(context);
-                await _raiseComplaint(
-                  titleController.text,
-                  descriptionController.text,
-                  selectedPriority,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange.shade600,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Submit'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _raiseComplaint(String title, String description, String priority) async {
-    try {
-      final token = await _authService.getToken();
-
-      final response = await http.post(
-        Uri.parse('${AuthService.baseUrl}/construction/raise-complaint/'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({
-          'site_id': widget.site['id'],
-          'title': title,
-          'description': description,
-          'priority': priority,
-        }),
-      );
-
-      if (!mounted) return;
-
-      if (response.statusCode == 201) {
-        final data = json.decode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Complaint raised successfully! Assigned to: ${data['assigned_to']}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _loadComplaints();
-      } else {
-        final data = json.decode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: ${data['error'] ?? 'Unknown error'}'), backgroundColor: Colors.red),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
-    }
-  }
 
   IconData _getFileIcon(String fileType) {
     switch (fileType) {

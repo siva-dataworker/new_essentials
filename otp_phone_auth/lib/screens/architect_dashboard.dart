@@ -14,6 +14,7 @@ import '../widgets/common_widgets.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 import 'architect_client_complaints_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ArchitectDashboard extends StatefulWidget {
   final UserModel user;
@@ -27,6 +28,7 @@ class ArchitectDashboard extends StatefulWidget {
 class _ArchitectDashboardState extends State<ArchitectDashboard> {
   final _authService = AuthService();
   int _selectedIndex = 0; // 0 = Sites, 1 = Profile
+  late UserModel _user;
 
   // Dropdown state
   String? _selectedArea;
@@ -46,13 +48,17 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
   @override
   void initState() {
     super.initState();
+    _user = widget.user;
     _loadAreas();
   }
 
   Future<void> _loadAreas() async {
     final cached = await CacheService.loadAreas();
     if (cached != null) {
-      setState(() { _areas = cached; _isLoadingAreas = false; });
+      setState(() {
+        _areas = cached;
+        _isLoadingAreas = false;
+      });
       return;
     }
     setState(() => _isLoadingAreas = true);
@@ -62,7 +68,9 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
       if (response['success']) {
         final areas = List<String>.from(response['areas']);
         await CacheService.saveAreas(areas);
-        setState(() { _areas = areas; });
+        setState(() {
+          _areas = areas;
+        });
       }
     } catch (e) {
       print('Error loading areas: $e');
@@ -81,7 +89,10 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
     });
     final cached = await CacheService.loadStreets(area);
     if (cached != null) {
-      setState(() { _streets = cached; _isLoadingStreets = false; });
+      setState(() {
+        _streets = cached;
+        _isLoadingStreets = false;
+      });
       return;
     }
     try {
@@ -90,7 +101,9 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
       if (response['success']) {
         final streets = List<String>.from(response['streets']);
         await CacheService.saveStreets(area, streets);
-        setState(() { _streets = streets; });
+        setState(() {
+          _streets = streets;
+        });
       }
     } catch (e) {
       print('Error loading streets: $e');
@@ -107,7 +120,10 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
     });
     final cached = await CacheService.loadDropdownSites(area, street);
     if (cached != null) {
-      setState(() { _sites = cached; _isLoadingSites = false; });
+      setState(() {
+        _sites = cached;
+        _isLoadingSites = false;
+      });
       return;
     }
     try {
@@ -116,7 +132,9 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
       if (response['success']) {
         final sites = List<Map<String, dynamic>>.from(response['sites']);
         await CacheService.saveDropdownSites(area, street, sites);
-        setState(() { _sites = sites; });
+        setState(() {
+          _sites = sites;
+        });
       }
     } catch (e) {
       print('Error loading sites: $e');
@@ -180,10 +198,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
             icon: Icon(Icons.location_city),
             label: 'Sites',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
@@ -204,7 +219,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
       backgroundColor: AppColors.lightSlate,
       appBar: CommonWidgets.buildAppBar(
         context,
-        title: '${widget.user.name ?? 'Architect'} - Select Site',
+        title: '${_user.name ?? 'Architect'} - Select Site',
         actions: [
           IconButton(
             icon: const Icon(Icons.logout_rounded, color: AppColors.deepNavy),
@@ -238,13 +253,16 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                     height: 50.h,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.purple.shade600, Colors.purple.shade400],
+                        colors: [
+                          Colors.purple.shade600,
+                          Colors.purple.shade400,
+                        ],
                       ),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: Text(
-                        (widget.user.name ?? 'A').substring(0, 1).toUpperCase(),
+                        (_user.name ?? 'A').substring(0, 1).toUpperCase(),
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -259,7 +277,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.user.name ?? 'Architect',
+                          _user.name ?? 'Architect',
                           style: TextStyle(
                             fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
@@ -359,10 +377,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
               decoration: BoxDecoration(
                 color: Colors.purple.shade50,
                 borderRadius: BorderRadius.circular(16.r),
-                border: Border.all(
-                  color: Colors.purple.shade200,
-                  width: 1,
-                ),
+                border: Border.all(color: Colors.purple.shade200, width: 1),
               ),
               child: Row(
                 children: [
@@ -444,11 +459,18 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                     height: 50.h,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.purple.shade600, Colors.purple.shade400],
+                        colors: [
+                          Colors.purple.shade600,
+                          Colors.purple.shade400,
+                        ],
                       ),
                       borderRadius: BorderRadius.circular(12.r),
                     ),
-                    child: Icon(Icons.architecture, color: Colors.white, size: 24.sp),
+                    child: Icon(
+                      Icons.architecture,
+                      color: Colors.white,
+                      size: 24.sp,
+                    ),
                   ),
                   SizedBox(width: 16.w),
                   Expanded(
@@ -481,35 +503,12 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
             SizedBox(height: 24.h),
 
             // Action Buttons
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16.w,
-                mainAxisSpacing: 16.h,
-                children: [
-                  _buildActionCard(
-                    title: 'Upload Documents',
-                    subtitle: 'Plans, designs, drawings',
-                    icon: Icons.upload_file,
-                    color: Colors.blue.shade600,
-                    onTap: () => _showDocumentUpload(),
-                  ),
-                  _buildActionCard(
-                    title: 'Raise Complaint',
-                    subtitle: 'Report issues to site engineer',
-                    icon: Icons.report_problem,
-                    color: Colors.orange.shade600,
-                    onTap: () => _showComplaintForm(),
-                  ),
-                  _buildActionCard(
-                    title: 'View History',
-                    subtitle: 'Previous uploads & complaints',
-                    icon: Icons.history,
-                    color: Colors.purple.shade600,
-                    onTap: () => _showHistory(),
-                  ),
-                ],
-              ),
+            _buildActionCard(
+              title: 'Upload Documents',
+              subtitle: 'Plans, designs, drawings',
+              icon: Icons.upload_file,
+              color: Colors.blue.shade600,
+              onTap: () => _showDocumentUpload(),
             ),
           ],
         ),
@@ -549,10 +548,14 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
           width: double.infinity,
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
           decoration: BoxDecoration(
-            color: enabled ? AppColors.lightBackground : AppColors.lightBackground.withValues(alpha: 0.5),
+            color: enabled
+                ? AppColors.lightBackground
+                : AppColors.lightBackground.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
-              color: enabled ? Colors.purple.shade300 : AppColors.textSecondary.withValues(alpha: 0.2),
+              color: enabled
+                  ? Colors.purple.shade300
+                  : AppColors.textSecondary.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -593,7 +596,9 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                     isExpanded: true,
                     icon: Icon(
                       Icons.keyboard_arrow_down,
-                      color: enabled ? Colors.purple.shade600 : AppColors.textSecondary,
+                      color: enabled
+                          ? Colors.purple.shade600
+                          : AppColors.textSecondary,
                     ),
                     style: TextStyle(
                       fontSize: 14.sp,
@@ -639,10 +644,14 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
           width: double.infinity,
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
           decoration: BoxDecoration(
-            color: _selectedStreet != null ? AppColors.lightBackground : AppColors.lightBackground.withValues(alpha: 0.5),
+            color: _selectedStreet != null
+                ? AppColors.lightBackground
+                : AppColors.lightBackground.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
-              color: _selectedStreet != null ? Colors.purple.shade300 : AppColors.textSecondary.withValues(alpha: 0.2),
+              color: _selectedStreet != null
+                  ? Colors.purple.shade300
+                  : AppColors.textSecondary.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -674,7 +683,9 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                   child: DropdownButton<String>(
                     value: _selectedSite,
                     hint: Text(
-                      _selectedStreet != null ? 'Select a site' : 'Select street first',
+                      _selectedStreet != null
+                          ? 'Select a site'
+                          : 'Select street first',
                       style: TextStyle(
                         fontSize: 14.sp,
                         color: AppColors.textSecondary,
@@ -683,7 +694,9 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                     isExpanded: true,
                     icon: Icon(
                       Icons.keyboard_arrow_down,
-                      color: _selectedStreet != null ? Colors.purple.shade600 : AppColors.textSecondary,
+                      color: _selectedStreet != null
+                          ? Colors.purple.shade600
+                          : AppColors.textSecondary,
                     ),
                     style: TextStyle(
                       fontSize: 14.sp,
@@ -694,7 +707,11 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
                         ? _sites.map((site) {
                             return DropdownMenuItem<String>(
                               value: site['id'],
-                              child: Text(site['display_name'] ?? site['site_name'] ?? 'Site'),
+                              child: Text(
+                                site['display_name'] ??
+                                    site['site_name'] ??
+                                    'Site',
+                              ),
                             );
                           }).toList()
                         : null,
@@ -753,10 +770,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
             SizedBox(height: 8.h),
             Text(
               subtitle,
-              style: TextStyle(
-                fontSize: 12.sp,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -809,7 +823,8 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ArchitectClientComplaintsScreen(siteId: _selectedSite!),
+        builder: (context) =>
+            ArchitectClientComplaintsScreen(siteId: _selectedSite!),
       ),
     );
   }
@@ -827,13 +842,26 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
   // PROFILE TAB
   // ============================================
 
+  void _openEditProfile() async {
+    final updated = await Navigator.push<UserModel>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(
+          user: _user,
+          accentColor: Colors.purple.shade600,
+          roleLabel: 'Architect',
+        ),
+      ),
+    );
+    if (updated != null) {
+      setState(() => _user = updated);
+    }
+  }
+
   Widget _buildProfileTab() {
     return Scaffold(
       backgroundColor: AppColors.lightSlate,
-      appBar: CommonWidgets.buildAppBar(
-        context,
-        title: 'Profile',
-      ),
+      appBar: CommonWidgets.buildAppBar(context, title: 'Profile'),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.r),
         child: Column(
@@ -853,7 +881,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
             ),
             SizedBox(height: 16.h),
             Text(
-              widget.user.name ?? 'Architect',
+              _user.name ?? 'Architect',
               style: TextStyle(
                 fontSize: 22.sp,
                 fontWeight: FontWeight.bold,
@@ -862,7 +890,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
             ),
             SizedBox(height: 4.h),
             Text(
-              widget.user.email ?? '',
+              _user.email ?? '',
               style: TextStyle(fontSize: 14.sp, color: Colors.grey),
             ),
             SizedBox(height: 8.h),
@@ -886,11 +914,7 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
             SizedBox(height: 32.h),
 
             // Profile Options
-            _buildProfileOption(Icons.person_outline, 'Edit Profile', () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit Profile - Coming Soon')),
-              );
-            }),
+            _buildProfileOption(Icons.person_outline, 'Edit Profile', _openEditProfile),
             _buildProfileOption(Icons.lock_outline, 'Change Password', () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Change Password - Coming Soon')),
@@ -1017,17 +1041,17 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking file: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error picking file: $e')));
     }
   }
 
   Future<void> _uploadDocument() async {
     if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a title')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter a title')));
       return;
     }
 
@@ -1067,9 +1091,9 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Upload failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
     } finally {
       setState(() => _isUploading = false);
     }
@@ -1145,18 +1169,26 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                 padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: _selectedFile != null ? Colors.purple.shade600 : Colors.purple.shade300,
+                    color: _selectedFile != null
+                        ? Colors.purple.shade600
+                        : Colors.purple.shade300,
                     width: 2,
                     style: BorderStyle.solid,
                   ),
                   borderRadius: BorderRadius.circular(8.r),
-                  color: _selectedFile != null ? Colors.purple.shade50 : Colors.grey.shade50,
+                  color: _selectedFile != null
+                      ? Colors.purple.shade50
+                      : Colors.grey.shade50,
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      _selectedFile != null ? Icons.check_circle : Icons.upload_file,
-                      color: _selectedFile != null ? Colors.purple.shade600 : Colors.grey.shade600,
+                      _selectedFile != null
+                          ? Icons.check_circle
+                          : Icons.upload_file,
+                      color: _selectedFile != null
+                          ? Colors.purple.shade600
+                          : Colors.grey.shade600,
                     ),
                     SizedBox(width: 12.w),
                     Expanded(
@@ -1164,11 +1196,15 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _selectedFile != null ? _selectedFile!.name : 'Tap to select file',
+                            _selectedFile != null
+                                ? _selectedFile!.name
+                                : 'Tap to select file',
                             style: TextStyle(
                               fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
-                              color: _selectedFile != null ? Colors.purple.shade700 : Colors.grey.shade600,
+                              color: _selectedFile != null
+                                  ? Colors.purple.shade700
+                                  : Colors.grey.shade600,
                             ),
                           ),
                           if (_selectedFile != null) ...[
@@ -1317,7 +1353,8 @@ class _ComplaintFormDialogState extends State<_ComplaintFormDialog> {
   }
 
   Future<void> _submitComplaint() async {
-    if (_titleController.text.trim().isEmpty || _descriptionController.text.trim().isEmpty) {
+    if (_titleController.text.trim().isEmpty ||
+        _descriptionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in all required fields')),
       );
@@ -1352,9 +1389,9 @@ class _ComplaintFormDialogState extends State<_ComplaintFormDialog> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Submission failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Submission failed: $e')));
     } finally {
       setState(() => _isSubmitting = false);
     }
@@ -1403,7 +1440,10 @@ class _ComplaintFormDialogState extends State<_ComplaintFormDialog> {
                   value: _selectedPriority,
                   isExpanded: true,
                   items: _priorities.map((priority) {
-                    return DropdownMenuItem(value: priority, child: Text(priority));
+                    return DropdownMenuItem(
+                      value: priority,
+                      child: Text(priority),
+                    );
                   }).toList(),
                   onChanged: (value) {
                     setState(() => _selectedPriority = value!);
@@ -1471,7 +1511,9 @@ class _ComplaintFormDialogState extends State<_ComplaintFormDialog> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => Navigator.pop(context),
                   child: const Text('Cancel'),
                 ),
                 SizedBox(width: 12.w),
@@ -1524,11 +1566,16 @@ class _ArchitectHistoryScreenState extends State<ArchitectHistoryScreen> {
   }
 
   Future<void> _loadHistory() async {
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final token = await _authService.getToken();
       final response = await http.get(
-        Uri.parse('${AuthService.baseUrl}/construction/architect-documents/?site_id=${widget.siteId}'),
+        Uri.parse(
+          '${AuthService.baseUrl}/construction/architect-documents/?site_id=${widget.siteId}',
+        ),
         headers: {'Authorization': 'Bearer ${token ?? ''}'},
       );
       if (response.statusCode == 200) {
@@ -1538,15 +1585,23 @@ class _ArchitectHistoryScreenState extends State<ArchitectHistoryScreen> {
           _isLoading = false;
         });
       } else {
-        setState(() { _error = 'Failed to load history'; _isLoading = false; });
+        setState(() {
+          _error = 'Failed to load history';
+          _isLoading = false;
+        });
       }
     } catch (e) {
-      setState(() { _error = e.toString(); _isLoading = false; });
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
     }
   }
 
   Future<void> _openDocument(String fileUrl) async {
-    final url = fileUrl.startsWith('http') ? fileUrl : 'http://187.127.164.22$fileUrl';
+    final url = fileUrl.startsWith('http')
+        ? fileUrl
+        : 'http://187.127.164.22$fileUrl';
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -1568,155 +1623,192 @@ class _ArchitectHistoryScreenState extends State<ArchitectHistoryScreen> {
         backgroundColor: AppColors.cleanWhite,
         foregroundColor: AppColors.deepNavy,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadHistory,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadHistory),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.purple))
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 56.sp, color: Colors.red),
-                      SizedBox(height: 12.h),
-                      Text(_error!, style: const TextStyle(color: AppColors.textSecondary)),
-                      SizedBox(height: 12.h),
-                      ElevatedButton(
-                        onPressed: _loadHistory,
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.purple, foregroundColor: Colors.white),
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 56.sp, color: Colors.red),
+                  SizedBox(height: 12.h),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
-                )
-              : _documents.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.history, size: 72.sp, color: Colors.grey.shade300),
-                          SizedBox(height: 16.h),
-                          Text('No documents uploaded yet',
-                              style: TextStyle(
-                                  fontSize: 18.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.deepNavy)),
-                          SizedBox(height: 8.h),
-                          Text('Documents you upload will appear here.',
-                              style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary)),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadHistory,
-                      color: Colors.purple,
-                      child: ListView.separated(
-                        padding: EdgeInsets.all(16.r),
-                        itemCount: _documents.length,
-                        separatorBuilder: (_, __) => SizedBox(height: 12.h),
-                        itemBuilder: (context, index) {
-                          final doc = _documents[index];
-                          final docType = doc['document_type'] as String? ?? '';
-                          final title = doc['title'] as String? ?? docType;
-                          final description = doc['description'] as String? ?? '';
-                          final uploadDate = (doc['upload_date'] as String? ?? '');
-                          final dateStr = uploadDate.length >= 10 ? uploadDate.substring(0, 10) : uploadDate;
-                          final fileUrl = doc['file_url'] as String? ?? '';
+                  SizedBox(height: 12.h),
+                  ElevatedButton(
+                    onPressed: _loadHistory,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : _documents.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.history, size: 72.sp, color: Colors.grey.shade300),
+                  SizedBox(height: 16.h),
+                  Text(
+                    'No documents uploaded yet',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.deepNavy,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    'Documents you upload will appear here.',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadHistory,
+              color: Colors.purple,
+              child: ListView.separated(
+                padding: EdgeInsets.all(16.r),
+                itemCount: _documents.length,
+                separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                itemBuilder: (context, index) {
+                  final doc = _documents[index];
+                  final docType = doc['document_type'] as String? ?? '';
+                  final title = doc['title'] as String? ?? docType;
+                  final description = doc['description'] as String? ?? '';
+                  final uploadDate = (doc['upload_date'] as String? ?? '');
+                  final dateStr = uploadDate.length >= 10
+                      ? uploadDate.substring(0, 10)
+                      : uploadDate;
+                  final fileUrl = doc['file_url'] as String? ?? '';
 
-                          return Container(
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.purple.withValues(alpha: 0.08),
+                          blurRadius: 8.r,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(16.r),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(10.r),
                             decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12.r),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.purple.withValues(alpha: 0.08),
-                                  blurRadius: 8.r,
-                                  offset: const Offset(0, 2),
+                              color: Colors.purple.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
+                            child: Icon(
+                              Icons.insert_drive_file,
+                              color: Colors.purple,
+                              size: 24.sp,
+                            ),
+                          ),
+                          SizedBox(width: 14.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.deepNavy,
+                                  ),
+                                ),
+                                if (docType.isNotEmpty) ...[
+                                  SizedBox(height: 2.h),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8.w,
+                                      vertical: 2.h,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.purple.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6.r),
+                                    ),
+                                    child: Text(
+                                      docType,
+                                      style: TextStyle(
+                                        fontSize: 11.sp,
+                                        color: Colors.purple,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                if (description.isNotEmpty) ...[
+                                  SizedBox(height: 4.h),
+                                  Text(
+                                    description,
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                                SizedBox(height: 4.h),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_today_outlined,
+                                      size: 12.sp,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                    SizedBox(width: 4.w),
+                                    Text(
+                                      dateStr,
+                                      style: TextStyle(
+                                        fontSize: 12.sp,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                            child: Padding(
-                              padding: EdgeInsets.all(16.r),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(10.r),
-                                    decoration: BoxDecoration(
-                                      color: Colors.purple.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(10.r),
-                                    ),
-                                    child: Icon(Icons.insert_drive_file,
-                                        color: Colors.purple, size: 24.sp),
-                                  ),
-                                  SizedBox(width: 14.w),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(title,
-                                            style: TextStyle(
-                                                fontSize: 14.sp,
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColors.deepNavy)),
-                                        if (docType.isNotEmpty) ...[
-                                          SizedBox(height: 2.h),
-                                          Container(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 8.w, vertical: 2.h),
-                                            decoration: BoxDecoration(
-                                              color: Colors.purple.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(6.r),
-                                            ),
-                                            child: Text(docType,
-                                                style: TextStyle(
-                                                    fontSize: 11.sp,
-                                                    color: Colors.purple,
-                                                    fontWeight: FontWeight.w600)),
-                                          ),
-                                        ],
-                                        if (description.isNotEmpty) ...[
-                                          SizedBox(height: 4.h),
-                                          Text(description,
-                                              style: TextStyle(
-                                                  fontSize: 12.sp,
-                                                  color: Colors.grey.shade600),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis),
-                                        ],
-                                        SizedBox(height: 4.h),
-                                        Row(
-                                          children: [
-                                            Icon(Icons.calendar_today_outlined,
-                                                size: 12.sp, color: Colors.grey.shade500),
-                                            SizedBox(width: 4.w),
-                                            Text(dateStr,
-                                                style: TextStyle(
-                                                    fontSize: 12.sp,
-                                                    color: Colors.grey.shade600)),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (fileUrl.isNotEmpty)
-                                    IconButton(
-                                      icon: Icon(Icons.open_in_new,
-                                          color: Colors.purple, size: 22.sp),
-                                      onPressed: () => _openDocument(fileUrl),
-                                      tooltip: 'Open document',
-                                    ),
-                                ],
+                          ),
+                          if (fileUrl.isNotEmpty)
+                            IconButton(
+                              icon: Icon(
+                                Icons.open_in_new,
+                                color: Colors.purple,
+                                size: 22.sp,
                               ),
+                              onPressed: () => _openDocument(fileUrl),
+                              tooltip: 'Open document',
                             ),
-                          );
-                        },
+                        ],
                       ),
                     ),
+                  );
+                },
+              ),
+            ),
     );
   }
 }

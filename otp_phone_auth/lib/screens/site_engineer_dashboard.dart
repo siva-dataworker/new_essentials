@@ -16,6 +16,7 @@ import 'site_engineer_material_screen.dart';
 import 'site_engineer_document_screen.dart';
 import 'site_engineer_labour_screen.dart';
 import 'site_engineer_reports_screen.dart';
+import 'edit_profile_screen.dart';
 
 class SiteEngineerDashboard extends StatefulWidget {
   final UserModel user;
@@ -28,15 +29,19 @@ class SiteEngineerDashboard extends StatefulWidget {
 
 class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
   final _authService = AuthService();
-  int _currentBottomIndex = 0; // 0=Dashboard, 1=Sites, 2=Reports, 3=Notifications, 4=Profile
+  int _currentBottomIndex =
+      0; // 0=Dashboard, 1=Sites, 2=Reports, 3=Notifications, 4=Profile
+  late UserModel _user;
   final _searchController = TextEditingController();
   String _searchQuery = '';
 
-  final Map<String, Map<String, bool>> _uploadStatus = {}; // site_id -> {morning: bool, evening: bool}
+  final Map<String, Map<String, bool>> _uploadStatus =
+      {}; // site_id -> {morning: bool, evening: bool}
 
   @override
   void initState() {
     super.initState();
+    _user = widget.user;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
@@ -59,7 +64,9 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
       final token = await _authService.getToken();
 
       final response = await http.get(
-        Uri.parse('${AuthService.baseUrl}/construction/today-upload-status/$siteId/'),
+        Uri.parse(
+          '${AuthService.baseUrl}/construction/today-upload-status/$siteId/',
+        ),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -81,24 +88,40 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+        ),
         title: Text(
           'Sign Out',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.deepNavy,
+          ),
         ),
         content: const Text('Are you sure you want to sign out?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.statusOverdue,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
             ),
-            child: Text('Sign Out', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Sign Out',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -130,10 +153,8 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
           case 2: // Reports
             currentScreen = const SiteEngineerReportsScreen();
             break;
-          case 3: // Notifications
-            currentScreen = _buildNotificationsTab();
-            break;
-          case 4: // Profile
+
+          case 3: // Profile
             currentScreen = _buildProfileTab();
             break;
           default:
@@ -174,11 +195,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                 activeIcon: Icon(Icons.bar_chart, size: 28.sp),
                 label: 'Reports',
               ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.notifications),
-                activeIcon: Icon(Icons.notifications, size: 28.sp),
-                label: 'Notifications',
-              ),
+
               BottomNavigationBarItem(
                 icon: const Icon(Icons.person),
                 activeIcon: Icon(Icons.person, size: 28.sp),
@@ -212,8 +229,12 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
   Widget _buildDashboardTab(ConstructionProvider provider) {
     final sites = provider.sites;
     final totalSites = sites.length;
-    final morningUploaded = _uploadStatus.values.where((s) => s['morning'] == true).length;
-    final eveningUploaded = _uploadStatus.values.where((s) => s['evening'] == true).length;
+    final morningUploaded = _uploadStatus.values
+        .where((s) => s['morning'] == true)
+        .length;
+    final eveningUploaded = _uploadStatus.values
+        .where((s) => s['evening'] == true)
+        .length;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -250,7 +271,11 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                       color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.engineering, color: Colors.white, size: 30.sp),
+                    child: Icon(
+                      Icons.engineering,
+                      color: Colors.white,
+                      size: 30.sp,
+                    ),
                   ),
                   SizedBox(width: 16.w),
                   Expanded(
@@ -258,7 +283,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Welcome, ${widget.user.name ?? "Engineer"}',
+                          'Welcome, ${_user.name ?? "Engineer"}',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 18.sp,
@@ -284,7 +309,11 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
             // Summary Cards
             Text(
               'Today\'s Overview',
-              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColors.deepNavy,
+              ),
             ),
             SizedBox(height: 12.h),
             GridView.count(
@@ -326,7 +355,11 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
             // Quick Actions
             Text(
               'Quick Actions',
-              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColors.deepNavy,
+              ),
             ),
             SizedBox(height: 12.h),
             Row(
@@ -394,7 +427,11 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
     );
   }
 
-  Widget _buildQuickActionButton(String label, IconData icon, VoidCallback onTap) {
+  Widget _buildQuickActionButton(
+    String label,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12.r),
@@ -412,7 +449,11 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
             SizedBox(width: 8.w),
             Text(
               label,
-              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColors.deepNavy,
+              ),
             ),
           ],
         ),
@@ -426,18 +467,27 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
     final filteredSites = _searchQuery.isEmpty
         ? sites
         : sites.where((site) {
-            final name = (site['display_name'] ?? site['site_name'] ?? '').toString().toLowerCase();
+            final name = (site['display_name'] ?? site['site_name'] ?? '')
+                .toString()
+                .toLowerCase();
             final area = (site['area'] ?? '').toString().toLowerCase();
             final street = (site['street'] ?? '').toString().toLowerCase();
-            final customer = (site['customer_name'] ?? '').toString().toLowerCase();
+            final customer = (site['customer_name'] ?? '')
+                .toString()
+                .toLowerCase();
             final query = _searchQuery.toLowerCase();
-            return name.contains(query) || area.contains(query) || street.contains(query) || customer.contains(query);
+            return name.contains(query) ||
+                area.contains(query) ||
+                street.contains(query) ||
+                customer.contains(query);
           }).toList();
 
     final isLoading = sites.isEmpty && _uploadStatus.isEmpty;
 
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.deepNavy));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.deepNavy),
+      );
     }
 
     return RefreshIndicator(
@@ -464,10 +514,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
             SizedBox(height: 8.h),
             Text(
               'Choose a site to view details and upload photos',
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
             ),
             SizedBox(height: 24.h),
 
@@ -488,10 +535,16 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search sites by name, area, or customer...',
-                  prefixIcon: const Icon(Icons.search, color: AppColors.deepNavy),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppColors.deepNavy,
+                  ),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear, color: AppColors.textSecondary),
+                          icon: const Icon(
+                            Icons.clear,
+                            color: AppColors.textSecondary,
+                          ),
                           onPressed: () => setState(() {
                             _searchQuery = '';
                             _searchController.clear();
@@ -499,7 +552,10 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                         )
                       : null,
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 16.h,
+                  ),
                 ),
                 onChanged: (value) => setState(() => _searchQuery = value),
               ),
@@ -533,7 +589,9 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                 },
               )
             else
-              ...filteredSites.map((site) => _buildSiteDropdownItem(site)).toList(),
+              ...filteredSites
+                  .map((site) => _buildSiteDropdownItem(site))
+                  .toList(),
           ],
         ),
       ),
@@ -542,8 +600,10 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
 
   Widget _buildSiteDropdownItem(Map<String, dynamic> site) {
     final siteId = site['id'].toString();
-    final status = _uploadStatus[siteId] ?? {'morning': false, 'evening': false};
-    final siteName = site['display_name'] ?? site['site_name'] ?? 'Unknown Site';
+    final status =
+        _uploadStatus[siteId] ?? {'morning': false, 'evening': false};
+    final siteName =
+        site['display_name'] ?? site['site_name'] ?? 'Unknown Site';
     final location = '${site['area'] ?? ''}, ${site['street'] ?? ''}';
 
     return Container(
@@ -684,14 +744,18 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
             style: TextStyle(
               fontSize: 11.sp,
               fontWeight: FontWeight.w600,
-              color: uploaded ? AppColors.statusCompleted : AppColors.statusOverdue,
+              color: uploaded
+                  ? AppColors.statusCompleted
+                  : AppColors.statusOverdue,
             ),
           ),
           SizedBox(width: 4.w),
           Icon(
             uploaded ? Icons.check_circle : Icons.pending,
             size: 12.sp,
-            color: uploaded ? AppColors.statusCompleted : AppColors.statusOverdue,
+            color: uploaded
+                ? AppColors.statusCompleted
+                : AppColors.statusOverdue,
           ),
         ],
       ),
@@ -702,7 +766,8 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
   Widget _buildNotificationsTab() {
     return CommonWidgets.buildEmptyState(
       context,
-      message: 'No Notifications\n\nYou\'re all caught up!\nNotifications will appear here',
+      message:
+          'No Notifications\n\nYou\'re all caught up!\nNotifications will appear here',
       icon: Icons.notifications_none,
     );
   }
@@ -726,12 +791,16 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
           ),
           SizedBox(height: 16.h),
           Text(
-            widget.user.name ?? 'Site Engineer',
-            style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+            _user.name ?? 'Site Engineer',
+            style: TextStyle(
+              fontSize: 22.sp,
+              fontWeight: FontWeight.bold,
+              color: AppColors.deepNavy,
+            ),
           ),
           SizedBox(height: 4.h),
           Text(
-            widget.user.email ?? '',
+            _user.email ?? '',
             style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
           ),
           SizedBox(height: 8.h),
@@ -743,25 +812,39 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
             ),
             child: Text(
               'Site Engineer',
-              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColors.deepNavy,
+              ),
             ),
           ),
           SizedBox(height: 32.h),
 
           // Profile Options
-          _buildProfileOption(Icons.person_outline, 'Edit Profile', () {}),
+          _buildProfileOption(Icons.person_outline, 'Edit Profile', _openEditProfile),
           _buildProfileOption(Icons.lock_outline, 'Change Password', () {}),
           _buildProfileOption(Icons.settings_outlined, 'Settings', () {}),
           _buildProfileOption(Icons.help_outline, 'Help & Support', () {}),
           _buildProfileOption(Icons.info_outline, 'About', () {}),
           SizedBox(height: 16.h),
-          _buildProfileOption(Icons.logout, 'Sign Out', _logout, isDestructive: true),
+          _buildProfileOption(
+            Icons.logout,
+            'Sign Out',
+            _logout,
+            isDestructive: true,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildProfileOption(IconData icon, String title, VoidCallback onTap, {bool isDestructive = false}) {
+  Widget _buildProfileOption(
+    IconData icon,
+    String title,
+    VoidCallback onTap, {
+    bool isDestructive = false,
+  }) {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
@@ -776,7 +859,10 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
         ],
       ),
       child: ListTile(
-        leading: Icon(icon, color: isDestructive ? AppColors.statusOverdue : AppColors.deepNavy),
+        leading: Icon(
+          icon,
+          color: isDestructive ? AppColors.statusOverdue : AppColors.deepNavy,
+        ),
         title: Text(
           title,
           style: TextStyle(
@@ -788,21 +874,37 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
         trailing: Icon(
           Icons.arrow_forward_ios,
           size: 16.sp,
-          color: isDestructive ? AppColors.statusOverdue : AppColors.textSecondary,
+          color: isDestructive
+              ? AppColors.statusOverdue
+              : AppColors.textSecondary,
         ),
         onTap: onTap,
       ),
     );
   }
 
+  void _openEditProfile() async {
+    final updated = await Navigator.push<UserModel>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(
+          user: _user,
+          accentColor: AppColors.deepNavy,
+          roleLabel: 'Site Engineer',
+        ),
+      ),
+    );
+    if (updated != null) {
+      setState(() => _user = updated);
+    }
+  }
+
   void _openSiteDetail(Map<String, dynamic> site) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SiteEngineerSiteDetailScreen(
-          site: site,
-          user: widget.user,
-        ),
+        builder: (context) =>
+            SiteEngineerSiteDetailScreen(site: site, user: widget.user),
       ),
     );
 
@@ -833,7 +935,8 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
         MaterialPageRoute(
           builder: (context) => SiteEngineerMaterialScreen(
             siteId: site['id'].toString(),
-            siteName: site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
+            siteName:
+                site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
           ),
         ),
       );
@@ -849,7 +952,8 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
           MaterialPageRoute(
             builder: (context) => SiteEngineerMaterialScreen(
               siteId: site['id'].toString(),
-              siteName: site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
+              siteName:
+                  site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
             ),
           ),
         );
@@ -878,7 +982,8 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
         MaterialPageRoute(
           builder: (_) => SiteEngineerLabourScreen(
             siteId: site['id'].toString(),
-            siteName: site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
+            siteName:
+                site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
           ),
         ),
       );
@@ -894,7 +999,8 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
           MaterialPageRoute(
             builder: (_) => SiteEngineerLabourScreen(
               siteId: site['id'].toString(),
-              siteName: site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
+              siteName:
+                  site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
             ),
           ),
         );
@@ -923,7 +1029,8 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
         MaterialPageRoute(
           builder: (context) => SiteEngineerDocumentScreen(
             siteId: site['id'].toString(),
-            siteName: site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
+            siteName:
+                site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
           ),
         ),
       );
@@ -939,7 +1046,8 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
           MaterialPageRoute(
             builder: (context) => SiteEngineerDocumentScreen(
               siteId: site['id'].toString(),
-              siteName: site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
+              siteName:
+                  site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
             ),
           ),
         );
@@ -971,7 +1079,8 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
 
   Future<void> _showBudgetDetails(Map<String, dynamic> site) async {
     final siteId = site['id'].toString();
-    final siteName = site['display_name'] ?? site['site_name'] ?? 'Unknown Site';
+    final siteName =
+        site['display_name'] ?? site['site_name'] ?? 'Unknown Site';
 
     // Show loading dialog
     showDialog(
@@ -1009,7 +1118,10 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
           backgroundColor: AppColors.cleanWhite,
           title: Row(
             children: [
-              const Icon(Icons.account_balance_wallet, color: AppColors.deepNavy),
+              const Icon(
+                Icons.account_balance_wallet,
+                color: AppColors.deepNavy,
+              ),
               SizedBox(width: 12.w),
               Expanded(
                 child: Text(
@@ -1070,11 +1182,18 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                 ),
                 SizedBox(height: 12.h),
 
-                _buildBudgetDetailRow('Allocated By', budget['allocated_by'] ?? 'N/A'),
-                _buildBudgetDetailRow('Date', budget['allocated_date']?.substring(0, 10) ?? 'N/A'),
+                _buildBudgetDetailRow(
+                  'Allocated By',
+                  budget['allocated_by'] ?? 'N/A',
+                ),
+                _buildBudgetDetailRow(
+                  'Date',
+                  budget['allocated_date']?.substring(0, 10) ?? 'N/A',
+                ),
                 _buildBudgetDetailRow('Status', budget['status'] ?? 'N/A'),
 
-                if (budget['notes'] != null && budget['notes'].toString().isNotEmpty) ...[
+                if (budget['notes'] != null &&
+                    budget['notes'].toString().isNotEmpty) ...[
                   SizedBox(height: 12.h),
                   Text(
                     'Notes',
@@ -1101,7 +1220,10 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'Close',
-                style: TextStyle(color: AppColors.deepNavy, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: AppColors.deepNavy,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -1118,10 +1240,7 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
         children: [
           Text(
             label,
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
           ),
           Text(
             value,
@@ -1138,7 +1257,9 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
 
   String _formatCurrency(dynamic amount) {
     if (amount == null) return '₹0';
-    double value = amount is String ? double.tryParse(amount) ?? 0 : amount.toDouble();
+    double value = amount is String
+        ? double.tryParse(amount) ?? 0
+        : amount.toDouble();
 
     if (value >= 10000000) {
       return '₹${(value / 10000000).toStringAsFixed(2)} Cr';
@@ -1162,7 +1283,10 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
         backgroundColor: AppColors.cleanWhite,
         title: Text(
           title,
-          style: const TextStyle(color: AppColors.deepNavy, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: AppColors.deepNavy,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         content: SizedBox(
           width: double.maxFinite,
@@ -1171,7 +1295,8 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
             itemCount: sites.length,
             itemBuilder: (context, index) {
               final site = sites[index];
-              final siteName = site['display_name'] ?? site['site_name'] ?? 'Unknown Site';
+              final siteName =
+                  site['display_name'] ?? site['site_name'] ?? 'Unknown Site';
               final location = '${site['area'] ?? ''}, ${site['street'] ?? ''}';
 
               return ListTile(
@@ -1182,7 +1307,11 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                     gradient: AppColors.navyGradient,
                     borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: Icon(Icons.location_city, color: Colors.white, size: 20.sp),
+                  child: Icon(
+                    Icons.location_city,
+                    color: Colors.white,
+                    size: 20.sp,
+                  ),
                 ),
                 title: Text(
                   siteName,
@@ -1209,7 +1338,10 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
         ],
       ),
@@ -1299,12 +1431,13 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
     }
   }
 
-  int get _totalCount => _labourCounts.values.fold(0, (sum, count) => sum + count);
+  int get _totalCount =>
+      _labourCounts.values.fold(0, (sum, count) => sum + count);
 
   double get _totalSalary => _labourCounts.entries.fold(
-        0,
-        (sum, e) => sum + e.value * (_rates[e.key] ?? 0),
-      );
+    0,
+    (sum, e) => sum + e.value * (_rates[e.key] ?? 0),
+  );
 
   @override
   void dispose() {
@@ -1334,33 +1467,51 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
             children: [
               Text(
                 '👷 Labor Entry',
-                style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                style: TextStyle(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.deepNavy,
+                ),
               ),
               const Spacer(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 6.h,
+                    ),
                     decoration: BoxDecoration(
                       gradient: AppColors.orangeGradient,
                       borderRadius: BorderRadius.circular(16.r),
                     ),
                     child: Text(
                       'Workers: $_totalCount',
-                      style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                   SizedBox(height: 4.h),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 6.h,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green.shade700,
                       borderRadius: BorderRadius.circular(16.r),
                     ),
                     child: Text(
                       '₹${_totalSalary.toStringAsFixed(0)}',
-                      style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -1381,7 +1532,9 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
           SizedBox(
             height: 300.h,
             child: ListView(
-              children: _labourCounts.keys.map((type) => _buildLabourTypeRow(type)).toList(),
+              children: _labourCounts.keys
+                  .map((type) => _buildLabourTypeRow(type))
+                  .toList(),
             ),
           ),
           SizedBox(height: 16.h),
@@ -1399,7 +1552,11 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.attach_money, size: 20.sp, color: Colors.orange.shade700),
+                    Icon(
+                      Icons.attach_money,
+                      size: 20.sp,
+                      color: Colors.orange.shade700,
+                    ),
                     SizedBox(width: 8.w),
                     Text(
                       'Extra Cost (Optional)',
@@ -1423,7 +1580,10 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
                       borderRadius: BorderRadius.circular(12.r),
                       borderSide: BorderSide(color: Colors.orange.shade200),
                     ),
-                    prefixIcon: Icon(Icons.currency_rupee, color: Colors.orange.shade700),
+                    prefixIcon: Icon(
+                      Icons.currency_rupee,
+                      color: Colors.orange.shade700,
+                    ),
                   ),
                 ),
                 SizedBox(height: 8.h),
@@ -1449,17 +1609,26 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.safetyOrange,
               padding: EdgeInsets.symmetric(vertical: 16.h),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
             ),
             child: _isSubmitting
                 ? SizedBox(
                     height: 20.h,
                     width: 20.w,
-                    child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    child: const CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
                   )
                 : Text(
                     'Submit Labor Entry',
-                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
           ),
         ],
@@ -1477,10 +1646,14 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
-        color: count > 0 ? AppColors.deepNavy.withValues(alpha: 0.05) : AppColors.lightSlate,
+        color: count > 0
+            ? AppColors.deepNavy.withValues(alpha: 0.05)
+            : AppColors.lightSlate,
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
-          color: count > 0 ? AppColors.deepNavy.withValues(alpha: 0.2) : Colors.transparent,
+          color: count > 0
+              ? AppColors.deepNavy.withValues(alpha: 0.2)
+              : Colors.transparent,
           width: 2,
         ),
       ),
@@ -1505,7 +1678,9 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
                   style: TextStyle(
                     fontSize: 15.sp,
                     fontWeight: count > 0 ? FontWeight.bold : FontWeight.w500,
-                    color: count > 0 ? AppColors.deepNavy : AppColors.textSecondary,
+                    color: count > 0
+                        ? AppColors.deepNavy
+                        : AppColors.textSecondary,
                   ),
                 ),
                 Text(
@@ -1514,7 +1689,9 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
                       : '₹${rate.toStringAsFixed(0)}/day',
                   style: TextStyle(
                     fontSize: 12.sp,
-                    color: count > 0 ? Colors.green.shade700 : AppColors.textSecondary,
+                    color: count > 0
+                        ? Colors.green.shade700
+                        : AppColors.textSecondary,
                     fontWeight: count > 0 ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
@@ -1524,9 +1701,13 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
           Row(
             children: [
               IconButton(
-                onPressed: () => setState(() => _labourCounts[type] = (count - 1).clamp(0, 50)),
+                onPressed: () => setState(
+                  () => _labourCounts[type] = (count - 1).clamp(0, 50),
+                ),
                 icon: Icon(Icons.remove_circle_outline, size: 32.sp),
-                color: count > 0 ? AppColors.safetyOrange : AppColors.textSecondary,
+                color: count > 0
+                    ? AppColors.safetyOrange
+                    : AppColors.textSecondary,
               ),
               Container(
                 width: 50.w,
@@ -1548,7 +1729,9 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
                 ),
               ),
               IconButton(
-                onPressed: () => setState(() => _labourCounts[type] = (count + 1).clamp(0, 50)),
+                onPressed: () => setState(
+                  () => _labourCounts[type] = (count + 1).clamp(0, 50),
+                ),
                 icon: Icon(Icons.add_circle_outline, size: 32.sp),
                 color: AppColors.safetyOrange,
               ),
@@ -1561,18 +1744,30 @@ class _LaborEntrySheetState extends State<_LaborEntrySheet> {
 
   IconData _getLabourIcon(String type) {
     switch (type) {
-      case 'Carpenter': return Icons.carpenter;
-      case 'Mason': return Icons.construction;
-      case 'Electrician': return Icons.electrical_services;
-      case 'Plumber': return Icons.plumbing;
-      case 'Painter': return Icons.format_paint;
-      case 'Helper': return Icons.handyman;
-      case 'Tile Layer': return Icons.layers;
-      case 'Tile Layerhelper': return Icons.layers_outlined;
-      case 'Kambi Fitter': return Icons.build;
-      case 'Concrete Kot': return Icons.foundation;
-      case 'Pile Labour': return Icons.vertical_align_bottom;
-      default: return Icons.person;
+      case 'Carpenter':
+        return Icons.carpenter;
+      case 'Mason':
+        return Icons.construction;
+      case 'Electrician':
+        return Icons.electrical_services;
+      case 'Plumber':
+        return Icons.plumbing;
+      case 'Painter':
+        return Icons.format_paint;
+      case 'Helper':
+        return Icons.handyman;
+      case 'Tile Layer':
+        return Icons.layers;
+      case 'Tile Layerhelper':
+        return Icons.layers_outlined;
+      case 'Kambi Fitter':
+        return Icons.build;
+      case 'Concrete Kot':
+        return Icons.foundation;
+      case 'Pile Labour':
+        return Icons.vertical_align_bottom;
+      default:
+        return Icons.person;
     }
   }
 
@@ -1659,10 +1854,7 @@ class SummaryCard extends StatelessWidget {
           SizedBox(height: 4.h),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 12.sp,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
         ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 import '../services/construction_service.dart';
 import '../services/material_service.dart';
 import '../services/budget_management_service.dart';
@@ -11,10 +12,51 @@ import 'supervisor_history_screen.dart';
 import 'supervisor_photo_upload_screen.dart';
 
 enum _SiteEntryStatus {
-  none,          // no entries today — FAB fully active
-  morningOnly,   // morning done, evening pending — FAB opens evening tab
-  complete,      // both done — FAB locked (green check)
+  none, // no entries today — FAB fully active
+  morningOnly, // morning done, evening pending — FAB opens evening tab
+  complete, // both done — FAB locked (green check)
   lockedByOther, // another supervisor entered today — FAB locked (grey lock)
+}
+
+/// Entry session management for workflow lock
+class EntrySession {
+  bool isActive = false;
+  String? sessionId;
+  DateTime? startTime;
+  final List<String> completedSteps = [];
+
+  static const Duration timeout = Duration(hours: 2);
+
+  bool get isLabourComplete => completedSteps.contains('labour');
+  bool get isMaterialComplete => completedSteps.contains('material');
+  bool get isPhotoComplete => completedSteps.contains('photo');
+
+  bool get isExpired {
+    if (startTime == null) return false;
+    return DateTime.now().difference(startTime!) > timeout;
+  }
+
+  bool get canExit => (isLabourComplete && isMaterialComplete) || isExpired;
+
+  void start() {
+    isActive = true;
+    sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+    startTime = DateTime.now();
+    completedSteps.clear();
+  }
+
+  void markComplete(String step) {
+    if (!completedSteps.contains(step)) {
+      completedSteps.add(step);
+    }
+  }
+
+  void end() {
+    isActive = false;
+    sessionId = null;
+    startTime = null;
+    completedSteps.clear();
+  }
 }
 
 class SiteDetailScreen extends StatefulWidget {
@@ -29,19 +71,23 @@ class SiteDetailScreen extends StatefulWidget {
 class _SiteDetailScreenState extends State<SiteDetailScreen> {
   final _constructionService = ConstructionService();
   final _authService = AuthService();
-  
+  final EntrySession _entrySession = EntrySession(); // Entry session management
+
   // Cache for site-specific data
   static final Map<String, Map<String, dynamic>?> _siteDataCache = {};
   static final Map<String, DateTime> _cacheTimestamps = {};
-  static const Duration _cacheExpiry = Duration(minutes: 5); // Cache expires after 5 minutes
-  
+  static const Duration _cacheExpiry = Duration(
+    minutes: 5,
+  ); // Cache expires after 5 minutes
+
   Map<String, dynamic>? _todayEntries;
   bool _isLoading = false;
   DateTime _selectedDate = DateTime.now();
   String? _userId; // Store user ID for cache key
   String get _siteId => widget.site['id'].toString();
-  String get _cacheKey => '${_userId ?? 'unknown'}_${_siteId}_${_selectedDate.toIso8601String().split('T')[0]}';
-  
+  String get _cacheKey =>
+      '${_userId ?? 'unknown'}_${_siteId}_${_selectedDate.toIso8601String().split('T')[0]}';
+
   // Dropdown functionality
   final Set<String> _expandedDates = {};
 
@@ -65,13 +111,16 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
   }
 
   Future<void> _loadTodayEntriesWithCache() async {
-    print('🏗️ [SITE_DETAIL] Loading entries for site: $_siteId, date: $_selectedDate');
-    
+    print(
+      '🏗️ [SITE_DETAIL] Loading entries for site: $_siteId, date: $_selectedDate',
+    );
+
     // Check if we have valid cached data
-    if (_siteDataCache.containsKey(_cacheKey) && _cacheTimestamps.containsKey(_cacheKey)) {
+    if (_siteDataCache.containsKey(_cacheKey) &&
+        _cacheTimestamps.containsKey(_cacheKey)) {
       final cacheTime = _cacheTimestamps[_cacheKey]!;
       final now = DateTime.now();
-      
+
       if (now.difference(cacheTime) < _cacheExpiry) {
         print('🎯 [SITE_DETAIL] Using cached data for $_cacheKey');
         setState(() {
@@ -83,28 +132,30 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
         print('⏰ [SITE_DETAIL] Cache expired for $_cacheKey, refreshing...');
       }
     }
-    
+
     // Load fresh data
     await _loadTodayEntries();
   }
 
   Future<void> _loadTodayEntries() async {
-    print('🔄 [SITE_DETAIL] Loading fresh data for site: $_siteId, date: $_selectedDate');
+    print(
+      '🔄 [SITE_DETAIL] Loading fresh data for site: $_siteId, date: $_selectedDate',
+    );
     setState(() => _isLoading = true);
-    
+
     try {
       final entries = await _constructionService.getEntriesByDate(
         widget.site['id'],
         _selectedDate,
       );
-      
+
       // Cache the data (handle null case)
       if (entries != null) {
         _siteDataCache[_cacheKey] = entries;
         _cacheTimestamps[_cacheKey] = DateTime.now();
         print('💾 [SITE_DETAIL] Cached data for $_cacheKey');
       }
-      
+
       setState(() {
         _todayEntries = entries;
         _isLoading = false;
@@ -134,7 +185,7 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
         );
       },
     );
-    
+
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
@@ -152,7 +203,7 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
       builder: (context) => _QuickActionsSheet(
         onLabourTap: () {
           Navigator.pop(context);
-          _showLabourEntry();
+          _checkEntryLockAndOpen();
         },
         onMaterialTap: () {
           Navigator.pop(context);
@@ -174,6 +225,292 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
     );
   }
 
+  /// Check entry lock before opening entry form
+  Future<void> _checkEntryLockAndOpen({bool startAtEvening = false}) async {
+    final now = DateTime.now();
+    final entryDate = DateFormat('yyyy-MM-dd').format(now);
+
+    print('🔍 [ENTRY_LOCK] Checking lock before opening entry form...');
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final result = await _constructionService.checkEntryLock(
+      siteId: widget.site['id'].toString(),
+      entryDate: entryDate,
+    );
+
+    // Close loading indicator
+    if (mounted) Navigator.pop(context);
+
+    if (!result['success']) {
+      // Network error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to check entry status: ${result['error']}'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (result['is_locked'] == true) {
+      // Site is locked by another supervisor
+      _showEntryLockedDialog(
+        lockedBy: result['locked_by'] ?? 'Another supervisor',
+        lockedAt: result['locked_at'] ?? 'earlier',
+        entries: List<Map<String, dynamic>>.from(result['entries'] ?? []),
+      );
+      return;
+    }
+
+    // Site is available - start entry session and open form
+    _entrySession.start();
+    print('✅ [ENTRY_SESSION] Session started: ${_entrySession.sessionId}');
+    _showLabourEntry(startAtEvening: startAtEvening);
+  }
+
+  /// Show dialog when entry is locked by another supervisor
+  void _showEntryLockedDialog({
+    required String lockedBy,
+    required String lockedAt,
+    required List<Map<String, dynamic>> entries,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.lock, color: Colors.orange.shade700, size: 28),
+            const SizedBox(width: 12),
+            const Text('Entry Locked'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Data has already been entered by:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.person,
+                        size: 18,
+                        color: Colors.orange.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          lockedBy,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 18,
+                        color: Colors.orange.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'at $lockedAt',
+                        style: TextStyle(color: Colors.orange.shade700),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (entries.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'Entered data:',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              ...entries.map((entry) => _buildReadOnlyEntryRow(entry)).toList(),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyEntryRow(Map<String, dynamic> entry) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            entry['labour_type'] ?? '',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          Text(
+            '${entry['labour_count']} workers',
+            style: TextStyle(color: Colors.grey.shade700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show warning when trying to exit during active entry session
+  void _showSessionLockWarning() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red.shade600, size: 28),
+            const SizedBox(width: 12),
+            const Text('Entry In Progress'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'You have started the daily entry process. Please complete:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            _buildRequirementRow(
+              'Labour Count',
+              _entrySession.isLabourComplete,
+            ),
+            _buildRequirementRow(
+              'Material Updates',
+              _entrySession.isMaterialComplete,
+            ),
+            _buildRequirementRow(
+              'Photos (Optional)',
+              _entrySession.isPhotoComplete,
+              optional: true,
+            ),
+            if (_entrySession.isExpired) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber.shade300),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info, size: 16, color: Colors.amber.shade700),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Session expired. You can exit now.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          if (_entrySession.isExpired)
+            TextButton(
+              onPressed: () {
+                _entrySession.end();
+                Navigator.pop(context); // Close dialog
+                Navigator.pop(context); // Exit screen
+              },
+              child: const Text('Exit Anyway'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(foregroundColor: AppColors.deepNavy),
+            child: const Text('Continue Entry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequirementRow(
+    String title,
+    bool isComplete, {
+    bool optional = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(
+            isComplete ? Icons.check_circle : Icons.radio_button_unchecked,
+            color: isComplete
+                ? Colors.green
+                : (optional ? Colors.grey : Colors.orange),
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontWeight: isComplete ? FontWeight.bold : FontWeight.normal,
+                color: isComplete ? Colors.green.shade700 : Colors.black87,
+              ),
+            ),
+          ),
+          if (optional)
+            Text(
+              'Optional',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+            ),
+        ],
+      ),
+    );
+  }
+
   void _showLabourEntry({bool startAtEvening = false}) {
     showModalBottomSheet(
       context: context,
@@ -186,10 +523,76 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
         siteId: widget.site['id'],
         defaultToEvening: startAtEvening,
         onSuccess: () {
+          _entrySession.markComplete('labour');
+          print('✅ [ENTRY_SESSION] Labour marked complete');
           _invalidateCache();
           _loadTodayEntries();
           SupervisorHistoryScreen.invalidateCache(widget.site['id']);
+
+          // Check if can exit or prompt for next step
+          if (_entrySession.canExit) {
+            _showCompletionDialog();
+          } else {
+            _promptNextStep();
+          }
         },
+      ),
+    );
+  }
+
+  /// Prompt user to continue to next step
+  void _promptNextStep() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green.shade600, size: 28),
+            const SizedBox(width: 12),
+            const Text('Labour Submitted'),
+          ],
+        ),
+        content: const Text('Please proceed to update material balances.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showMaterialEntry();
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.deepNavy),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show completion dialog when all required steps are done
+  void _showCompletionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green.shade600, size: 28),
+            const SizedBox(width: 12),
+            const Text('Entry Complete!'),
+          ],
+        ),
+        content: const Text(
+          'All required entries have been submitted successfully.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              _entrySession.end();
+              print('✅ [ENTRY_SESSION] Session ended');
+              Navigator.pop(context); // Close dialog
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.deepNavy),
+            child: const Text('Done'),
+          ),
+        ],
       ),
     );
   }
@@ -199,17 +602,26 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withOpacity(0.3), // Reduced opacity for less blur
+      barrierColor: Colors.black.withOpacity(
+        0.3,
+      ), // Reduced opacity for less blur
       enableDrag: true,
       isDismissible: true,
       builder: (context) => _MaterialEntrySheet(
         siteId: widget.site['id'],
         onSuccess: () {
+          _entrySession.markComplete('material');
+          print('✅ [ENTRY_SESSION] Material marked complete');
           // Invalidate cache and reload
           _invalidateCache();
           _loadTodayEntries();
           // Also invalidate history screen cache
           SupervisorHistoryScreen.invalidateCache(widget.site['id']);
+
+          // Check if all required steps are complete
+          if (_entrySession.canExit) {
+            _showCompletionDialog();
+          }
         },
         onMaterialUpdated: () {
           // Reload available materials when material usage is submitted
@@ -230,21 +642,21 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
     setState(() {
       // Get all dates from entries
       final allDates = <String>{};
-      
+
       if (_todayEntries?['labour_entries'] != null) {
         for (var entry in _todayEntries!['labour_entries']) {
           final date = entry['entry_date'] ?? _formatSelectedDate();
           allDates.add(date);
         }
       }
-      
+
       if (_todayEntries?['material_entries'] != null) {
         for (var entry in _todayEntries!['material_entries']) {
           final date = entry['entry_date'] ?? _formatSelectedDate();
           allDates.add(date);
         }
       }
-      
+
       _expandedDates.addAll(allDates);
     });
   }
@@ -284,8 +696,10 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
       MaterialPageRoute(
         builder: (context) => SupervisorHistoryScreen(
           siteId: widget.site['id'],
-          siteName: widget.site['display_name'] ?? widget.site['site_name'] ?? 'Site',
-          showRequestButton: true, // Enable request button in site-specific history
+          siteName:
+              widget.site['display_name'] ?? widget.site['site_name'] ?? 'Site',
+          showRequestButton:
+              true, // Enable request button in site-specific history
         ),
       ),
     );
@@ -310,70 +724,76 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                TextField(
-                  controller: materialNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Material Name *',
-                    hintText: 'e.g., Cement, Steel, Bricks',
-                    border: OutlineInputBorder(),
+                  TextField(
+                    controller: materialNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Material Name *',
+                      hintText: 'e.g., Cement, Steel, Bricks',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                SizedBox(height: 16.h),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: quantityController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Quantity *',
-                          border: OutlineInputBorder(),
+                  SizedBox(height: 16.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          controller: quantityController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Quantity *',
+                            border: OutlineInputBorder(),
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: TextField(
-                        controller: unitController,
-                        decoration: const InputDecoration(
-                          labelText: 'Unit *',
-                          hintText: 'bags, tons',
-                          border: OutlineInputBorder(),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: TextField(
+                          controller: unitController,
+                          decoration: const InputDecoration(
+                            labelText: 'Unit *',
+                            hintText: 'bags, tons',
+                            border: OutlineInputBorder(),
+                          ),
                         ),
                       ),
+                    ],
+                  ),
+                  SizedBox(height: 16.h),
+                  DropdownButtonFormField<String>(
+                    value: selectedPriority,
+                    decoration: const InputDecoration(
+                      labelText: 'Priority',
+                      border: OutlineInputBorder(),
                     ),
-                  ],
-                ),
-                SizedBox(height: 16.h),
-                DropdownButtonFormField<String>(
-                  value: selectedPriority,
-                  decoration: const InputDecoration(
-                    labelText: 'Priority',
-                    border: OutlineInputBorder(),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'urgent',
+                        child: Text('🔴 Urgent'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'normal',
+                        child: Text('🟡 Normal'),
+                      ),
+                      DropdownMenuItem(value: 'low', child: Text('🟢 Low')),
+                    ],
+                    onChanged: (value) {
+                      setState(() => selectedPriority = value ?? 'normal');
+                    },
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'urgent', child: Text('🔴 Urgent')),
-                    DropdownMenuItem(value: 'normal', child: Text('🟡 Normal')),
-                    DropdownMenuItem(value: 'low', child: Text('🟢 Low')),
-                  ],
-                  onChanged: (value) {
-                    setState(() => selectedPriority = value ?? 'normal');
-                  },
-                ),
-                SizedBox(height: 16.h),
-                TextField(
-                  controller: notesController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes (Optional)',
-                    hintText: 'Additional details...',
-                    border: OutlineInputBorder(),
+                  SizedBox(height: 16.h),
+                  TextField(
+                    controller: notesController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes (Optional)',
+                      hintText: 'Additional details...',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
           ),
           actions: [
             TextButton(
@@ -386,33 +806,41 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
                     quantityController.text.isEmpty ||
                     unitController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please fill all required fields')),
+                    const SnackBar(
+                      content: Text('Please fill all required fields'),
+                    ),
                   );
                   return;
                 }
 
-                final result = await _constructionService.submitMaterialRequirement(
-                  siteId: widget.site['id'],
-                  materialName: materialNameController.text,
-                  quantity: double.parse(quantityController.text),
-                  unit: unitController.text,
-                  priority: selectedPriority,
-                  notes: notesController.text,
-                );
+                final result = await _constructionService
+                    .submitMaterialRequirement(
+                      siteId: widget.site['id'],
+                      materialName: materialNameController.text,
+                      quantity: double.parse(quantityController.text),
+                      unit: unitController.text,
+                      priority: selectedPriority,
+                      notes: notesController.text,
+                    );
 
                 if (mounted) {
                   Navigator.pop(context);
                   if (result['success']) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(result['message'] ?? 'Material requirement submitted'),
+                        content: Text(
+                          result['message'] ?? 'Material requirement submitted',
+                        ),
                         backgroundColor: Colors.green,
                       ),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(result['error'] ?? 'Failed to submit. Backend not ready yet.'),
+                        content: Text(
+                          result['error'] ??
+                              'Failed to submit. Backend not ready yet.',
+                        ),
                         backgroundColor: Colors.red,
                         duration: const Duration(seconds: 4),
                       ),
@@ -431,14 +859,15 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
   bool _isToday() {
     final now = DateTime.now();
     return _selectedDate.year == now.year &&
-           _selectedDate.month == now.month &&
-           _selectedDate.day == now.day;
+        _selectedDate.month == now.month &&
+        _selectedDate.day == now.day;
   }
 
   _SiteEntryStatus get _todayEntryStatus {
     if (!_isToday()) return _SiteEntryStatus.none;
     final entries = List<Map<String, dynamic>>.from(
-        _todayEntries?['labour_entries'] ?? []);
+      _todayEntries?['labour_entries'] ?? [],
+    );
     if (entries.isEmpty) return _SiteEntryStatus.none;
 
     // Requirement 2: block if any entry belongs to a different supervisor
@@ -473,7 +902,20 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
   }
 
   String _formatSelectedDate() {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}';
   }
 
@@ -481,259 +923,325 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
     if (_isToday()) {
       return 'Today';
     }
-    
+
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
     if (_selectedDate.year == yesterday.year &&
         _selectedDate.month == yesterday.month &&
         _selectedDate.day == yesterday.day) {
       return 'Yesterday';
     }
-    
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[_selectedDate.month - 1]} ${_selectedDate.day}';
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.lightSlate,
-      body: RefreshIndicator(
-        onRefresh: _forceRefresh,
-        color: AppColors.safetyOrange,
-        child: CustomScrollView(
-          slivers: [
-            // Site Header
-            SliverAppBar(
-              expandedHeight: 280,
-              pinned: true,
-              backgroundColor: AppColors.deepNavy,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.calendar_today, color: Colors.white),
-                  onPressed: _selectDate,
-                  tooltip: 'Select Date',
+    return WillPopScope(
+      onWillPop: () async {
+        // Check if entry session is active and not complete
+        if (_entrySession.isActive && !_entrySession.canExit) {
+          _showSessionLockWarning();
+          return false; // Block navigation
+        }
+        return true; // Allow navigation
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.lightSlate,
+        body: RefreshIndicator(
+          onRefresh: _forceRefresh,
+          color: AppColors.safetyOrange,
+          child: CustomScrollView(
+            slivers: [
+              // Site Header
+              SliverAppBar(
+                expandedHeight: 280,
+                pinned: true,
+                backgroundColor: AppColors.deepNavy,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
                 ),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: Colors.white),
-                  onSelected: (value) {
-                    if (value == 'expand_all') {
-                      _expandAllDates();
-                    } else if (value == 'collapse_all') {
-                      _collapseAllDates();
-                    } else if (value == 'refresh') {
-                      _forceRefresh();
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'expand_all',
-                      child: Row(
-                        children: [
-                          Icon(Icons.expand_more, size: 20),
-                          SizedBox(width: 12),
-                          Text('Expand All'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'collapse_all',
-                      child: Row(
-                        children: [
-                          Icon(Icons.expand_less, size: 20),
-                          SizedBox(width: 12),
-                          Text('Collapse All'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'refresh',
-                      child: Row(
-                        children: [
-                          Icon(Icons.refresh, size: 20),
-                          SizedBox(width: 12),
-                          Text('Refresh Data'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                IconButton(
-                  icon: const Icon(Icons.history, color: Colors.white),
-                  onPressed: () => _openHistory(),
-                  tooltip: 'View History',
-                ),
-              ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppColors.lightSlate,
-                          AppColors.deepNavy.withValues(alpha: 0.9),
-                        ],
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(Icons.construction, size: 100.sp, color: Colors.white54),
-                    ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.calendar_today, color: Colors.white),
+                    onPressed: _selectDate,
+                    tooltip: 'Select Date',
                   ),
-                  Positioned(
-                    bottom: 20,
-                    left: 20,
-                    right: 20,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.site['display_name'] ?? 'Site',
-                          style: TextStyle(
-                            fontSize: 28.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        Row(
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                    onSelected: (value) {
+                      if (value == 'expand_all') {
+                        _expandAllDates();
+                      } else if (value == 'collapse_all') {
+                        _collapseAllDates();
+                      } else if (value == 'refresh') {
+                        _forceRefresh();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'expand_all',
+                        child: Row(
                           children: [
-                            Icon(Icons.location_on, size: 16.sp, color: Colors.white70),
-                            SizedBox(width: 4.w),
-                            Text(
-                              '${widget.site['area']} - ${widget.site['street']}',
-                              style: TextStyle(fontSize: 14.sp, color: Colors.white70),
-                            ),
+                            Icon(Icons.expand_more, size: 20),
+                            SizedBox(width: 12),
+                            Text('Expand All'),
                           ],
                         ),
-                        SizedBox(height: 12.h),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4.r),
-                          child: LinearProgressIndicator(
-                            value: 0.65,
-                            minHeight: 8,
-                            backgroundColor: Colors.white.withValues(alpha: 0.3),
-                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.safetyOrange),
-                          ),
-                        ),
-                        SizedBox(height: 4.h),
-                        Text(
-                          '65% Complete',
-                          style: TextStyle(fontSize: 12.sp, color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Today's Entries with Dropdown
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(16.r),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _isToday() ? "Today's Entries" : "Entries for ${_formatSelectedDate()}",
-                          style: TextStyle(
-                            fontSize: 20.sp,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.deepNavy,
-                          ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'collapse_all',
+                        child: Row(
+                          children: [
+                            Icon(Icons.expand_less, size: 20),
+                            SizedBox(width: 12),
+                            Text('Collapse All'),
+                          ],
                         ),
                       ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.deepNavy.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: _selectDate,
-                            borderRadius: BorderRadius.circular(12.r),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.calendar_today,
-                                    size: 16.sp,
-                                    color: AppColors.deepNavy,
-                                  ),
-                                  SizedBox(width: 6.w),
-                                  Text(
-                                    _formatShortDate(),
-                                    style: TextStyle(
-                                      fontSize: 13.sp,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.deepNavy,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                      const PopupMenuItem(
+                        value: 'refresh',
+                        child: Row(
+                          children: [
+                            Icon(Icons.refresh, size: 20),
+                            SizedBox(width: 12),
+                            Text('Refresh Data'),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 12.h),
-                  // IST Time Display
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                    decoration: BoxDecoration(
-                      color: AppColors.statusCompleted.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8.r),
-                      border: Border.all(color: AppColors.statusCompleted.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.access_time, size: 14.sp, color: AppColors.statusCompleted),
-                        SizedBox(width: 6.w),
-                        Text(
-                          'IST: ${TimeValidator.formatISTTime(TimeValidator.getISTTime())}',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.statusCompleted,
+                  IconButton(
+                    icon: const Icon(Icons.history, color: Colors.white),
+                    onPressed: () => _openHistory(),
+                    tooltip: 'View History',
+                  ),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              AppColors.lightSlate,
+                              AppColors.deepNavy.withValues(alpha: 0.9),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                        child: Center(
+                          child: Icon(
+                            Icons.construction,
+                            size: 100.sp,
+                            color: Colors.white54,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 20,
+                        left: 20,
+                        right: 20,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.site['display_name'] ?? 'Site',
+                              style: TextStyle(
+                                fontSize: 28.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 8.h),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  size: 16.sp,
+                                  color: Colors.white70,
+                                ),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  '${widget.site['area']} - ${widget.site['street']}',
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 12.h),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4.r),
+                              child: LinearProgressIndicator(
+                                value: 0.65,
+                                minHeight: 8,
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.3,
+                                ),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  AppColors.safetyOrange,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 4.h),
+                            Text(
+                              '65% Complete',
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 16.h),
-                  if (_isToday()) _buildEntryStatusBanner(),
-                  if (_isToday()) SizedBox(height: 12.h),
-                  if (_isLoading)
-                    const Center(child: CircularProgressIndicator(color: AppColors.safetyOrange))
-                  else if (_todayEntries == null || (_todayEntries!['labour_entries']?.isEmpty ?? true) && (_todayEntries!['material_entries']?.isEmpty ?? true))
-                    _buildEmptyState()
-                  else
-                    _buildEntriesWithDropdown(),
-                ],
+                ),
               ),
-            ),
+
+              // Today's Entries with Dropdown
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(16.r),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _isToday()
+                                  ? "Today's Entries"
+                                  : "Entries for ${_formatSelectedDate()}",
+                              style: TextStyle(
+                                fontSize: 20.sp,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.deepNavy,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.deepNavy.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: _selectDate,
+                                borderRadius: BorderRadius.circular(12.r),
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 12.w,
+                                    vertical: 8.h,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today,
+                                        size: 16.sp,
+                                        color: AppColors.deepNavy,
+                                      ),
+                                      SizedBox(width: 6.w),
+                                      Text(
+                                        _formatShortDate(),
+                                        style: TextStyle(
+                                          fontSize: 13.sp,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.deepNavy,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12.h),
+                      // IST Time Display
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 8.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.statusCompleted.withValues(
+                            alpha: 0.1,
+                          ),
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(
+                            color: AppColors.statusCompleted.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              size: 14.sp,
+                              color: AppColors.statusCompleted,
+                            ),
+                            SizedBox(width: 6.w),
+                            Text(
+                              'IST: ${TimeValidator.formatISTTime(TimeValidator.getISTTime())}',
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.statusCompleted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 16.h),
+                      if (_isToday()) _buildEntryStatusBanner(),
+                      if (_isToday()) SizedBox(height: 12.h),
+                      if (_isLoading)
+                        const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.safetyOrange,
+                          ),
+                        )
+                      else if (_todayEntries == null ||
+                          (_todayEntries!['labour_entries']?.isEmpty ?? true) &&
+                              (_todayEntries!['material_entries']?.isEmpty ??
+                                  true))
+                        _buildEmptyState()
+                      else
+                        _buildEntriesWithDropdown(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-          ],
         ),
+        floatingActionButton: _buildCentralFAB(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
-      floatingActionButton: _buildCentralFAB(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -820,12 +1328,20 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
               color: AppColors.lightSlate,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.add_circle_outline, size: 40.sp, color: AppColors.deepNavy),
+            child: Icon(
+              Icons.add_circle_outline,
+              size: 40.sp,
+              color: AppColors.deepNavy,
+            ),
           ),
           SizedBox(height: 16.h),
           Text(
             _isToday() ? 'No entries yet today' : 'No entries for this date',
-            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+            style: TextStyle(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.bold,
+              color: AppColors.deepNavy,
+            ),
           ),
           SizedBox(height: 8.h),
           Text(
@@ -842,8 +1358,9 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
 
   Widget _buildEntriesWithDropdown() {
     // Group entries by date and type
-    final Map<String, Map<String, List<Map<String, dynamic>>>> groupedEntries = {};
-    
+    final Map<String, Map<String, List<Map<String, dynamic>>>> groupedEntries =
+        {};
+
     // Process labour entries
     if (_todayEntries?['labour_entries'] != null) {
       for (var entry in _todayEntries!['labour_entries']) {
@@ -854,7 +1371,7 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
         groupedEntries[date]!['labour']!.add(entry);
       }
     }
-    
+
     // Process material entries
     if (_todayEntries?['material_entries'] != null) {
       for (var entry in _todayEntries!['material_entries']) {
@@ -865,33 +1382,38 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
         groupedEntries[date]!['material']!.add(entry);
       }
     }
-    
+
     // If no entries, show empty state
     if (groupedEntries.isEmpty) {
       return _buildEmptyState();
     }
-    
+
     // Sort dates (most recent first)
     final sortedDates = groupedEntries.keys.toList()
       ..sort((a, b) => b.compareTo(a));
-    
+
     return Column(
       children: sortedDates.map((date) {
         final dateEntries = groupedEntries[date]!;
         final labourEntries = dateEntries['labour']!;
         final materialEntries = dateEntries['material']!;
-        
-        if (labourEntries.isEmpty && materialEntries.isEmpty) return const SizedBox.shrink();
-        
+
+        if (labourEntries.isEmpty && materialEntries.isEmpty)
+          return const SizedBox.shrink();
+
         return _buildDateDropdownCard(date, labourEntries, materialEntries);
       }).toList(),
     );
   }
 
-  Widget _buildDateDropdownCard(String date, List<Map<String, dynamic>> labourEntries, List<Map<String, dynamic>> materialEntries) {
+  Widget _buildDateDropdownCard(
+    String date,
+    List<Map<String, dynamic>> labourEntries,
+    List<Map<String, dynamic>> materialEntries,
+  ) {
     final isExpanded = _expandedDates.contains(date);
     final formattedDate = _formatDateForDropdown(date);
-    
+
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
@@ -918,10 +1440,14 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
               child: Container(
                 padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
-                  color: isExpanded ? AppColors.deepNavy.withValues(alpha: 0.05) : Colors.transparent,
+                  color: isExpanded
+                      ? AppColors.deepNavy.withValues(alpha: 0.05)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(16.r),
                   border: Border.all(
-                    color: isExpanded ? AppColors.deepNavy.withValues(alpha: 0.2) : Colors.transparent,
+                    color: isExpanded
+                        ? AppColors.deepNavy.withValues(alpha: 0.2)
+                        : Colors.transparent,
                     width: 1,
                   ),
                 ),
@@ -932,7 +1458,9 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
                       padding: EdgeInsets.all(10.r),
                       decoration: BoxDecoration(
                         gradient: isExpanded ? AppColors.navyGradient : null,
-                        color: isExpanded ? null : AppColors.deepNavy.withValues(alpha: 0.1),
+                        color: isExpanded
+                            ? null
+                            : AppColors.deepNavy.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10.r),
                       ),
                       child: Icon(
@@ -961,9 +1489,14 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
                             children: [
                               if (labourEntries.isNotEmpty) ...[
                                 Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8.w,
+                                    vertical: 4.h,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.safetyOrange.withValues(alpha: 0.1),
+                                    color: AppColors.safetyOrange.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(8.r),
                                   ),
                                   child: Text(
@@ -979,9 +1512,14 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
                               ],
                               if (materialEntries.isNotEmpty) ...[
                                 Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8.w,
+                                    vertical: 4.h,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.statusCompleted.withValues(alpha: 0.1),
+                                    color: AppColors.statusCompleted.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(8.r),
                                   ),
                                   child: Text(
@@ -997,9 +1535,14 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
                               if (isExpanded) ...[
                                 SizedBox(width: 8.w),
                                 Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 6.w,
+                                    vertical: 2.h,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.deepNavy.withValues(alpha: 0.1),
+                                    color: AppColors.deepNavy.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(6.r),
                                   ),
                                   child: Text(
@@ -1033,25 +1576,31 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
               ),
             ),
           ),
-          
+
           // Expandable Content
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             height: isExpanded ? null : 0,
-            child: isExpanded ? Container(
-              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
-              child: Column(
-                children: [
-                  const Divider(color: AppColors.lightSlate, height: 1),
-                  SizedBox(height: 16.h),
-                  // Labour entries
-                  ...labourEntries.map((entry) => _buildLabourCard(entry)),
-                  // Material entries
-                  ...materialEntries.map((entry) => _buildMaterialCard(entry)),
-                ],
-              ),
-            ) : null,
+            child: isExpanded
+                ? Container(
+                    padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
+                    child: Column(
+                      children: [
+                        const Divider(color: AppColors.lightSlate, height: 1),
+                        SizedBox(height: 16.h),
+                        // Labour entries
+                        ...labourEntries.map(
+                          (entry) => _buildLabourCard(entry),
+                        ),
+                        // Material entries
+                        ...materialEntries.map(
+                          (entry) => _buildMaterialCard(entry),
+                        ),
+                      ],
+                    ),
+                  )
+                : null,
           ),
         ],
       ),
@@ -1065,7 +1614,7 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
       final today = DateTime(now.year, now.month, now.day);
       final yesterday = today.subtract(const Duration(days: 1));
       final entryDate = DateTime(date.year, date.month, date.day);
-      
+
       if (entryDate == today) {
         return 'Today • ${_formatDateWithDay(date)}';
       } else if (entryDate == yesterday) {
@@ -1079,8 +1628,29 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
   }
 
   String _formatDateWithDay(DateTime date) {
-    final days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final days = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     final dayName = days[date.weekday % 7];
     return '$dayName, ${months[date.month - 1]} ${date.day}, ${date.year}';
   }
@@ -1238,20 +1808,27 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
     final status = _todayEntryStatus;
 
     // Fully locked states
-    if (status == _SiteEntryStatus.complete || status == _SiteEntryStatus.lockedByOther) {
+    if (status == _SiteEntryStatus.complete ||
+        status == _SiteEntryStatus.lockedByOther) {
       final isComplete = status == _SiteEntryStatus.complete;
       return GestureDetector(
         onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-              isComplete
-                  ? 'Both morning & evening entries submitted. Day complete!'
-                  : 'Entry already submitted by another supervisor today.',
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isComplete
+                    ? 'Both morning & evening entries submitted. Day complete!'
+                    : 'Entry already submitted by another supervisor today.',
+              ),
+              backgroundColor: isComplete
+                  ? Colors.green.shade700
+                  : Colors.grey.shade700,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
             ),
-            backgroundColor: isComplete ? Colors.green.shade700 : Colors.grey.shade700,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-          ));
+          );
         },
         child: Container(
           width: 64.w,
@@ -1261,7 +1838,9 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: (isComplete ? Colors.green : Colors.grey).withValues(alpha: 0.35),
+                color: (isComplete ? Colors.green : Colors.grey).withValues(
+                  alpha: 0.35,
+                ),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),
@@ -1298,7 +1877,7 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () => _showLabourEntry(startAtEvening: true),
+                onTap: () => _checkEntryLockAndOpen(startAtEvening: true),
                 borderRadius: BorderRadius.circular(32),
                 child: const Icon(Icons.add, size: 32, color: Colors.white),
               ),
@@ -1393,7 +1972,11 @@ class _QuickActionsSheet extends StatelessWidget {
           const SizedBox(height: 24),
           const Text(
             'Quick Actions',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppColors.deepNavy,
+            ),
           ),
           const SizedBox(height: 24),
           _buildActionCard(
@@ -1472,9 +2055,22 @@ class _QuickActionsSheet extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(subtitle, style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1503,11 +2099,12 @@ class _LabourEntrySheet extends StatefulWidget {
   State<_LabourEntrySheet> createState() => _LabourEntrySheetState();
 }
 
-class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerProviderStateMixin {
+class _LabourEntrySheetState extends State<_LabourEntrySheet>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _constructionService = ConstructionService();
   final _budgetService = BudgetManagementService();
-  
+
   // Dynamic labour counts for morning and evening
   Map<String, int> _morningLabourCounts = {};
   Map<String, int> _eveningLabourCounts = {};
@@ -1564,38 +2161,54 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
     setState(() => _isLoadingMorningData = true);
     try {
       print('🔍 Loading morning data for site: ${widget.siteId}');
-      final response = await _constructionService.getHistoryByDay(siteId: widget.siteId);
-      
+      final response = await _constructionService.getHistoryByDay(
+        siteId: widget.siteId,
+      );
+
       if (response['success']) {
         final data = response['data'] as Map<String, dynamic>;
-        final labourByDay = data['labour_by_day'] as Map<String, dynamic>? ?? {};
-        
+        final labourByDay =
+            data['labour_by_day'] as Map<String, dynamic>? ?? {};
+
         // Get today's day of week (e.g., "Tuesday")
         final today = DateTime.now();
-        final dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        final dayNames = [
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday',
+          'Sunday',
+        ];
         final todayDayName = dayNames[today.weekday - 1];
-        
+
         // Get today's date in YYYY-MM-DD format for filtering
-        final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-        
+        final todayStr =
+            '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
         print('📅 Today is: $todayDayName ($todayStr)');
         print('📦 Available days in response: ${labourByDay.keys.toList()}');
-        
+
         // Get entries for today's day of week, then filter by actual date
         List<Map<String, dynamic>> todayEntries = [];
-        
+
         if (labourByDay.containsKey(todayDayName)) {
           final dayEntries = labourByDay[todayDayName] as List;
           print('✅ Found ${dayEntries.length} entries for $todayDayName');
-          
+
           for (var entry in dayEntries) {
             final entryDate = entry['entry_date'] as String?;
-            print('  - Checking entry: ${entry['labour_type']} on date $entryDate');
-            
+            print(
+              '  - Checking entry: ${entry['labour_type']} on date $entryDate',
+            );
+
             // Only include entries from today's actual date
             if (entryDate != null && entryDate.startsWith(todayStr)) {
               todayEntries.add(Map<String, dynamic>.from(entry));
-              print('    ✅ Added: ${entry['labour_type']}: ${entry['labour_count']} workers');
+              print(
+                '    ✅ Added: ${entry['labour_type']}: ${entry['labour_count']} workers',
+              );
             } else {
               print('    ❌ Skipped: date $entryDate does not match $todayStr');
             }
@@ -1603,12 +2216,12 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
         } else {
           print('❌ No entries found for $todayDayName');
         }
-        
+
         print('✅ Total entries loaded for today: ${todayEntries.length}');
-        
+
         setState(() {
-          _morningData = todayEntries.isNotEmpty 
-              ? {'entries': todayEntries} 
+          _morningData = todayEntries.isNotEmpty
+              ? {'entries': todayEntries}
               : null;
         });
       } else {
@@ -1626,16 +2239,20 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
     setState(() => _isLoadingEveningData = true);
     try {
       print('🔍 Loading evening history for site: ${widget.siteId}');
-      final response = await _constructionService.getHistoryByDay(siteId: widget.siteId);
-      
+      final response = await _constructionService.getHistoryByDay(
+        siteId: widget.siteId,
+      );
+
       if (response['success']) {
         final data = response['data'] as Map<String, dynamic>;
-        final labourByDay = data['labour_by_day'] as Map<String, dynamic>? ?? {};
-        
+        final labourByDay =
+            data['labour_by_day'] as Map<String, dynamic>? ?? {};
+
         // Get today's date in YYYY-MM-DD format
         final today = DateTime.now();
-        final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-        
+        final todayStr =
+            '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
         // Filter entries to only include today's data
         List<Map<String, dynamic>> todayEntries = [];
         labourByDay.forEach((day, entries) {
@@ -1643,9 +2260,11 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
             todayEntries.addAll(List<Map<String, dynamic>>.from(entries));
           }
         });
-        
-        print('✅ Loaded ${todayEntries.length} evening labour entries for today ($todayStr)');
-        
+
+        print(
+          '✅ Loaded ${todayEntries.length} evening labour entries for today ($todayStr)',
+        );
+
         setState(() {
           _eveningHistoryData = todayEntries;
         });
@@ -1661,13 +2280,13 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
 
   Future<void> _fetchRates() async {
     setState(() => _isLoadingRates = true);
-    
+
     final rates = await _budgetService.getLabourRates('global');
     if (rates.isNotEmpty && mounted) {
       final Map<String, double> loaded = {};
       final Map<String, int> morningCounts = {};
       final Map<String, int> eveningCounts = {};
-      
+
       for (final r in rates) {
         final type = r['labour_type'] as String?;
         final rate = (r['daily_rate'] as num?)?.toDouble();
@@ -1678,14 +2297,14 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
           eveningCounts[type] = 0;
         }
       }
-      
+
       setState(() {
         _rates = loaded;
         _morningLabourCounts = morningCounts;
         _eveningLabourCounts = eveningCounts;
         _isLoadingRates = false;
       });
-      
+
       print('✅ Loaded ${loaded.length} labour types from admin');
     } else {
       setState(() => _isLoadingRates = false);
@@ -1693,15 +2312,16 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
   }
 
   // Get current tab's labour counts
-  Map<String, int> get _currentLabourCounts => 
+  Map<String, int> get _currentLabourCounts =>
       _tabController.index == 0 ? _morningLabourCounts : _eveningLabourCounts;
 
-  int get _totalCount => _currentLabourCounts.values.fold(0, (sum, count) => sum + count);
+  int get _totalCount =>
+      _currentLabourCounts.values.fold(0, (sum, count) => sum + count);
 
   double get _totalSalary => _currentLabourCounts.entries.fold(
-        0,
-        (sum, e) => sum + e.value * (_rates[e.key] ?? 0),
-      );
+    0,
+    (sum, e) => sum + e.value * (_rates[e.key] ?? 0),
+  );
 
   @override
   void dispose() {
@@ -1715,138 +2335,195 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              const Text(
-                '👷 Labour Count',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+    return WillPopScope(
+      onWillPop: () async {
+        // STRICT LOCK: Block back navigation completely if any entries started
+        final hasEntries = _currentLabourCounts.values.any(
+          (count) => count > 0,
+        );
+
+        if (hasEntries) {
+          // Show warning message - DO NOT allow back
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                '⚠️ Please complete and submit labour entries, material updates, and photos before going back.',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              const Spacer(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.orangeGradient,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      'Workers: $_totalCount',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
+              backgroundColor: Colors.red.shade700,
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+          // BLOCK back navigation
+          return false;
+        }
+
+        // No entries started, allow back navigation
+        return true;
+      },
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.cleanWhite,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        ),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  '👷 Labour Count',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.deepNavy,
                   ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade700,
-                      borderRadius: BorderRadius.circular(16),
+                ),
+                const Spacer(),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.orangeGradient,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        'Workers: $_totalCount',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade700,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        '₹${_totalSalary.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Time window info
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: TimeValidator.isLabourEntryOnTime()
+                    ? Colors.green.shade50
+                    : Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: TimeValidator.isLabourEntryOnTime()
+                      ? Colors.green.shade200
+                      : Colors.orange.shade300,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    TimeValidator.isLabourEntryOnTime()
+                        ? Icons.check_circle
+                        : Icons.warning,
+                    size: 16,
+                    color: TimeValidator.isLabourEntryOnTime()
+                        ? Colors.green.shade700
+                        : Colors.orange.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
                     child: Text(
-                      '₹${_totalSalary.toStringAsFixed(0)}',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                      TimeValidator.isLabourEntryOnTime()
+                          ? '${TimeValidator.getLabourTimeWindow()} • Current: ${TimeValidator.formatISTTime(TimeValidator.getISTTime())}'
+                          : '⚠️ Late Entry! ${TimeValidator.getLabourTimeWindow()}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: TimeValidator.isLabourEntryOnTime()
+                            ? Colors.green.shade700
+                            : Colors.orange.shade900,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Time window info
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: TimeValidator.isLabourEntryOnTime() 
-                ? Colors.green.shade50 
-                : Colors.orange.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: TimeValidator.isLabourEntryOnTime() 
-                  ? Colors.green.shade200 
-                  : Colors.orange.shade300,
-              ),
             ),
-            child: Row(
-              children: [
-                Icon(
-                  TimeValidator.isLabourEntryOnTime() ? Icons.check_circle : Icons.warning,
-                  size: 16,
-                  color: TimeValidator.isLabourEntryOnTime() 
-                    ? Colors.green.shade700 
-                    : Colors.orange.shade700,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    TimeValidator.isLabourEntryOnTime()
-                      ? '${TimeValidator.getLabourTimeWindow()} • Current: ${TimeValidator.formatISTTime(TimeValidator.getISTTime())}'
-                      : '⚠️ Late Entry! ${TimeValidator.getLabourTimeWindow()}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: TimeValidator.isLabourEntryOnTime() 
-                        ? Colors.green.shade700 
-                        : Colors.orange.shade900,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Tab Bar
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.lightSlate,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              onTap: (_) => setState(() {}),
-              indicator: BoxDecoration(
-                gradient: AppColors.orangeGradient,
+            const SizedBox(height: 16),
+
+            // Tab Bar
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.lightSlate,
                 borderRadius: BorderRadius.circular(12),
               ),
-              labelColor: Colors.white,
-              unselectedLabelColor: AppColors.textSecondary,
-              labelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              unselectedLabelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              tabs: const [
-                Tab(text: '🌅 Morning'),
-                Tab(text: '🌆 Evening'),
-              ],
+              child: TabBar(
+                controller: _tabController,
+                onTap: (_) => setState(() {}),
+                indicator: BoxDecoration(
+                  gradient: AppColors.orangeGradient,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                labelColor: Colors.white,
+                unselectedLabelColor: AppColors.textSecondary,
+                labelStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+                tabs: const [
+                  Tab(text: '🌅 Morning'),
+                  Tab(text: '🌆 Evening'),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Tab Content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildTabContent(true),  // Morning
-                _buildTabContent(false), // Evening
-              ],
+            const SizedBox(height: 16),
+
+            // Tab Content
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildTabContent(true), // Morning
+                  _buildTabContent(false), // Evening
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1862,27 +2539,20 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
             SizedBox(height: 16),
             Text(
               'Loading labour types...',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
           ],
         ),
       );
     }
-    
+
     // Show message if no labour types are available
     if (_morningLabourCounts.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.info_outline,
-              size: 64,
-              color: Colors.grey.shade400,
-            ),
+            Icon(Icons.info_outline, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             const Text(
               'No Labour Types Available',
@@ -1895,135 +2565,326 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
             const SizedBox(height: 8),
             const Text(
               'Admin needs to add labour types first',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
           ],
         ),
       );
     }
-    
+
     // For evening tab, show morning data in read-only format
     if (!isMorning) {
       return _buildEveningDisplayContent();
     }
-    
+
     // Morning tab - editable form
     final labourCounts = _morningLabourCounts;
     final extraCostController = _morningExtraCostController;
     final extraCostNotesController = _morningExtraCostNotesController;
-    
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-        // Time Picker Section
-        _buildTimePicker(isMorning),
-        const SizedBox(height: 16),
-        
-        SizedBox(
-          height: 300,
-          child: ListView(
-            children: labourCounts.keys.map((type) => _buildLabourTypeRow(type, isMorning)).toList(),
+          // Time Picker Section
+          _buildTimePicker(isMorning),
+          const SizedBox(height: 16),
+
+          SizedBox(
+            height: 300,
+            child: ListView(
+              children: labourCounts.keys
+                  .map((type) => _buildLabourTypeRow(type, isMorning))
+                  .toList(),
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        // Extra Cost Section
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.orange.shade200),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.attach_money, size: 20, color: Colors.orange.shade700),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Extra Cost (Optional)',
-                    style: TextStyle(
+          const SizedBox(height: 20),
+          // Extra Cost Section with Modern Design
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.orange.shade50,
+                  Colors.orange.shade100.withValues(alpha: 0.3),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.orange.shade300, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.orange.shade600,
+                            Colors.orange.shade400,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withValues(alpha: 0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.attach_money,
+                        size: 22,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Extra Cost',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade900,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        Text(
+                          'Optional expenses',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: extraCostController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade900,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Enter amount',
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontWeight: FontWeight.normal,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: Colors.orange.shade200,
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: Colors.orange.shade600,
+                          width: 2,
+                        ),
+                      ),
+                      prefixIcon: Container(
+                        margin: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.orange.shade400,
+                              Colors.orange.shade600,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.currency_rupee,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: extraCostController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: 'Enter amount (₹)',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.orange.shade200),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.orange.shade200),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.orange.shade700, width: 2),
-                  ),
-                  prefixIcon: Icon(Icons.currency_rupee, color: Colors.orange.shade700),
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: extraCostNotesController,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  hintText: 'Notes (e.g., transport, tools)',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.orange.shade200),
+                const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.orange.shade200),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.orange.shade700, width: 2),
+                  child: TextField(
+                    controller: extraCostNotesController,
+                    maxLines: 2,
+                    style: const TextStyle(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Notes (e.g., transport, tools, materials)',
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 13,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: Colors.orange.shade200,
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: Colors.orange.shade600,
+                          width: 2,
+                        ),
+                      ),
+                      prefixIcon: Icon(
+                        Icons.note_alt_outlined,
+                        color: Colors.orange.shade600,
+                        size: 22,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: _totalCount > 0 && !_isSubmitting ? () => _submit(isMorning) : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.safetyOrange,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: _isSubmitting
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                )
-              : Text(
-                  'Submit ${isMorning ? "Morning" : "Evening"} Labour Count',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+          const SizedBox(height: 24),
+          // Modern Submit Button with Gradient
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: _totalCount > 0
+                  ? [
+                      BoxShadow(
+                        color: AppColors.safetyOrange.withValues(alpha: 0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ]
+                  : [],
+            ),
+            child: ElevatedButton(
+              onPressed: _totalCount > 0 && !_isSubmitting
+                  ? () => _submit(isMorning)
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-        ),
-      ],
-    ),
+              ),
+              child: Ink(
+                decoration: BoxDecoration(
+                  gradient: _totalCount > 0
+                      ? LinearGradient(
+                          colors: [
+                            AppColors.safetyOrange,
+                            Colors.orange.shade600,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : LinearGradient(
+                          colors: [Colors.grey.shade300, Colors.grey.shade400],
+                        ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  alignment: Alignment.center,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.check_circle,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Submit ${isMorning ? "Morning" : "Evening"} Labour Count',
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2060,12 +2921,15 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
                         ),
                       ),
                       Text(
-                        _isLoadingMorningData 
-                            ? 'Loading...' 
-                            : _morningData != null 
-                                ? '${(_morningData!['entries'] as List).length} entries found'
-                                : 'No entries yet',
-                        style: const TextStyle(fontSize: 13, color: Colors.white70),
+                        _isLoadingMorningData
+                            ? 'Loading...'
+                            : _morningData != null
+                            ? '${(_morningData!['entries'] as List).length} entries found'
+                            : 'No entries yet',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.white70,
+                        ),
                       ),
                     ],
                   ),
@@ -2093,7 +2957,9 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
               ),
             )
           else if (_morningData != null && _morningData!['entries'] != null)
-            ..._buildMorningEntriesDisplay(_morningData!['entries'] as List<Map<String, dynamic>>)
+            ..._buildMorningEntriesDisplay(
+              _morningData!['entries'] as List<Map<String, dynamic>>,
+            )
           else
             Container(
               padding: const EdgeInsets.all(24),
@@ -2104,14 +2970,15 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
               ),
               child: Column(
                 children: [
-                  Icon(Icons.wb_sunny_outlined, size: 48, color: Colors.orange.shade300),
+                  Icon(
+                    Icons.wb_sunny_outlined,
+                    size: 48,
+                    color: Colors.orange.shade300,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     'No labour entries found for today',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -2130,7 +2997,11 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.nightlight_outlined, size: 80, color: Colors.grey.shade400),
+                  Icon(
+                    Icons.nightlight_outlined,
+                    size: 80,
+                    color: Colors.grey.shade400,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No Evening History Found',
@@ -2161,7 +3032,7 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
     int totalWorkers = 0;
     double totalSalary = 0.0;
     double totalExtraCost = 0.0;
-    
+
     for (final entry in entries) {
       totalWorkers += (entry['labour_count'] as num?)?.toInt() ?? 0;
       final labourType = entry['labour_type'] as String? ?? 'General';
@@ -2195,18 +3066,11 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
                 ),
                 Text(
                   'Workers',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
             ),
-            Container(
-              width: 1,
-              height: 40,
-              color: Colors.orange.shade300,
-            ),
+            Container(width: 1, height: 40, color: Colors.orange.shade300),
             Column(
               children: [
                 Text(
@@ -2219,19 +3083,12 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
                 ),
                 Text(
                   'Total Cost',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
             ),
             if (totalExtraCost > 0) ...[
-              Container(
-                width: 1,
-                height: 40,
-                color: Colors.orange.shade300,
-              ),
+              Container(width: 1, height: 40, color: Colors.orange.shade300),
               Column(
                 children: [
                   Text(
@@ -2244,10 +3101,7 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
                   ),
                   Text(
                     'Extra Cost',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                 ],
               ),
@@ -2265,7 +3119,7 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
         final notes = entry['notes'] as String?;
         final extraCost = (entry['extra_cost'] as num?)?.toDouble() ?? 0.0;
         final extraCostNotes = entry['extra_cost_notes'] as String?;
-        
+
         return _buildHistoryLabourRow(
           labourType,
           count,
@@ -2290,7 +3144,8 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
     }
 
     // Sort dates in descending order (most recent first)
-    final sortedDates = entriesByDate.keys.toList()..sort((a, b) => b.compareTo(a));
+    final sortedDates = entriesByDate.keys.toList()
+      ..sort((a, b) => b.compareTo(a));
 
     return [
       // Header
@@ -2335,12 +3190,12 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
       // Display entries grouped by date
       ...sortedDates.map((date) {
         final entries = entriesByDate[date]!;
-        
+
         // Calculate totals for this date
         int totalWorkers = 0;
         double totalSalary = 0.0;
         double totalExtraCost = 0.0;
-        
+
         for (final entry in entries) {
           totalWorkers += (entry['labour_count'] as num?)?.toInt() ?? 0;
           // Calculate salary based on labour type and count
@@ -2363,7 +3218,11 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
               ),
               child: Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 16, color: AppColors.deepNavy),
+                  Icon(
+                    Icons.calendar_today,
+                    size: 16,
+                    color: AppColors.deepNavy,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     _formatDate(date),
@@ -2393,9 +3252,10 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
               final count = (entry['labour_count'] as num?)?.toInt() ?? 0;
               final entryTime = entry['entry_time'] as String?;
               final notes = entry['notes'] as String?;
-              final extraCost = (entry['extra_cost'] as num?)?.toDouble() ?? 0.0;
+              final extraCost =
+                  (entry['extra_cost'] as num?)?.toDouble() ?? 0.0;
               final extraCostNotes = entry['extra_cost_notes'] as String?;
-              
+
               return _buildHistoryLabourRow(
                 labourType,
                 count,
@@ -2405,7 +3265,7 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
                 extraCostNotes,
               );
             }),
-            
+
             const SizedBox(height: 24),
           ],
         );
@@ -2473,7 +3333,10 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
                     if (entryTime != null)
                       Text(
                         'Time: ${_formatTimeFromString(entryTime)}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                   ],
                 ),
@@ -2501,7 +3364,7 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
               ),
             ],
           ),
-          
+
           // Notes
           if (notes != null && notes.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -2518,14 +3381,17 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
                   Expanded(
                     child: Text(
                       notes,
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ],
-          
+
           // Extra cost
           if (extraCost > 0) ...[
             const SizedBox(height: 8),
@@ -2540,7 +3406,11 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.attach_money, size: 14, color: Colors.orange.shade700),
+                      Icon(
+                        Icons.attach_money,
+                        size: 14,
+                        color: Colors.orange.shade700,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'Extra Cost: ₹${extraCost.toStringAsFixed(0)}',
@@ -2556,7 +3426,10 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
                     const SizedBox(height: 4),
                     Text(
                       extraCostNotes,
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
                   ],
                 ],
@@ -2571,7 +3444,20 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
   String _formatDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       return '${months[date.month - 1]} ${date.day}, ${date.year}';
     } catch (e) {
       return dateStr;
@@ -2661,35 +3547,89 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
   }
 
   Widget _buildLabourTypeRow(String type, bool isMorning) {
-    final labourCounts = isMorning ? _morningLabourCounts : _eveningLabourCounts;
+    final labourCounts = isMorning
+        ? _morningLabourCounts
+        : _eveningLabourCounts;
     final count = labourCounts[type]!;
     final icon = _getLabourIcon(type);
     final rate = _rates[type] ?? 0;
     final rowTotal = count * rate;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: count > 0 ? AppColors.deepNavy.withValues(alpha: 0.05) : AppColors.lightSlate,
+        gradient: count > 0
+            ? LinearGradient(
+                colors: [
+                  AppColors.deepNavy.withValues(alpha: 0.08),
+                  AppColors.deepNavy.withValues(alpha: 0.03),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
+        color: count == 0 ? Colors.white : null,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: count > 0 ? AppColors.deepNavy.withValues(alpha: 0.2) : Colors.transparent,
-          width: 2,
+          color: count > 0
+              ? AppColors.deepNavy.withValues(alpha: 0.25)
+              : Colors.grey.shade200,
+          width: count > 0 ? 2 : 1,
         ),
+        boxShadow: count > 0
+            ? [
+                BoxShadow(
+                  color: AppColors.deepNavy.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
+          // Icon Container with gradient
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: count > 0 ? AppColors.deepNavy : AppColors.textSecondary,
-              borderRadius: BorderRadius.circular(10),
+              gradient: count > 0
+                  ? LinearGradient(
+                      colors: [
+                        AppColors.deepNavy,
+                        AppColors.deepNavy.withValues(alpha: 0.8),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : LinearGradient(
+                      colors: [Colors.grey.shade400, Colors.grey.shade300],
+                    ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: count > 0
+                  ? [
+                      BoxShadow(
+                        color: AppColors.deepNavy.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : [],
             ),
-            child: Icon(icon, color: Colors.white, size: 20),
+            child: Icon(icon, color: Colors.white, size: 24),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
+          // Labour Type Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2697,54 +3637,145 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
                 Text(
                   type,
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: count > 0 ? FontWeight.bold : FontWeight.w500,
-                    color: count > 0 ? AppColors.deepNavy : AppColors.textSecondary,
+                    fontSize: 16,
+                    fontWeight: count > 0 ? FontWeight.bold : FontWeight.w600,
+                    color: count > 0
+                        ? AppColors.deepNavy
+                        : Colors.grey.shade700,
+                    letterSpacing: -0.3,
                   ),
                 ),
-                Text(
-                  count > 0
-                      ? '₹${rate.toStringAsFixed(0)}/day × $count = ₹${rowTotal.toStringAsFixed(0)}'
-                      : '₹${rate.toStringAsFixed(0)}/day',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: count > 0 ? Colors.green.shade700 : AppColors.textSecondary,
-                    fontWeight: count > 0 ? FontWeight.w600 : FontWeight.normal,
-                  ),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.currency_rupee,
+                      size: 13,
+                      color: count > 0
+                          ? Colors.green.shade700
+                          : Colors.grey.shade500,
+                    ),
+                    Text(
+                      count > 0
+                          ? '${rate.toStringAsFixed(0)}/day × $count = ₹${rowTotal.toStringAsFixed(0)}'
+                          : '${rate.toStringAsFixed(0)}/day',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: count > 0
+                            ? Colors.green.shade700
+                            : Colors.grey.shade500,
+                        fontWeight: count > 0
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+          // Counter Controls
           Row(
             children: [
-              IconButton(
-                onPressed: () => setState(() => labourCounts[type] = (count - 1).clamp(0, 50)),
-                icon: const Icon(Icons.remove_circle_outline, size: 32),
-                color: count > 0 ? AppColors.safetyOrange : AppColors.textSecondary,
+              // Minus Button
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: count > 0
+                      ? () => setState(
+                          () => labourCounts[type] = (count - 1).clamp(0, 50),
+                        )
+                      : null,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: count > 0
+                          ? Colors.red.shade50
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: count > 0
+                            ? Colors.red.shade200
+                            : Colors.grey.shade300,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.remove,
+                      size: 22,
+                      color: count > 0
+                          ? Colors.red.shade600
+                          : Colors.grey.shade400,
+                    ),
+                  ),
+                ),
               ),
-              Container(
+              const SizedBox(width: 10),
+              // Count Display
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
                 width: 50,
-                height: 40,
+                height: 44,
                 decoration: BoxDecoration(
-                  gradient: count > 0 ? AppColors.orangeGradient : null,
-                  color: count == 0 ? AppColors.lightSlate : null,
-                  borderRadius: BorderRadius.circular(10),
+                  gradient: count > 0
+                      ? AppColors.orangeGradient
+                      : LinearGradient(
+                          colors: [Colors.grey.shade200, Colors.grey.shade100],
+                        ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: count > 0
+                      ? [
+                          BoxShadow(
+                            color: AppColors.safetyOrange.withValues(
+                              alpha: 0.3,
+                            ),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : [],
                 ),
                 child: Center(
                   child: Text(
                     '$count',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: count > 0 ? Colors.white : AppColors.textSecondary,
+                      color: count > 0 ? Colors.white : Colors.grey.shade600,
                     ),
                   ),
                 ),
               ),
-              IconButton(
-                onPressed: () => setState(() => labourCounts[type] = (count + 1).clamp(0, 50)),
-                icon: const Icon(Icons.add_circle_outline, size: 32),
-                color: AppColors.safetyOrange,
+              const SizedBox(width: 10),
+              // Plus Button
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => setState(
+                    () => labourCounts[type] = (count + 1).clamp(0, 50),
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.green.shade400, Colors.green.shade600],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withValues(alpha: 0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.add, size: 22, color: Colors.white),
+                  ),
+                ),
               ),
             ],
           ),
@@ -2755,30 +3786,50 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
 
   IconData _getLabourIcon(String type) {
     switch (type) {
-      case 'Carpenter': return Icons.carpenter;
-      case 'Mason': return Icons.construction;
-      case 'Electrician': return Icons.electrical_services;
-      case 'Plumber': return Icons.plumbing;
-      case 'Painter': return Icons.format_paint;
-      case 'Helper': return Icons.handyman;
-      case 'Tile Layer': return Icons.layers;
-      case 'Tile Layerhelper': return Icons.layers_outlined;
-      case 'Kambi Fitter': return Icons.build;
-      case 'Concrete Kot': return Icons.foundation;
-      case 'Pile Labour': return Icons.vertical_align_bottom;
-      default: return Icons.person;
+      case 'Carpenter':
+        return Icons.carpenter;
+      case 'Mason':
+        return Icons.construction;
+      case 'Electrician':
+        return Icons.electrical_services;
+      case 'Plumber':
+        return Icons.plumbing;
+      case 'Painter':
+        return Icons.format_paint;
+      case 'Helper':
+        return Icons.handyman;
+      case 'Tile Layer':
+        return Icons.layers;
+      case 'Tile Layerhelper':
+        return Icons.layers_outlined;
+      case 'Kambi Fitter':
+        return Icons.build;
+      case 'Concrete Kot':
+        return Icons.foundation;
+      case 'Pile Labour':
+        return Icons.vertical_align_bottom;
+      default:
+        return Icons.person;
     }
   }
 
   Future<void> _submit(bool isMorning) async {
-    final labourCounts = isMorning ? _morningLabourCounts : _eveningLabourCounts;
-    final extraCostController = isMorning ? _morningExtraCostController : _eveningExtraCostController;
-    final extraCostNotesController = isMorning ? _morningExtraCostNotesController : _eveningExtraCostNotesController;
-    final selectedDateTime = isMorning ? _morningSelectedDateTime : _eveningSelectedDateTime;
-    
+    final labourCounts = isMorning
+        ? _morningLabourCounts
+        : _eveningLabourCounts;
+    final extraCostController = isMorning
+        ? _morningExtraCostController
+        : _eveningExtraCostController;
+    final extraCostNotesController = isMorning
+        ? _morningExtraCostNotesController
+        : _eveningExtraCostNotesController;
+    final selectedDateTime = isMorning
+        ? _morningSelectedDateTime
+        : _eveningSelectedDateTime;
+
     // Check if labour entry is on time
     final isOnTime = TimeValidator.isLabourEntryOnTime();
-    
+
     // Show confirmation dialog first
     final confirmed = await showDialog<bool>(
       context: context,
@@ -2796,15 +3847,15 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
     if (confirmed != true) return;
 
     setState(() => _isSubmitting = true);
-    
+
     // Parse extra cost
     final extraCost = double.tryParse(extraCostController.text.trim()) ?? 0;
     final extraCostNotes = extraCostNotesController.text.trim();
-    
+
     print('🕒 [LABOUR] About to submit with selected time: $selectedDateTime');
     print('🕒 [LABOUR] Current IST time: ${TimeValidator.getISTTime()}');
     print('🕒 [LABOUR] Is on time: $isOnTime');
-    
+
     // Submit each labour type with count > 0
     final errors = <String>[];
     int successCount = 0;
@@ -2847,11 +3898,13 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              isOnTime 
-                ? '$successCount labour types submitted successfully!'
-                : '⚠️ $successCount labour types submitted (Late entry - Admin notified)',
+              isOnTime
+                  ? '$successCount labour types submitted successfully!'
+                  : '⚠️ $successCount labour types submitted (Late entry - Admin notified)',
             ),
-            backgroundColor: isOnTime ? AppColors.statusCompleted : Colors.orange,
+            backgroundColor: isOnTime
+                ? AppColors.statusCompleted
+                : Colors.orange,
             duration: Duration(seconds: isOnTime ? 2 : 4),
           ),
         );
@@ -2860,7 +3913,9 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
         widget.onSuccess();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$successCount submitted. Errors: ${errors.join(', ')}'),
+            content: Text(
+              '$successCount submitted. Errors: ${errors.join(', ')}',
+            ),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 5),
           ),
@@ -2879,8 +3934,10 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
   }
 
   Widget _buildTimePicker(bool isMorning) {
-    final selectedDateTime = isMorning ? _morningSelectedDateTime : _eveningSelectedDateTime;
-    
+    final selectedDateTime = isMorning
+        ? _morningSelectedDateTime
+        : _eveningSelectedDateTime;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -2915,11 +3972,17 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
                   decoration: BoxDecoration(
                     color: AppColors.lightSlate,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.deepNavy.withValues(alpha: 0.15)),
+                    border: Border.all(
+                      color: AppColors.deepNavy.withValues(alpha: 0.15),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 18, color: AppColors.textSecondary),
+                      Icon(
+                        Icons.calendar_today,
+                        size: 18,
+                        color: AppColors.textSecondary,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         _formatDateTime(selectedDateTime),
@@ -2943,11 +4006,17 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.deepNavy.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppColors.deepNavy.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.schedule, size: 18, color: AppColors.deepNavy),
+                        Icon(
+                          Icons.schedule,
+                          size: 18,
+                          color: AppColors.deepNavy,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           _formatTime(selectedDateTime),
@@ -2979,20 +4048,37 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
   }
 
   String _formatDateTime(DateTime dateTime) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
   }
 
   String _formatTime(DateTime dateTime) {
-    final hour = dateTime.hour == 0 ? 12 : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
+    final hour = dateTime.hour == 0
+        ? 12
+        : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
     final minute = dateTime.minute.toString().padLeft(2, '0');
     final period = dateTime.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $period';
   }
 
   Future<void> _selectTime(bool isMorning) async {
-    final selectedDateTime = isMorning ? _morningSelectedDateTime : _eveningSelectedDateTime;
-    
+    final selectedDateTime = isMorning
+        ? _morningSelectedDateTime
+        : _eveningSelectedDateTime;
+
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(selectedDateTime),
@@ -3009,7 +4095,7 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
         );
       },
     );
-    
+
     if (picked != null) {
       setState(() {
         if (isMorning) {
@@ -3030,7 +4116,9 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet> with SingleTickerP
           );
         }
       });
-      print('🕒 [LABOUR] ${isMorning ? "Morning" : "Evening"} time changed to: ${isMorning ? _morningSelectedDateTime : _eveningSelectedDateTime}');
+      print(
+        '🕒 [LABOUR] ${isMorning ? "Morning" : "Evening"} time changed to: ${isMorning ? _morningSelectedDateTime : _eveningSelectedDateTime}',
+      );
     }
   }
 }
@@ -3042,7 +4130,7 @@ class _MaterialEntrySheet extends StatefulWidget {
   final VoidCallback? onMaterialUpdated;
 
   const _MaterialEntrySheet({
-    required this.siteId, 
+    required this.siteId,
     required this.onSuccess,
     this.onMaterialUpdated,
   });
@@ -3051,7 +4139,8 @@ class _MaterialEntrySheet extends StatefulWidget {
   State<_MaterialEntrySheet> createState() => _MaterialEntrySheetState();
 }
 
-class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTickerProviderStateMixin {
+class _MaterialEntrySheetState extends State<_MaterialEntrySheet>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _constructionService = ConstructionService();
   final _materialService = MaterialService();
@@ -3070,25 +4159,27 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
     // Initialize with current local time
     _selectedDateTime = DateTime.now();
     print('🕒 [MATERIAL] Initialized with local time: $_selectedDateTime');
-    
+
     // Load materials from inventory
     _loadAvailableMaterials();
   }
-  
+
   Future<void> _loadAvailableMaterials() async {
     setState(() => _isLoadingMaterials = true);
-    
+
     try {
       final result = await _materialService.getMaterialBalance(widget.siteId);
-      
+
       if (result['success'] == true) {
-        final materials = List<Map<String, dynamic>>.from(result['balance'] ?? []);
+        final materials = List<Map<String, dynamic>>.from(
+          result['balance'] ?? [],
+        );
         setState(() {
           _availableMaterials = materials;
           // Initialize quantities map with available materials
           _materialQuantities = {
             for (var material in materials)
-              material['material_type'] as String: 0.0
+              material['material_type'] as String: 0.0,
           };
         });
       }
@@ -3111,121 +4202,166 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              const Text(
-                '📦 Material Balance',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+    return WillPopScope(
+      onWillPop: () async {
+        // STRICT LOCK: Block back navigation completely if any entries started
+        final hasEntries = _materialQuantities.values.any((qty) => qty > 0);
+
+        if (hasEntries) {
+          // Show warning message - DO NOT allow back
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                '⚠️ Please complete and submit material updates before going back.',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  gradient: AppColors.greenGradient,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '$_totalItems items',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Time window info
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: TimeValidator.isMaterialEntryOnTime() 
-                ? Colors.green.shade50 
-                : Colors.orange.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: TimeValidator.isMaterialEntryOnTime() 
-                  ? Colors.green.shade200 
-                  : Colors.orange.shade300,
+              backgroundColor: Colors.red.shade700,
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: Row(
+          );
+          // BLOCK back navigation
+          return false;
+        }
+
+        // No entries started, allow back navigation
+        return true;
+      },
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.cleanWhite,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        ),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
               children: [
-                Icon(
-                  TimeValidator.isMaterialEntryOnTime() ? Icons.check_circle : Icons.warning,
-                  size: 16,
-                  color: TimeValidator.isMaterialEntryOnTime() 
-                    ? Colors.green.shade700 
-                    : Colors.orange.shade700,
+                const Text(
+                  '📦 Material Balance',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.deepNavy,
+                  ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.greenGradient,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   child: Text(
-                    TimeValidator.isMaterialEntryOnTime()
-                      ? '${TimeValidator.getMaterialTimeWindow()} • Current: ${TimeValidator.formatISTTime(TimeValidator.getISTTime())}'
-                      : '⚠️ Outside Time Window! ${TimeValidator.getMaterialTimeWindow()}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: TimeValidator.isMaterialEntryOnTime() 
-                        ? Colors.green.shade700 
-                        : Colors.orange.shade900,
-                      fontWeight: FontWeight.w600,
+                    '$_totalItems items',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Tab Bar
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.lightSlate,
-              borderRadius: BorderRadius.circular(12),
+            const SizedBox(height: 8),
+            // Time window info
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: TimeValidator.isMaterialEntryOnTime()
+                    ? Colors.green.shade50
+                    : Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: TimeValidator.isMaterialEntryOnTime()
+                      ? Colors.green.shade200
+                      : Colors.orange.shade300,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    TimeValidator.isMaterialEntryOnTime()
+                        ? Icons.check_circle
+                        : Icons.warning,
+                    size: 16,
+                    color: TimeValidator.isMaterialEntryOnTime()
+                        ? Colors.green.shade700
+                        : Colors.orange.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      TimeValidator.isMaterialEntryOnTime()
+                          ? '${TimeValidator.getMaterialTimeWindow()} • Current: ${TimeValidator.formatISTTime(TimeValidator.getISTTime())}'
+                          : '⚠️ Outside Time Window! ${TimeValidator.getMaterialTimeWindow()}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: TimeValidator.isMaterialEntryOnTime()
+                            ? Colors.green.shade700
+                            : Colors.orange.shade900,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: TabBar(
-              controller: _tabController,
-              onTap: (_) => setState(() {}),
-              indicator: BoxDecoration(
-                gradient: AppColors.greenGradient,
+            const SizedBox(height: 16),
+
+            // Tab Bar
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.lightSlate,
                 borderRadius: BorderRadius.circular(12),
               ),
-              labelColor: Colors.white,
-              unselectedLabelColor: AppColors.textSecondary,
-              labelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              unselectedLabelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              tabs: const [
-                Tab(text: '📝 Update'),
-                Tab(text: '📊 Available'),
-              ],
+              child: TabBar(
+                controller: _tabController,
+                onTap: (_) => setState(() {}),
+                indicator: BoxDecoration(
+                  gradient: AppColors.greenGradient,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                labelColor: Colors.white,
+                unselectedLabelColor: AppColors.textSecondary,
+                labelStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+                tabs: const [
+                  Tab(text: '📝 Update'),
+                  Tab(text: '📊 Available'),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Tab Content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildUpdateTab(),
-                _buildAvailableTab(),
-              ],
+            const SizedBox(height: 16),
+
+            // Tab Content
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [_buildUpdateTab(), _buildAvailableTab()],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -3258,7 +4394,11 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.inventory_2_outlined, size: 60, color: AppColors.textSecondary),
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 60,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'No materials available',
@@ -3283,102 +4423,246 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
             )
           else
             Column(
-              children: _materialQuantities.keys.map((type) => _buildMaterialTypeRow(type)).toList(),
+              children: _materialQuantities.keys
+                  .map((type) => _buildMaterialTypeRow(type))
+                  .toList(),
             ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.orange.shade200),
+          const SizedBox(height: 20),
+          // Modern Extra Cost Section for Materials
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.orange.shade50,
+                  Colors.orange.shade100.withValues(alpha: 0.3),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.orange.shade300, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.orange.shade600,
+                            Colors.orange.shade400,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withValues(alpha: 0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.attach_money,
+                        size: 22,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Extra Cost',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade900,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        Text(
+                          'Optional expenses',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _extraCostController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Enter amount',
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontWeight: FontWeight.normal,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: Colors.orange.shade200,
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: Colors.orange.shade600,
+                          width: 2,
+                        ),
+                      ),
+                      prefixIcon: Container(
+                        margin: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.orange.shade400,
+                              Colors.orange.shade600,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.currency_rupee,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _extraCostNotesController,
+                    maxLines: 2,
+                    style: const TextStyle(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Notes (e.g., transport, tools, materials)',
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 13,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: Colors.orange.shade200,
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: Colors.orange.shade600,
+                          width: 2,
+                        ),
+                      ),
+                      prefixIcon: Icon(
+                        Icons.note_alt_outlined,
+                        color: Colors.orange.shade600,
+                        size: 22,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.attach_money, size: 20, color: Colors.orange.shade700),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Extra Cost (Optional)',
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _totalItems > 0 && !_isSubmitting ? _submit : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.statusCompleted,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: _isSubmitting
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Text(
+                    'Submit Material Balance',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade900,
+                      color: Colors.white,
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _extraCostController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: 'Enter amount (₹)',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.orange.shade200),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.orange.shade200),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.orange.shade700, width: 2),
-                  ),
-                  prefixIcon: Icon(Icons.currency_rupee, color: Colors.orange.shade700),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _extraCostNotesController,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  hintText: 'Notes (e.g., transport, tools)',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.orange.shade200),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.orange.shade200),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.orange.shade700, width: 2),
-                  ),
-                ),
-              ),
-            ],
           ),
-        ),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: _totalItems > 0 && !_isSubmitting ? _submit : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.statusCompleted,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: _isSubmitting
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                )
-              : const Text(
-                  'Submit Material Balance',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-        ),
-      ],
-    ),
+        ],
+      ),
     );
   }
 
@@ -3395,61 +4679,66 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
                 ),
               )
             : _availableMaterials.isEmpty
-                ? Container(
-                    height: 400,
-                    padding: EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: AppColors.lightSlate,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.borderColor),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.inventory_2_outlined, size: 80, color: AppColors.textSecondary),
-                          SizedBox(height: 16),
-                          Text(
-                            'No materials available',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Site Engineer needs to add materials to inventory first',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+            ? Container(
+                height: 400,
+                padding: EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.lightSlate,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.borderColor),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 80,
+                        color: AppColors.textSecondary,
                       ),
-                    ),
-                  )
-                : Expanded(
-                    child: ListView.builder(
-                      itemCount: _availableMaterials.length,
-                      itemBuilder: (context, index) {
-                        final material = _availableMaterials[index];
-                        return _buildAvailableMaterialCard(material);
-                      },
-                    ),
+                      SizedBox(height: 16),
+                      Text(
+                        'No materials available',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Site Engineer needs to add materials to inventory first',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
+                ),
+              )
+            : Expanded(
+                child: ListView.builder(
+                  itemCount: _availableMaterials.length,
+                  itemBuilder: (context, index) {
+                    final material = _availableMaterials[index];
+                    return _buildAvailableMaterialCard(material);
+                  },
+                ),
+              ),
       ],
     );
   }
 
   Widget _buildAvailableMaterialCard(Map<String, dynamic> material) {
     final materialType = material['material_type'] as String;
-    final currentBalance = (material['current_balance'] as num?)?.toDouble() ?? 0.0;
+    final currentBalance =
+        (material['current_balance'] as num?)?.toDouble() ?? 0.0;
     final totalUsed = (material['total_used'] as num?)?.toDouble() ?? 0.0;
     final unit = material['unit'] as String? ?? 'units';
     final icon = _getMaterialIcon(materialType);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -3463,7 +4752,10 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.statusCompleted.withValues(alpha: 0.3), width: 2),
+        border: Border.all(
+          color: AppColors.statusCompleted.withValues(alpha: 0.3),
+          width: 2,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3512,14 +4804,20 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.statusCompleted.withValues(alpha: 0.2)),
+              border: Border.all(
+                color: AppColors.statusCompleted.withValues(alpha: 0.2),
+              ),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: Column(
                     children: [
-                      Icon(Icons.inventory, color: AppColors.statusCompleted, size: 28),
+                      Icon(
+                        Icons.inventory,
+                        color: AppColors.statusCompleted,
+                        size: 28,
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         'Available',
@@ -3548,15 +4846,15 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
                     ],
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 80,
-                  color: AppColors.borderColor,
-                ),
+                Container(width: 1, height: 80, color: AppColors.borderColor),
                 Expanded(
                   child: Column(
                     children: [
-                      Icon(Icons.trending_down, color: AppColors.safetyOrange, size: 28),
+                      Icon(
+                        Icons.trending_down,
+                        color: AppColors.safetyOrange,
+                        size: 28,
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         'Total Used',
@@ -3595,43 +4893,93 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
 
   Widget _buildMaterialTypeRow(String type) {
     final quantity = _materialQuantities[type]!;
-    
+
     // Find the material data from available materials
     final materialData = _availableMaterials.firstWhere(
       (m) => m['material_type'] == type,
       orElse: () => {},
     );
-    
-    final availableBalance = (materialData['current_balance'] as num?)?.toDouble() ?? 0.0;
+
+    final availableBalance =
+        (materialData['current_balance'] as num?)?.toDouble() ?? 0.0;
     final unit = materialData['unit'] as String? ?? 'units';
     final icon = _getMaterialIcon(type);
-    
-    return Container(
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: quantity > 0 ? AppColors.statusCompleted.withValues(alpha: 0.05) : AppColors.lightSlate,
-        borderRadius: BorderRadius.circular(16),
+        gradient: quantity > 0
+            ? LinearGradient(
+                colors: [
+                  Colors.green.shade50,
+                  Colors.green.shade100.withValues(alpha: 0.3),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
+        color: quantity == 0 ? Colors.white : null,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: quantity > 0 ? AppColors.statusCompleted.withValues(alpha: 0.2) : Colors.transparent,
-          width: 2,
+          color: quantity > 0 ? Colors.green.shade300 : Colors.grey.shade200,
+          width: quantity > 0 ? 2 : 1,
         ),
+        boxShadow: quantity > 0
+            ? [
+                BoxShadow(
+                  color: Colors.green.withValues(alpha: 0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 40,
-                height: 40,
+              // Icon with gradient
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
-                  color: quantity > 0 ? AppColors.statusCompleted : AppColors.textSecondary,
-                  borderRadius: BorderRadius.circular(10),
+                  gradient: quantity > 0
+                      ? LinearGradient(
+                          colors: [
+                            Colors.green.shade600,
+                            Colors.green.shade400,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : LinearGradient(
+                          colors: [Colors.grey.shade400, Colors.grey.shade300],
+                        ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: quantity > 0
+                      ? [
+                          BoxShadow(
+                            color: Colors.green.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : [],
                 ),
-                child: Icon(icon, color: Colors.white, size: 20),
+                child: Icon(icon, color: Colors.white, size: 26),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -3639,78 +4987,230 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
                     Text(
                       type,
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: quantity > 0 ? FontWeight.bold : FontWeight.w500,
-                        color: quantity > 0 ? AppColors.deepNavy : AppColors.textSecondary,
+                        fontSize: 17,
+                        fontWeight: quantity > 0
+                            ? FontWeight.bold
+                            : FontWeight.w600,
+                        color: quantity > 0
+                            ? AppColors.deepNavy
+                            : Colors.grey.shade700,
+                        letterSpacing: -0.3,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
-                        Text(
-                          'Available: ',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w500,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green.shade300),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.inventory_2,
+                                size: 12,
+                                color: Colors.green.shade700,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${availableBalance.toInt()} $unit',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.green.shade700,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          '${availableBalance.toInt()} $unit',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.statusCompleted,
-                            fontWeight: FontWeight.bold,
+                        if (quantity > 0) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.orange.shade400,
+                                  Colors.orange.shade600,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.orange.withValues(alpha: 0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.arrow_downward,
+                                  size: 12,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${quantity.toInt()} $unit',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
-                    if (quantity > 0) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        'Using: ${quantity.toInt()} $unit',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.safetyOrange,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
-              IconButton(
-                onPressed: () => setState(() => _materialQuantities[type] = 0),
-                icon: const Icon(Icons.refresh, size: 24),
-                color: quantity > 0 ? AppColors.safetyOrange : AppColors.textSecondary,
+              // Reset button
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: quantity > 0
+                      ? () => setState(() => _materialQuantities[type] = 0)
+                      : null,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: quantity > 0
+                          ? Colors.orange.shade50
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: quantity > 0
+                            ? Colors.orange.shade300
+                            : Colors.grey.shade300,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.refresh,
+                      size: 22,
+                      color: quantity > 0
+                          ? Colors.orange.shade600
+                          : Colors.grey.shade400,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
+          // Modern Slider with value display
           Row(
             children: [
               Expanded(
-                child: Slider(
-                  value: quantity,
-                  min: 0,
-                  max: availableBalance > 0 ? availableBalance : 100,
-                  divisions: (availableBalance > 0 ? availableBalance : 100).toInt(),
-                  activeColor: AppColors.statusCompleted,
-                  inactiveColor: AppColors.lightSlate,
-                  onChanged: (value) => setState(() => _materialQuantities[type] = value),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SliderTheme(
+                      data: SliderThemeData(
+                        activeTrackColor: Colors.green.shade600,
+                        inactiveTrackColor: Colors.grey.shade200,
+                        thumbColor: Colors.green.shade700,
+                        overlayColor: Colors.green.withValues(alpha: 0.2),
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 12,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 22,
+                        ),
+                        trackHeight: 6,
+                        activeTickMarkColor: Colors.transparent,
+                        inactiveTickMarkColor: Colors.transparent,
+                      ),
+                      child: Slider(
+                        value: quantity,
+                        min: 0,
+                        max: availableBalance > 0 ? availableBalance : 100,
+                        divisions:
+                            (availableBalance > 0 ? availableBalance : 100)
+                                .toInt(),
+                        onChanged: (value) =>
+                            setState(() => _materialQuantities[type] = value),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '0',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            '${(availableBalance > 0 ? availableBalance : 100).toInt()}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 60,
+              const SizedBox(width: 12),
+              // Value display
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  gradient: quantity > 0
+                      ? LinearGradient(
+                          colors: [
+                            Colors.green.shade600,
+                            Colors.green.shade400,
+                          ],
+                        )
+                      : LinearGradient(
+                          colors: [Colors.grey.shade300, Colors.grey.shade200],
+                        ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: quantity > 0
+                      ? [
+                          BoxShadow(
+                            color: Colors.green.withValues(alpha: 0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : [],
+                ),
                 child: Text(
                   '${quantity.toInt()}',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: quantity > 0 ? AppColors.statusCompleted : AppColors.textSecondary,
+                    color: quantity > 0 ? Colors.white : Colors.grey.shade600,
                   ),
-                  textAlign: TextAlign.right,
                 ),
               ),
             ],
@@ -3723,18 +5223,26 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
   IconData _getMaterialIcon(String type) {
     // Generic icon mapping based on common material types
     final typeLower = type.toLowerCase();
-    
+
     if (typeLower.contains('brick')) return Icons.grid_4x4;
     if (typeLower.contains('sand')) return Icons.landscape;
     if (typeLower.contains('cement')) return Icons.inventory;
-    if (typeLower.contains('steel') || typeLower.contains('rod') || typeLower.contains('bar')) return Icons.hardware;
-    if (typeLower.contains('jelly') || typeLower.contains('water')) return Icons.water_drop;
-    if (typeLower.contains('putty') || typeLower.contains('paint')) return Icons.format_paint;
-    if (typeLower.contains('stone') || typeLower.contains('aggregate')) return Icons.terrain;
-    if (typeLower.contains('wood') || typeLower.contains('timber')) return Icons.carpenter;
-    if (typeLower.contains('wire') || typeLower.contains('cable')) return Icons.cable;
+    if (typeLower.contains('steel') ||
+        typeLower.contains('rod') ||
+        typeLower.contains('bar'))
+      return Icons.hardware;
+    if (typeLower.contains('jelly') || typeLower.contains('water'))
+      return Icons.water_drop;
+    if (typeLower.contains('putty') || typeLower.contains('paint'))
+      return Icons.format_paint;
+    if (typeLower.contains('stone') || typeLower.contains('aggregate'))
+      return Icons.terrain;
+    if (typeLower.contains('wood') || typeLower.contains('timber'))
+      return Icons.carpenter;
+    if (typeLower.contains('wire') || typeLower.contains('cable'))
+      return Icons.cable;
     if (typeLower.contains('pipe')) return Icons.plumbing;
-    
+
     return Icons.inventory_2; // Default icon
   }
 
@@ -3742,15 +5250,17 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
     // Check if material entry is on time
     final isOnTime = TimeValidator.isMaterialEntryOnTime();
     final currentIST = TimeValidator.getISTTime();
-    
-    print('🕒 [MATERIAL] Current IST time: $currentIST (${TimeValidator.formatISTTime(currentIST)})');
+
+    print(
+      '🕒 [MATERIAL] Current IST time: $currentIST (${TimeValidator.formatISTTime(currentIST)})',
+    );
     print('🕒 [MATERIAL] Is on time: $isOnTime');
     print('🕒 [MATERIAL] Time window: 4:00 PM - 7:00 PM IST');
-    
+
     // Parse extra cost
     final extraCost = double.tryParse(_extraCostController.text.trim()) ?? 0;
     final extraCostNotes = _extraCostNotesController.text.trim();
-    
+
     // Prepare materials list with correct units from available materials
     final materials = _materialQuantities.entries
         .where((entry) => entry.value > 0)
@@ -3760,7 +5270,7 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
             (m) => m['material_type'] == entry.key,
             orElse: () => {'unit': 'units'},
           );
-          
+
           return {
             'material_type': entry.key,
             'quantity': entry.value,
@@ -3781,11 +5291,13 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
     );
 
     if (confirmed != true) return;
-    
+
     setState(() => _isSubmitting = true);
-    
-    print('🕒 [MATERIAL] About to submit with selected time: $_selectedDateTime');
-    
+
+    print(
+      '🕒 [MATERIAL] About to submit with selected time: $_selectedDateTime',
+    );
+
     final result = await _constructionService.submitMaterialBalance(
       siteId: widget.siteId,
       materials: materials,
@@ -3793,49 +5305,56 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
       extraCostNotes: extraCostNotes.isNotEmpty ? extraCostNotes : null,
       customDateTime: _selectedDateTime, // Pass the selected local time
     );
-    
+
     print('🕒 [MATERIAL] Submission result: ${result['success']}');
-    print('🕒 [MATERIAL] Should send notification: ${!isOnTime && result['success']}');
-    
+    print(
+      '🕒 [MATERIAL] Should send notification: ${!isOnTime && result['success']}',
+    );
+
     // Send notification to admin if entry is late
     if (!isOnTime && result['success']) {
       print('📧 [MATERIAL] Sending late entry notification to admin...');
       final notificationService = NotificationService();
-      final notificationResult = await notificationService.sendLateEntryNotification(
-        siteId: widget.siteId,
-        entryType: 'material',
-        message: TimeValidator.getMaterialLateMessage(),
-        actualTime: currentIST,
+      final notificationResult = await notificationService
+          .sendLateEntryNotification(
+            siteId: widget.siteId,
+            entryType: 'material',
+            message: TimeValidator.getMaterialLateMessage(),
+            actualTime: currentIST,
+          );
+      print(
+        '📧 [MATERIAL] Notification result: ${notificationResult['success']}',
       );
-      print('📧 [MATERIAL] Notification result: ${notificationResult['success']}');
       if (!notificationResult['success']) {
-        print('❌ [MATERIAL] Notification error: ${notificationResult['error']}');
+        print(
+          '❌ [MATERIAL] Notification error: ${notificationResult['error']}',
+        );
       }
     }
-    
+
     setState(() => _isSubmitting = false);
-    
+
     if (mounted) {
       // Reload available materials to show updated total_used
       if (result['success']) {
         await _loadAvailableMaterials();
         widget.onMaterialUpdated?.call();
       }
-      
+
       Navigator.pop(context);
       widget.onSuccess();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            result['success'] 
-              ? (isOnTime 
-                  ? '✅ Materials updated!' 
-                  : '⚠️ Materials updated (Late entry - Admin notified)')
-              : '❌ ${result['error']}'
+            result['success']
+                ? (isOnTime
+                      ? '✅ Materials updated!'
+                      : '⚠️ Materials updated (Late entry - Admin notified)')
+                : '❌ ${result['error']}',
           ),
-          backgroundColor: result['success'] 
-            ? (isOnTime ? AppColors.statusCompleted : Colors.orange)
-            : AppColors.statusOverdue,
+          backgroundColor: result['success']
+              ? (isOnTime ? AppColors.statusCompleted : Colors.orange)
+              : AppColors.statusOverdue,
           duration: Duration(seconds: result['success'] && !isOnTime ? 4 : 2),
         ),
       );
@@ -3848,14 +5367,20 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
       decoration: BoxDecoration(
         color: AppColors.statusCompleted.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.statusCompleted.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: AppColors.statusCompleted.withValues(alpha: 0.2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.access_time, size: 20, color: AppColors.statusCompleted),
+              Icon(
+                Icons.access_time,
+                size: 20,
+                color: AppColors.statusCompleted,
+              ),
               const SizedBox(width: 8),
               const Text(
                 'Entry Time',
@@ -3878,11 +5403,17 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.statusCompleted.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppColors.statusCompleted.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today, size: 18, color: AppColors.statusCompleted),
+                        Icon(
+                          Icons.calendar_today,
+                          size: 18,
+                          color: AppColors.statusCompleted,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           _formatDate(_selectedDateTime),
@@ -3906,11 +5437,17 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.statusCompleted.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppColors.statusCompleted.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.schedule, size: 18, color: AppColors.statusCompleted),
+                        Icon(
+                          Icons.schedule,
+                          size: 18,
+                          color: AppColors.statusCompleted,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           _formatTime(_selectedDateTime),
@@ -3942,12 +5479,27 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
   }
 
   String _formatDate(DateTime dateTime) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
   }
 
   String _formatTime(DateTime dateTime) {
-    final hour = dateTime.hour == 0 ? 12 : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
+    final hour = dateTime.hour == 0
+        ? 12
+        : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
     final minute = dateTime.minute.toString().padLeft(2, '0');
     final period = dateTime.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $period';
@@ -3972,7 +5524,7 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
         );
       },
     );
-    
+
     if (picked != null) {
       setState(() {
         _selectedDateTime = DateTime(
@@ -4004,7 +5556,7 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
         );
       },
     );
-    
+
     if (picked != null) {
       setState(() {
         _selectedDateTime = DateTime(
@@ -4019,7 +5571,6 @@ class _MaterialEntrySheetState extends State<_MaterialEntrySheet> with SingleTic
     }
   }
 }
-
 
 // Confirmation Dialog
 class _ConfirmationDialog extends StatelessWidget {
@@ -4053,7 +5604,9 @@ class _ConfirmationDialog extends StatelessWidget {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                gradient: isLabour ? AppColors.navyGradient : AppColors.greenGradient,
+                gradient: isLabour
+                    ? AppColors.navyGradient
+                    : AppColors.greenGradient,
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -4075,14 +5628,11 @@ class _ConfirmationDialog extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Please review your entries',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            
+
             // Entries List
             Container(
               constraints: const BoxConstraints(maxHeight: 300),
@@ -4102,14 +5652,16 @@ class _ConfirmationDialog extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Total Summary
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: isLabour ? AppColors.orangeGradient : AppColors.greenGradient,
+                gradient: isLabour
+                    ? AppColors.orangeGradient
+                    : AppColors.greenGradient,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -4118,7 +5670,7 @@ class _ConfirmationDialog extends StatelessWidget {
                   const Icon(Icons.check_circle, color: Colors.white, size: 24),
                   const SizedBox(width: 12),
                   Text(
-                    isLabour 
+                    isLabour
                         ? 'Total: $totalCount Workers'
                         : 'Total: $totalCount Items',
                     style: const TextStyle(
@@ -4130,9 +5682,9 @@ class _ConfirmationDialog extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Action Buttons
             Row(
               children: [
@@ -4161,7 +5713,9 @@ class _ConfirmationDialog extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context, true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isLabour ? AppColors.safetyOrange : AppColors.statusCompleted,
+                      backgroundColor: isLabour
+                          ? AppColors.safetyOrange
+                          : AppColors.statusCompleted,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -4280,31 +5834,51 @@ class _ConfirmationDialog extends StatelessWidget {
 
   IconData _getLabourIcon(String type) {
     switch (type) {
-      case 'Carpenter': return Icons.carpenter;
-      case 'Mason': return Icons.construction;
-      case 'Electrician': return Icons.electrical_services;
-      case 'Plumber': return Icons.plumbing;
-      case 'Painter': return Icons.format_paint;
-      case 'Helper': return Icons.handyman;
-      case 'Tile Layer': return Icons.layers;
-      case 'Tile Layerhelper': return Icons.layers_outlined;
-      case 'Kambi Fitter': return Icons.build;
-      case 'Concrete Kot': return Icons.foundation;
-      case 'Pile Labour': return Icons.vertical_align_bottom;
-      default: return Icons.person;
+      case 'Carpenter':
+        return Icons.carpenter;
+      case 'Mason':
+        return Icons.construction;
+      case 'Electrician':
+        return Icons.electrical_services;
+      case 'Plumber':
+        return Icons.plumbing;
+      case 'Painter':
+        return Icons.format_paint;
+      case 'Helper':
+        return Icons.handyman;
+      case 'Tile Layer':
+        return Icons.layers;
+      case 'Tile Layerhelper':
+        return Icons.layers_outlined;
+      case 'Kambi Fitter':
+        return Icons.build;
+      case 'Concrete Kot':
+        return Icons.foundation;
+      case 'Pile Labour':
+        return Icons.vertical_align_bottom;
+      default:
+        return Icons.person;
     }
   }
 
   IconData _getMaterialIcon(String type) {
     switch (type) {
-      case 'Bricks': return Icons.grid_4x4;
-      case 'M Sand': return Icons.landscape;
-      case 'P Sand': return Icons.terrain;
-      case 'Cement': return Icons.inventory;
-      case 'Steel': return Icons.hardware;
-      case 'Jelly': return Icons.water_drop;
-      case 'Putty': return Icons.format_paint;
-      default: return Icons.inventory_2;
+      case 'Bricks':
+        return Icons.grid_4x4;
+      case 'M Sand':
+        return Icons.landscape;
+      case 'P Sand':
+        return Icons.terrain;
+      case 'Cement':
+        return Icons.inventory;
+      case 'Steel':
+        return Icons.hardware;
+      case 'Jelly':
+        return Icons.water_drop;
+      case 'Putty':
+        return Icons.format_paint;
+      default:
+        return Icons.inventory_2;
     }
   }
 }

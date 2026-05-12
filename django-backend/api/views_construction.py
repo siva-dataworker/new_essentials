@@ -238,12 +238,14 @@ def submit_labour_count(request):
     """
     Supervisor: Submit daily labour count with custom local time
     Accepts custom_datetime from client to use local device time
+    Enhanced with entry lock validation to prevent multiple supervisors
     """
     try:
         # Import time utilities
         from .time_utils import is_within_entry_hours, get_entry_metadata, get_entry_time_status, get_day_of_week
         from datetime import datetime
         import pytz
+        from django.db import transaction, IntegrityError
         
         user_id = request.user['user_id']
         user_role = request.user.get('role', 'Supervisor')  # Get user role from JWT token
@@ -297,59 +299,210 @@ def submit_labour_count(request):
             entry_time = entry_meta['timestamp_ist']
             day_of_week = entry_meta['day_of_week']
         
-        # DAILY RESTRICTION: Check if already submitted today for this site AND labour type
+        # Determine entry type based on time
+        entry_hour = entry_time.hour if hasattr(entry_time, 'hour') else datetime.now().hour
+        entry_type = 'morning' if entry_hour < 12 else 'evening'
+        
+        print(f"[ENTRY_LOCK] Checking lock for site={site_id}, date={entry_date}, type={entry_type}, labour={labour_type}")
+        
+        # CRITICAL: Check if ANY supervisor has already entered for this site/date/type/labour
         existing_entry = fetch_one("""
-            SELECT id FROM labour_entries
-            WHERE supervisor_id = %s AND site_id = %s AND entry_date = %s AND labour_type = %s
-        """, (user_id, site_id, entry_date, labour_type))
+            SELECT 
+                le.id,
+                le.supervisor_id,
+                COALESCE(u.full_name, u.name, u.phone_number) as supervisor_name,
+                le.entry_time,
+                le.labour_type
+            FROM labour_entries le
+            LEFT JOIN users u ON le.supervisor_id = u.user_id
+            WHERE le.site_id = %s 
+              AND le.entry_date = %s 
+              AND le.labour_type = %s
+            LIMIT 1
+        """, (site_id, entry_date, labour_type))
         
         if existing_entry:
-            return Response({
-                'error': f'{labour_type} labour count already submitted for {entry_date} for this site. You can only submit each labour type once per day.'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            # Check if it's the same supervisor (allow updates/duplicates with warning)
+            if str(existing_entry['supervisor_id']) == str(user_id):
+                return Response({
+                    'error': f'You have already submitted {labour_type} count for {entry_date}. Each labour type can only be submitted once per day.',
+                    'can_edit': False,
+                    'existing_entry_id': existing_entry['id']
+                }, status=status.HTTP_409_CONFLICT)
+            else:
+                # Different supervisor - BLOCK with 423 LOCKED status
+                entry_time_str = existing_entry['entry_time'].strftime("%I:%M %p") if existing_entry.get('entry_time') else 'earlier'
+                return Response({
+                    'error': f'{labour_type} data already entered by {existing_entry["supervisor_name"]} at {entry_time_str}',
+                    'locked_by': existing_entry['supervisor_name'],
+                    'locked_at': entry_time_str,
+                    'entry_type': entry_type,
+                    'can_edit': False
+                }, status=status.HTTP_423_LOCKED)
         
-        # Insert labour entry with custom or current time
+        # Insert labour entry with custom or current time (wrapped in transaction)
         entry_id = str(uuid.uuid4())
-        execute_query("""
-            INSERT INTO labour_entries
-            (id, site_id, supervisor_id, labour_count, labour_type, entry_date, entry_time, day_of_week, notes, extra_cost, extra_cost_notes, submitted_by_role)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (entry_id, site_id, user_id, labour_count, labour_type, entry_date, entry_time, day_of_week, notes, extra_cost, extra_cost_notes, user_role))
+        
+        try:
+            with transaction.atomic():
+                execute_query("""
+                    INSERT INTO labour_entries
+                    (id, site_id, supervisor_id, labour_count, labour_type, entry_date, entry_time, entry_type, day_of_week, notes, extra_cost, extra_cost_notes, submitted_by_role)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (entry_id, site_id, user_id, labour_count, labour_type, entry_date, entry_time, entry_type, day_of_week, notes, extra_cost, extra_cost_notes, user_role))
 
-        # Resolve daily rate: use admin-set rate if exists, else fall back to defaults
-        _default_rates = {
-            'General': 600, 'Mason': 800, 'Helper': 500, 'Carpenter': 750,
-            'Plumber': 700, 'Electrician': 750, 'Painter': 650, 'Tile Layer': 700,
-            'Tile Layerhelper': 700, 'Kambi Fitter': 900, 'Concrete Kot': 950, 'Pile Labour': 800,
-        }
-        rate_row = fetch_one("""
-            SELECT daily_rate FROM labour_salary_rates
-            WHERE site_id IS NULL AND labour_type = %s AND is_active = true
-            ORDER BY effective_from DESC LIMIT 1
-        """, (labour_type,))
-        daily_rate = float(rate_row['daily_rate']) if rate_row and rate_row.get('daily_rate') else _default_rates.get(labour_type, 900)
-        total_cost = daily_rate * int(labour_count)
+                # Resolve daily rate: use admin-set rate if exists, else fall back to defaults
+                _default_rates = {
+                    'General': 600, 'Mason': 800, 'Helper': 500, 'Carpenter': 750,
+                    'Plumber': 700, 'Electrician': 750, 'Painter': 650, 'Tile Layer': 700,
+                    'Tile Layerhelper': 700, 'Kambi Fitter': 900, 'Concrete Kot': 950, 'Pile Labour': 800,
+                }
+                rate_row = fetch_one("""
+                    SELECT daily_rate FROM labour_salary_rates
+                    WHERE site_id IS NULL AND labour_type = %s AND is_active = true
+                    ORDER BY effective_from DESC LIMIT 1
+                """, (labour_type,))
+                daily_rate = float(rate_row['daily_rate']) if rate_row and rate_row.get('daily_rate') else _default_rates.get(labour_type, 900)
+                total_cost = daily_rate * int(labour_count)
 
-        execute_query("""
-            INSERT INTO labour_cost_calculation
-            (id, site_id, labour_entry_id, labour_type, labour_count, daily_rate, total_cost, entry_date, day_of_week)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (labour_entry_id) DO UPDATE
-              SET daily_rate = EXCLUDED.daily_rate,
-                  total_cost = EXCLUDED.total_cost
-        """, (str(uuid.uuid4()), site_id, entry_id, labour_type, int(labour_count), daily_rate, total_cost, entry_date, day_of_week))
+                execute_query("""
+                    INSERT INTO labour_cost_calculation
+                    (id, site_id, labour_entry_id, labour_type, labour_count, daily_rate, total_cost, entry_date, day_of_week)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (labour_entry_id) DO UPDATE
+                      SET daily_rate = EXCLUDED.daily_rate,
+                          total_cost = EXCLUDED.total_cost
+                """, (str(uuid.uuid4()), site_id, entry_id, labour_type, int(labour_count), daily_rate, total_cost, entry_date, day_of_week))
 
-        return Response({
-            'message': 'Labour count submitted successfully',
-            'entry_id': entry_id,
-            'day_of_week': day_of_week,
-            'entry_date': entry_date.strftime('%Y-%m-%d'),
-            'entry_time': entry_time.strftime('%H:%M:%S'),
-            'extra_cost': extra_cost,
-            'used_custom_time': custom_datetime_str is not None
-        }, status=status.HTTP_201_CREATED)
+                print(f"[ENTRY_LOCK] ✅ Labour entry created successfully: {entry_id}")
+
+                return Response({
+                    'message': 'Labour count submitted successfully',
+                    'entry_id': entry_id,
+                    'day_of_week': day_of_week,
+                    'entry_date': entry_date.strftime('%Y-%m-%d'),
+                    'entry_time': entry_time.strftime('%H:%M:%S'),
+                    'entry_type': entry_type,
+                    'extra_cost': extra_cost,
+                    'used_custom_time': custom_datetime_str is not None
+                }, status=status.HTTP_201_CREATED)
+                
+        except IntegrityError as e:
+            # Database constraint violation (race condition caught)
+            print(f"[ENTRY_LOCK] ❌ IntegrityError: {e}")
+            if 'idx_labour_entry_lock' in str(e) or 'unique' in str(e).lower():
+                return Response({
+                    'error': 'Entry already exists. Another supervisor may have submitted simultaneously.',
+                    'retry': True
+                }, status=status.HTTP_409_CONFLICT)
+            raise
         
     except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def check_entry_lock(request):
+    """
+    Check if a site entry is locked by another supervisor
+    Query params: site_id, entry_date (optional, defaults to today)
+    """
+    try:
+        from datetime import datetime, date
+        
+        user_id = request.user['user_id']
+        site_id = request.GET.get('site_id')
+        entry_date_str = request.GET.get('entry_date')
+        
+        if not site_id:
+            return Response({'error': 'site_id is required'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        # Use provided date or default to today
+        if entry_date_str:
+            try:
+                entry_date = datetime.strptime(entry_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({'error': 'Invalid date format. Use YYYY-MM-DD'}, 
+                              status=status.HTTP_400_BAD_REQUEST)
+        else:
+            entry_date = date.today()
+        
+        # Determine entry type based on current time
+        current_hour = datetime.now().hour
+        entry_type = 'morning' if current_hour < 12 else 'evening'
+        
+        print(f"[ENTRY_LOCK_CHECK] Checking lock for site={site_id}, date={entry_date}, type={entry_type}, user={user_id}")
+        
+        # Check if any entries exist for this site/date
+        entries = fetch_all("""
+            SELECT 
+                le.id,
+                le.supervisor_id,
+                COALESCE(u.full_name, u.name, u.phone_number) as supervisor_name,
+                le.entry_time,
+                le.labour_type,
+                le.labour_count,
+                le.entry_type
+            FROM labour_entries le
+            LEFT JOIN users u ON le.supervisor_id = u.user_id
+            WHERE le.site_id = %s 
+              AND le.entry_date = %s
+            ORDER BY le.entry_time DESC
+        """, (site_id, entry_date))
+        
+        if not entries:
+            # No entries - site is available
+            return Response({
+                'is_locked': False,
+                'can_enter': True,
+                'entries': []
+            }, status=status.HTTP_200_OK)
+        
+        # Check if current user has any entries
+        user_entries = [e for e in entries if str(e['supervisor_id']) == str(user_id)]
+        other_entries = [e for e in entries if str(e['supervisor_id']) != str(user_id)]
+        
+        if other_entries:
+            # Another supervisor has entered data
+            first_other = other_entries[0]
+            entry_time_str = first_other['entry_time'].strftime("%I:%M %p") if first_other.get('entry_time') else 'earlier'
+            
+            return Response({
+                'is_locked': True,
+                'locked_by': first_other['supervisor_name'],
+                'locked_at': entry_time_str,
+                'can_enter': False,
+                'can_view': True,
+                'entries': [
+                    {
+                        'labour_type': e['labour_type'],
+                        'labour_count': e['labour_count'],
+                        'entry_type': e.get('entry_type', 'unknown')
+                    }
+                    for e in other_entries
+                ]
+            }, status=status.HTTP_200_OK)
+        
+        # Only current user has entries - they can continue
+        return Response({
+            'is_locked': False,
+            'can_enter': True,
+            'has_existing_entries': True,
+            'entries': [
+                {
+                    'labour_type': e['labour_type'],
+                    'labour_count': e['labour_count'],
+                    'entry_type': e.get('entry_type', 'unknown')
+                }
+                for e in user_entries
+            ]
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print(f"[ENTRY_LOCK_CHECK] ❌ Error: {e}")
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

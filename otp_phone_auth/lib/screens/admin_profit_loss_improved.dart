@@ -11,10 +11,12 @@ class AdminProfitLossImproved extends StatefulWidget {
   const AdminProfitLossImproved({Key? key}) : super(key: key);
 
   @override
-  State<AdminProfitLossImproved> createState() => _AdminProfitLossImprovedState();
+  State<AdminProfitLossImproved> createState() =>
+      _AdminProfitLossImprovedState();
 }
 
-class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with SingleTickerProviderStateMixin {
+class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved>
+    with SingleTickerProviderStateMixin {
   String? _selectedSiteId;
   String? _selectedSiteName;
   late AnimationController _animationController;
@@ -31,7 +33,7 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-    
+
     // Load sites on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AdminProvider>().loadSites();
@@ -49,7 +51,7 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
       _selectedSiteId = siteId;
       _selectedSiteName = siteName;
     });
-    
+
     // Load P/L data
     context.read<AdminProvider>().getProfitLossData(siteId);
     _animationController.forward(from: 0);
@@ -60,22 +62,23 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
     return Scaffold(
       backgroundColor: AdminTheme.lightGray,
       appBar: AppBar(
-        title: const Text(
-          'Complete Accounts',
-          style: AdminTheme.heading2,
-        ),
+        title: const Text('Complete Accounts', style: AdminTheme.heading2),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.compare_arrows, color: AdminTheme.primaryBlue),
+            icon: const Icon(
+              Icons.compare_arrows,
+              color: AdminTheme.primaryBlue,
+            ),
             onPressed: () async {
               final provider = context.read<AdminProvider>();
               if (provider.sites.isNotEmpty) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => AdminSiteComparisonScreen(sites: provider.sites),
+                    builder: (context) =>
+                        AdminSiteComparisonScreen(sites: provider.sites),
                   ),
                 );
               }
@@ -130,14 +133,14 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
                   ],
                 ),
               ),
-              
+
               // Content
               Expanded(
                 child: _selectedSiteId == null
                     ? _buildEmptyState()
                     : provider.isLoading('pl_$_selectedSiteId')
-                        ? _buildLoadingState()
-                        : _buildContent(provider),
+                    ? _buildLoadingState()
+                    : _buildContent(provider),
               ),
             ],
           );
@@ -169,10 +172,7 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
             style: AdminTheme.heading3,
           ),
           SizedBox(height: 8.h),
-          Text(
-            'Choose from the dropdown above',
-            style: AdminTheme.bodyMedium,
-          ),
+          Text('Choose from the dropdown above', style: AdminTheme.bodyMedium),
         ],
       ),
     );
@@ -222,7 +222,8 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
         }
 
         final data = snapshot.data!;
-        final profitLoss = double.tryParse(data['profit_loss']?.toString() ?? '0') ?? 0;
+        final profitLoss =
+            double.tryParse(data['profit_loss']?.toString() ?? '0') ?? 0;
         final isProfit = profitLoss >= 0;
 
         return FadeTransition(
@@ -248,8 +249,9 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
   }
 
   Widget _buildProfitLossCard(Map<String, dynamic> data, bool isProfit) {
-    final profitLoss = double.tryParse(data['profit_loss']?.toString() ?? '0') ?? 0;
-    
+    final profitLoss =
+        double.tryParse(data['profit_loss']?.toString() ?? '0') ?? 0;
+
     return Container(
       padding: EdgeInsets.all(24.r),
       decoration: AdminTheme.gradientCard(
@@ -366,7 +368,13 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
     );
   }
 
-  Widget _buildCostRow(String label, dynamic amount, IconData icon, Color color, {bool isTotal = false}) {
+  Widget _buildCostRow(
+    String label,
+    dynamic amount,
+    IconData icon,
+    Color color, {
+    bool isTotal = false,
+  }) {
     return Row(
       children: [
         Container(
@@ -386,7 +394,9 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
         ),
         Text(
           '₹${_formatAmount(amount)}',
-          style: (isTotal ? AdminTheme.heading2 : AdminTheme.heading3).copyWith(color: color),
+          style: (isTotal ? AdminTheme.heading2 : AdminTheme.heading3).copyWith(
+            color: color,
+          ),
         ),
       ],
     );
@@ -407,7 +417,7 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
               context,
               MaterialPageRoute(
                 builder: (context) => AdminMaterialPurchasesScreen(
-                  siteId: int.parse(_selectedSiteId!),
+                  siteId: _selectedSiteId!,
                   siteName: _selectedSiteName!,
                 ),
               ),
@@ -424,7 +434,7 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
               context,
               MaterialPageRoute(
                 builder: (context) => AdminSiteDocumentsScreen(
-                  siteId: int.parse(_selectedSiteId!),
+                  siteId: _selectedSiteId!,
                   siteName: _selectedSiteName!,
                 ),
               ),
@@ -435,7 +445,12 @@ class _AdminProfitLossImprovedState extends State<AdminProfitLossImproved> with 
     );
   }
 
-  Widget _buildActionButton(String label, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildActionButton(
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return Material(
       color: Colors.transparent,
       child: InkWell(

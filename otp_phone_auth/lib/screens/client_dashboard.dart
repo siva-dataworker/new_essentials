@@ -57,7 +57,8 @@ class _ClientDashboardState extends State<ClientDashboard> {
         _loadMaterials();
         // Load photos filtered to today's date by default
         final today = DateTime.now();
-        final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+        final todayStr =
+            '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
         _loadPhotos(filterDate: todayStr);
       }
     } catch (e) {
@@ -70,7 +71,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
     if (_currentSiteId == null) return;
 
     try {
-      final response = await _constructionService.getClientMaterials(_currentSiteId!);
+      final response = await _constructionService.getClientMaterials(
+        _currentSiteId!,
+      );
       setState(() {
         _materialsData = response;
       });
@@ -101,7 +104,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
     return Scaffold(
       backgroundColor: AppColors.lightSlate,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.deepNavy))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.deepNavy),
+            )
           : _buildContent(),
       bottomNavigationBar: _buildBottomNav(),
     );
@@ -122,10 +127,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
       case 2:
         return ClientIssuesTab(siteData: _siteData, onRefresh: _loadSiteData);
       case 3:
-        return ClientProfileTab(
-          userName: _userName,
-          siteId: _currentSiteId,
-        );
+        return ClientProfileTab(userName: _userName, siteId: _currentSiteId);
       default:
         return const SizedBox();
     }
@@ -167,7 +169,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.deepNavy.withOpacity(0.1) : Colors.transparent,
+          color: isSelected
+              ? AppColors.deepNavy.withOpacity(0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(12.r),
         ),
         child: Column(
@@ -221,7 +225,10 @@ class ClientProgressTab extends StatelessWidget {
           SliverAppBar(
             floating: true,
             backgroundColor: AppColors.deepNavy,
-            title: const Text('Project Progress', style: TextStyle(color: Colors.white)),
+            title: const Text(
+              'Project Progress',
+              style: TextStyle(color: Colors.white),
+            ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.refresh, color: Colors.white),
@@ -264,7 +271,8 @@ class ClientProgressTab extends StatelessWidget {
 
   Widget _buildDateFilter(BuildContext context) {
     final today = DateTime.now();
-    final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final todayStr =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
     // Determine display text
     String displayText;
@@ -275,7 +283,8 @@ class ClientProgressTab extends StatelessWidget {
     } else {
       // Check if yesterday
       final yesterday = today.subtract(const Duration(days: 1));
-      final yesterdayStr = '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+      final yesterdayStr =
+          '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
       if (selectedDate == yesterdayStr) {
         displayText = 'Yesterday';
       } else {
@@ -350,20 +359,20 @@ class ClientProgressTab extends StatelessWidget {
     );
 
     if (picked != null) {
-      final pickedStr = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      final pickedStr =
+          '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
       onDateFilter(filterDate: pickedStr);
     }
   }
-
 
   Widget _buildSiteInfo() {
     final sites = siteData?['sites'] as List? ?? [];
     if (sites.isEmpty) {
       return Container(
-        padding: EdgeInsets.all(20.r),
+        padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16.r),
+          borderRadius: BorderRadius.circular(12.r),
         ),
         child: const Center(
           child: Text('No site assigned', style: TextStyle(color: Colors.grey)),
@@ -373,57 +382,57 @@ class ClientProgressTab extends StatelessWidget {
 
     final site = sites[0];
     return Container(
-      padding: EdgeInsets.all(20.r),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [AppColors.deepNavy, AppColors.deepNavy.withOpacity(0.8)],
         ),
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.deepNavy.withOpacity(0.3),
-            blurRadius: 10.r,
-            offset: const Offset(0, 4),
+            color: AppColors.deepNavy.withOpacity(0.2),
+            blurRadius: 8.r,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(12.r),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12.r),
+          Container(
+            padding: EdgeInsets.all(10.r),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Icon(Icons.home_work, color: Colors.white, size: 24.sp),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  site['site_name'] ?? 'Project',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                child: Icon(Icons.home_work, color: Colors.white, size: 28.sp),
-              ),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      site['site_name'] ?? 'Project',
-                      style: TextStyle(
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      '${site['area']} • ${site['street']}',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
+                SizedBox(height: 2.h),
+                Text(
+                  '${site['area']} • ${site['street']}',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -435,10 +444,15 @@ class ClientProgressTab extends StatelessWidget {
     final List<Map<String, dynamic>> allPhotos = [];
 
     if (photosData != null && photosData!['photos_by_date'] != null) {
-      final photosMap = Map<String, dynamic>.from(photosData!['photos_by_date'] as Map);
+      final photosMap = Map<String, dynamic>.from(
+        photosData!['photos_by_date'] as Map,
+      );
       for (final entry in photosMap.entries) {
         for (final p in (entry.value as List)) {
-          allPhotos.add({...Map<String, dynamic>.from(p as Map), 'uploaded_date': entry.key});
+          allPhotos.add({
+            ...Map<String, dynamic>.from(p as Map),
+            'uploaded_date': entry.key,
+          });
         }
       }
     } else {
@@ -463,13 +477,16 @@ class ClientProgressTab extends StatelessWidget {
     }
 
     return Column(
-      children: allPhotos.map((photo) => _buildInstaPost(context, photo)).toList(),
+      children: allPhotos
+          .map((photo) => _buildInstaPost(context, photo))
+          .toList(),
     );
   }
 
   Widget _buildInstaPost(BuildContext context, Map<String, dynamic> photo) {
     final imageUrl = ConstructionService.getFullImageUrl(
-        photo['photo_url'] ?? photo['image_url'] ?? '');
+      photo['photo_url'] ?? photo['image_url'] ?? '',
+    );
     final uploadedBy = photo['uploaded_by'] as String? ?? 'Unknown';
     final role = photo['uploaded_by_role'] as String? ?? '';
     final timeOfDay = (photo['time_of_day'] as String? ?? '').toLowerCase();
@@ -480,8 +497,18 @@ class ClientProgressTab extends StatelessWidget {
     final timeColor = isEvening ? Colors.indigo : Colors.orange;
 
     return Container(
-      margin: EdgeInsets.only(bottom: 1.h),
-      color: Colors.white,
+      margin: EdgeInsets.only(bottom: 12.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8.r,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -491,11 +518,11 @@ class ClientProgressTab extends StatelessWidget {
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 18.r,
+                  radius: 16.r,
                   backgroundColor: AppColors.deepNavy.withValues(alpha: 0.1),
                   child: Icon(
                     role == 'Supervisor' ? Icons.person : Icons.engineering,
-                    size: 18.sp,
+                    size: 16.sp,
                     color: AppColors.deepNavy,
                   ),
                 ),
@@ -515,71 +542,97 @@ class ClientProgressTab extends StatelessWidget {
                       Text(
                         role.isNotEmpty ? role : 'Site Team',
                         style: TextStyle(
-                            fontSize: 11.sp, color: Colors.grey.shade500),
+                          fontSize: 11.sp,
+                          color: Colors.grey.shade500,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                   decoration: BoxDecoration(
                     color: timeColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12.r),
-                    border: Border.all(
-                        color: timeColor.withValues(alpha: 0.4)),
+                    borderRadius: BorderRadius.circular(10.r),
+                    border: Border.all(color: timeColor.withValues(alpha: 0.4)),
                   ),
                   child: Text(
                     timeLabel,
                     style: TextStyle(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.bold,
-                        color: timeColor),
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.bold,
+                      color: timeColor,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
 
-          // ── Full-width photo ──
+          // ── Instagram-style photo with fixed aspect ratio ──
           GestureDetector(
             onTap: imageUrl.isNotEmpty
                 ? () => _showFullscreenImage(context, photo)
                 : null,
-            child: imageUrl.isNotEmpty
-                ? Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 200.h,
-                      color: Colors.grey.shade100,
-                      child: Center(
-                          child: Icon(Icons.broken_image,
-                              size: 48.sp, color: Colors.grey)),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(0),
+              child: imageUrl.isNotEmpty
+                  ? AspectRatio(
+                      aspectRatio: 4 / 3, // Instagram-like aspect ratio
+                      child: Image.network(
+                        imageUrl,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: Colors.grey.shade100,
+                          child: Center(
+                            child: Icon(
+                              Icons.broken_image,
+                              size: 40.sp,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : AspectRatio(
+                      aspectRatio: 4 / 3,
+                      child: Container(
+                        color: Colors.grey.shade100,
+                        child: Center(
+                          child: Icon(
+                            Icons.photo_camera,
+                            size: 40.sp,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
                     ),
-                  )
-                : Container(
-                    height: 200.h,
-                    color: Colors.grey.shade100,
-                    child: Center(
-                        child: Icon(Icons.photo_camera,
-                            size: 48.sp, color: Colors.grey)),
-                  ),
+            ),
           ),
 
           // ── Date caption ──
           if (date.isNotEmpty)
             Padding(
-              padding:
-                  EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-              child: Text(
-                date,
-                style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade500),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 12.sp,
+                    color: Colors.grey.shade400,
+                  ),
+                  SizedBox(width: 4.w),
+                  Text(
+                    date,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
               ),
             ),
-
-          const Divider(height: 1, color: Color(0xFFEEEEEE)),
         ],
       ),
     );
@@ -609,7 +662,8 @@ class ClientProgressTab extends StatelessWidget {
 
   void _showFullscreenImage(BuildContext context, Map<String, dynamic> photo) {
     final imageUrl = ConstructionService.getFullImageUrl(
-        photo['photo_url'] ?? photo['image_url'] ?? '');
+      photo['photo_url'] ?? photo['image_url'] ?? '',
+    );
     final uploadedBy = photo['uploaded_by'] as String? ?? 'Unknown';
     final role = photo['uploaded_by_role'] as String? ?? '';
     final timeOfDay = photo['time_of_day'] as String? ?? '';
@@ -646,7 +700,11 @@ class ClientProgressTab extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.broken_image, size: 64.sp, color: Colors.white54),
+                      Icon(
+                        Icons.broken_image,
+                        size: 64.sp,
+                        color: Colors.white54,
+                      ),
                       SizedBox(height: 16.h),
                       const Text(
                         'Failed to load image',
@@ -666,7 +724,20 @@ class ClientProgressTab extends StatelessWidget {
   String _formatDateShort(String date) {
     try {
       final dt = DateTime.parse(date);
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       return '${months[dt.month - 1]} ${dt.day}';
     } catch (e) {
       return date;
@@ -684,7 +755,20 @@ class ClientProgressTab extends StatelessWidget {
       if (checkDate == today) return 'Today';
       if (checkDate == yesterday) return 'Yesterday';
 
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
     } catch (e) {
       return date;
@@ -715,7 +799,10 @@ class ClientMaterialsTab extends StatelessWidget {
           SliverAppBar(
             floating: true,
             backgroundColor: AppColors.deepNavy,
-            title: const Text('Materials', style: TextStyle(color: Colors.white)),
+            title: const Text(
+              'Materials',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
           materials.isEmpty
               ? SliverFillRemaining(
@@ -723,7 +810,11 @@ class ClientMaterialsTab extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.inventory_2, size: 64.sp, color: Colors.grey[300]),
+                        Icon(
+                          Icons.inventory_2,
+                          size: 64.sp,
+                          color: Colors.grey[300],
+                        ),
                         SizedBox(height: 16.h),
                         Text(
                           'No materials used yet',
@@ -736,13 +827,10 @@ class ClientMaterialsTab extends StatelessWidget {
               : SliverPadding(
                   padding: EdgeInsets.all(16.r),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final material = materials[index];
-                        return _buildMaterialCard(material);
-                      },
-                      childCount: materials.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final material = materials[index];
+                      return _buildMaterialCard(material);
+                    }, childCount: materials.length),
                   ),
                 ),
         ],
@@ -819,7 +907,10 @@ class ClientMaterialsTab extends StatelessWidget {
                     SizedBox(width: 8.w),
                     Text(
                       'used',
-                      style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: Colors.grey[600],
+                      ),
                     ),
                   ],
                 ),
@@ -868,8 +959,12 @@ class ClientDesignsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sites = siteData?['sites'] as List? ?? [];
-    final architectDocs = sites.isNotEmpty ? (sites[0]['architect_documents'] as List? ?? []) : [];
-    final engineerDocs = sites.isNotEmpty ? (sites[0]['engineer_documents'] as List? ?? []) : [];
+    final architectDocs = sites.isNotEmpty
+        ? (sites[0]['architect_documents'] as List? ?? [])
+        : [];
+    final engineerDocs = sites.isNotEmpty
+        ? (sites[0]['engineer_documents'] as List? ?? [])
+        : [];
     final allDocuments = [...architectDocs, ...engineerDocs];
 
     return RefreshIndicator(
@@ -880,7 +975,10 @@ class ClientDesignsTab extends StatelessWidget {
           SliverAppBar(
             floating: true,
             backgroundColor: AppColors.deepNavy,
-            title: const Text('Designs & Plans', style: TextStyle(color: Colors.white)),
+            title: const Text(
+              'Designs & Plans',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
           allDocuments.isEmpty
               ? SliverFillRemaining(
@@ -888,9 +986,16 @@ class ClientDesignsTab extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.architecture, size: 64.sp, color: Colors.grey[300]),
+                        Icon(
+                          Icons.architecture,
+                          size: 64.sp,
+                          color: Colors.grey[300],
+                        ),
                         SizedBox(height: 16.h),
-                        const Text('No designs uploaded yet', style: TextStyle(color: Colors.grey)),
+                        const Text(
+                          'No designs uploaded yet',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                       ],
                     ),
                   ),
@@ -898,19 +1003,17 @@ class ClientDesignsTab extends StatelessWidget {
               : SliverPadding(
                   padding: EdgeInsets.all(16.r),
                   sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.8,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final doc = allDocuments[index];
-                        return _buildDesignCard(context, doc);
-                      },
-                      childCount: allDocuments.length,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.8,
+                        ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final doc = allDocuments[index];
+                      return _buildDesignCard(context, doc);
+                    }, childCount: allDocuments.length),
                   ),
                 ),
         ],
@@ -945,10 +1048,16 @@ class ClientDesignsTab extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: AppColors.lightSlate,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(16.r),
+                  ),
                 ),
                 child: Center(
-                  child: Icon(Icons.insert_drive_file, size: 48.sp, color: Colors.grey[400]),
+                  child: Icon(
+                    Icons.insert_drive_file,
+                    size: 48.sp,
+                    color: Colors.grey[400],
+                  ),
                 ),
               ),
             ),
@@ -976,7 +1085,10 @@ class ClientDesignsTab extends StatelessWidget {
                     SizedBox(height: 4.h),
                     Text(
                       uploadDate,
-                      style: TextStyle(fontSize: 11.sp, color: Colors.grey[500]),
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: Colors.grey[500],
+                      ),
                     ),
                   ],
                 ],
@@ -988,7 +1100,11 @@ class ClientDesignsTab extends StatelessWidget {
     );
   }
 
-  Future<void> _openDocument(BuildContext context, String documentUrl, String title) async {
+  Future<void> _openDocument(
+    BuildContext context,
+    String documentUrl,
+    String title,
+  ) async {
     if (documentUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -1004,10 +1120,7 @@ class ClientDesignsTab extends StatelessWidget {
       final uri = Uri.parse(fullUrl);
 
       if (await canLaunchUrl(uri)) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1074,7 +1187,9 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
       }
 
       final siteId = sites[0]['site_id'] as String;
-      final response = await _constructionService.getClientComplaints(siteId: siteId);
+      final response = await _constructionService.getClientComplaints(
+        siteId: siteId,
+      );
 
       if (mounted) {
         setState(() {
@@ -1093,9 +1208,9 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
   void _showCreateComplaintDialog() {
     final sites = widget.siteData?['sites'] as List? ?? [];
     if (sites.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No site assigned')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No site assigned')));
       return;
     }
 
@@ -1135,7 +1250,10 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
                   maxLength: 500,
                 ),
                 SizedBox(height: 16.h),
-                const Text('Priority', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Priority',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 SizedBox(height: 8.h),
                 Wrap(
                   spacing: 8,
@@ -1152,7 +1270,9 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
                       selectedColor: _getPriorityColor(priority),
                       labelStyle: TextStyle(
                         color: isSelected ? Colors.white : Colors.black87,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     );
                   }).toList(),
@@ -1185,12 +1305,13 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
                 }
 
                 // Create complaint
-                final response = await _constructionService.createClientComplaint(
-                  siteId: siteId,
-                  title: title,
-                  description: descriptionController.text.trim(),
-                  priority: selectedPriority,
-                );
+                final response = await _constructionService
+                    .createClientComplaint(
+                      siteId: siteId,
+                      title: title,
+                      description: descriptionController.text.trim(),
+                      priority: selectedPriority,
+                    );
 
                 if (!mounted) return;
 
@@ -1206,7 +1327,9 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Failed: ${response['error'] ?? 'Unknown error'}'),
+                      content: Text(
+                        'Failed: ${response['error'] ?? 'Unknown error'}',
+                      ),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -1266,7 +1389,10 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
           SliverAppBar(
             floating: true,
             backgroundColor: AppColors.deepNavy,
-            title: const Text('Issues & Updates', style: TextStyle(color: Colors.white)),
+            title: const Text(
+              'Issues & Updates',
+              style: TextStyle(color: Colors.white),
+            ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.add, color: Colors.white),
@@ -1284,7 +1410,11 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.report_problem, size: 64.sp, color: Colors.grey[300]),
+                    Icon(
+                      Icons.report_problem,
+                      size: 64.sp,
+                      color: Colors.grey[300],
+                    ),
                     SizedBox(height: 16.h),
                     Text(
                       'No issues reported',
@@ -1293,7 +1423,10 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
                     SizedBox(height: 8.h),
                     Text(
                       'Tap + to report an issue',
-                      style: TextStyle(fontSize: 14.sp, color: Colors.grey[500]),
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: Colors.grey[500],
+                      ),
                     ),
                   ],
                 ),
@@ -1303,13 +1436,10 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
             SliverPadding(
               padding: EdgeInsets.all(16.r),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final complaint = _complaints[index];
-                    return _buildComplaintCard(complaint);
-                  },
-                  childCount: _complaints.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final complaint = _complaints[index];
+                  return _buildComplaintCard(complaint);
+                }, childCount: _complaints.length),
               ),
             ),
         ],
@@ -1326,119 +1456,136 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
 
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10.r,
-              offset: const Offset(0, 2),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10.r,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: EdgeInsets.all(16.r),
+            decoration: BoxDecoration(
+              color: AppColors.deepNavy.withOpacity(0.05),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Container(
-              padding: EdgeInsets.all(16.r),
-              decoration: BoxDecoration(
-                color: AppColors.deepNavy.withOpacity(0.05),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.deepNavy,
-                      ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.deepNavy,
                     ),
                   ),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                    decoration: BoxDecoration(
-                      color: _getPriorityColor(priority),
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Text(
-                      priority,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: _getPriorityColor(priority),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Text(
+                    priority,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
 
-            // Body
-            Padding(
-              padding: EdgeInsets.all(16.r),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (description.isNotEmpty) ...[
+          // Body
+          Padding(
+            padding: EdgeInsets.all(16.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (description.isNotEmpty) ...[
+                  Text(
+                    description,
+                    style: TextStyle(fontSize: 14.sp, color: Colors.grey[700]),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 12.h),
+                ],
+
+                // Status
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 16.sp,
+                      color: _getStatusColor(status),
+                    ),
+                    SizedBox(width: 4.w),
                     Text(
-                      description,
-                      style: TextStyle(fontSize: 14.sp, color: Colors.grey[700]),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      'Status: ',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color: Colors.grey[600],
+                      ),
                     ),
-                    SizedBox(height: 12.h),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8.w,
+                        vertical: 2.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(status).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4.r),
+                      ),
+                      child: Text(
+                        status.replaceAll('_', ' '),
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.bold,
+                          color: _getStatusColor(status),
+                        ),
+                      ),
+                    ),
                   ],
+                ),
 
-                  // Status
-                  Row(
-                    children: [
-                      Icon(Icons.info_outline, size: 16.sp, color: _getStatusColor(status)),
-                      SizedBox(width: 4.w),
-                      Text(
-                        'Status: ',
-                        style: TextStyle(fontSize: 13.sp, color: Colors.grey[600]),
-                      ),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(status).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                        child: Text(
-                          status.replaceAll('_', ' '),
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.bold,
-                            color: _getStatusColor(status),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                SizedBox(height: 8.h),
 
-                  SizedBox(height: 8.h),
-
-                  // Created date
-                  Row(
-                    children: [
-                      Icon(Icons.calendar_today, size: 16.sp, color: Colors.grey[600]),
-                      SizedBox(width: 4.w),
-                      Text(
-                        'Reported: ${_formatDateTime(createdAt)}',
-                        style: TextStyle(fontSize: 13.sp, color: Colors.grey[600]),
+                // Created date
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 16.sp,
+                      color: Colors.grey[600],
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      'Reported: ${_formatDateTime(createdAt)}',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color: Colors.grey[600],
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1456,7 +1603,20 @@ class _ClientIssuesTabState extends State<ClientIssuesTab> {
         return 'Yesterday ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
       }
 
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
     } catch (e) {
       return dateTimeStr;
@@ -1498,7 +1658,9 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
 
     setState(() => _isLoadingBudget = true);
     try {
-      final response = await ConstructionService().getClientBudgetAllocation(widget.siteId!);
+      final response = await ConstructionService().getClientBudgetAllocation(
+        widget.siteId!,
+      );
       if (mounted) {
         setState(() {
           _budgetAllocation = response;
@@ -1515,7 +1677,9 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
 
   String _formatCurrency(dynamic amount) {
     if (amount == null) return '₹0';
-    double value = amount is String ? double.tryParse(amount) ?? 0 : amount.toDouble();
+    double value = amount is String
+        ? double.tryParse(amount) ?? 0
+        : amount.toDouble();
 
     if (value >= 10000000) {
       return '₹${(value / 10000000).toStringAsFixed(2)} Cr';
@@ -1557,7 +1721,11 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
                           color: AppColors.deepNavy.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.person, size: 40.sp, color: AppColors.deepNavy),
+                        child: Icon(
+                          Icons.person,
+                          size: 40.sp,
+                          color: AppColors.deepNavy,
+                        ),
                       ),
                       SizedBox(height: 16.h),
                       Text(
@@ -1587,7 +1755,12 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
     );
   }
 
-  Widget _buildBudgetCard(String title, String value, IconData icon, Color color) {
+  Widget _buildBudgetCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
@@ -1612,10 +1785,7 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
                 ),
                 SizedBox(height: 4.h),
                 Text(
@@ -1642,10 +1812,7 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
         children: [
           Text(
             label,
-            style: TextStyle(
-              fontSize: 13.sp,
-              color: Colors.grey,
-            ),
+            style: TextStyle(fontSize: 13.sp, color: Colors.grey),
           ),
           Expanded(
             child: Text(
@@ -1682,7 +1849,9 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
           backgroundColor: Colors.red,
           foregroundColor: Colors.white,
           padding: EdgeInsets.symmetric(vertical: 16.h),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
         ),
       ),
     );

@@ -161,6 +161,7 @@ urlpatterns = [
     
     # Supervisor endpoints
     path('construction/labour/', views_construction.submit_labour_count, name='submit-labour'),
+    path('construction/check-entry-lock/', views_construction.check_entry_lock, name='check-entry-lock'),
     path('construction/material-balance/', views_construction.submit_material_balance, name='submit-material-balance'),
     path('construction/today-entries/', views_construction.get_today_entries, name='get-today-entries'),
     path('construction/today-entries-supervisor/', views_construction.get_today_entries_for_supervisor, name='get-today-entries-supervisor'),

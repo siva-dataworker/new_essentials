@@ -14,20 +14,20 @@ class ConstructionService {
   // Helper method to convert relative image URLs to full URLs
   static String getFullImageUrl(String? relativeUrl) {
     if (relativeUrl == null || relativeUrl.isEmpty) return '';
-    
+
     // If already a full URL, return as is
     if (relativeUrl.startsWith('http')) return relativeUrl;
-    
+
     // If relative URL starts with /media/, prepend the media base URL
     if (relativeUrl.startsWith('/media/')) {
       return '$mediaBaseUrl$relativeUrl';
     }
-    
+
     // If it doesn't start with /, add it
     if (!relativeUrl.startsWith('/')) {
       return '$mediaBaseUrl/media/$relativeUrl';
     }
-    
+
     return '$mediaBaseUrl$relativeUrl';
   }
 
@@ -58,7 +58,10 @@ class ConstructionService {
       );
       final data = json.decode(response.body);
       if (response.statusCode == 200) {
-        return {'success': true, 'message': data['message'] ?? 'Profile updated'};
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Profile updated',
+        };
       }
       return {'success': false, 'error': data['error'] ?? 'Update failed'};
     } catch (e) {
@@ -106,7 +109,10 @@ class ConstructionService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getSites({String? area, String? street}) async {
+  Future<List<Map<String, dynamic>>> getSites({
+    String? area,
+    String? street,
+  }) async {
     try {
       var url = '$baseUrl/construction/sites/';
       final params = <String>[];
@@ -143,7 +149,9 @@ class ConstructionService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ [MATERIALS] Fetched ${(data['materials'] as List).length} materials');
+        print(
+          '✅ [MATERIALS] Fetched ${(data['materials'] as List).length} materials',
+        );
         return List<Map<String, dynamic>>.from(data['materials']);
       }
       print('❌ [MATERIALS] Error: ${response.statusCode}');
@@ -167,7 +175,7 @@ class ConstructionService {
         print('✅ [MATERIALS] Added: $materialName');
         return {'success': true, 'data': data};
       }
-      
+
       final error = json.decode(response.body);
       print('❌ [MATERIALS] Error adding: ${error['error']}');
       return {'success': false, 'error': error['error']};
@@ -180,6 +188,55 @@ class ConstructionService {
   // ============================================
   // SUPERVISOR APIS
   // ============================================
+
+  /// Check if entry is locked by another supervisor
+  Future<Map<String, dynamic>> checkEntryLock({
+    required String siteId,
+    String? entryDate, // Optional, defaults to today on backend
+  }) async {
+    try {
+      final params = {'site_id': siteId};
+      if (entryDate != null) {
+        params['entry_date'] = entryDate;
+      }
+
+      final uri = Uri.parse(
+        '$baseUrl/construction/check-entry-lock/',
+      ).replace(queryParameters: params);
+
+      print(
+        '🔍 [ENTRY_LOCK] Checking lock for site: $siteId, date: ${entryDate ?? 'today'}',
+      );
+
+      final response = await http
+          .get(uri, headers: await _getHeaders())
+          .timeout(const Duration(seconds: 10));
+
+      print('📊 [ENTRY_LOCK] Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print(
+          '✅ [ENTRY_LOCK] Lock check result: is_locked=${data['is_locked']}',
+        );
+        return {
+          'success': true,
+          'is_locked': data['is_locked'] ?? false,
+          'locked_by': data['locked_by'],
+          'locked_at': data['locked_at'],
+          'can_enter': data['can_enter'] ?? true,
+          'can_view': data['can_view'] ?? false,
+          'entries': data['entries'] ?? [],
+        };
+      }
+
+      print('❌ [ENTRY_LOCK] Failed with status: ${response.statusCode}');
+      return {'success': false, 'error': 'Failed to check entry lock'};
+    } catch (e) {
+      print('❌ [ENTRY_LOCK] Exception: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
 
   Future<Map<String, dynamic>> submitLabourCount({
     required String siteId,
@@ -201,14 +258,20 @@ class ConstructionService {
         'labour_type': labourType ?? 'General',
         'notes': notes ?? '',
       };
-      
+
       // Add custom date/time if provided
       if (customDateTime != null) {
-        body['custom_date'] = customDateTime.toIso8601String().split('T')[0]; // YYYY-MM-DD
-        body['custom_time'] = customDateTime.toIso8601String().split('T')[1].split('.')[0]; // HH:MM:SS
-        body['custom_datetime'] = customDateTime.toIso8601String(); // Full ISO string
+        body['custom_date'] = customDateTime.toIso8601String().split(
+          'T',
+        )[0]; // YYYY-MM-DD
+        body['custom_time'] = customDateTime
+            .toIso8601String()
+            .split('T')[1]
+            .split('.')[0]; // HH:MM:SS
+        body['custom_datetime'] = customDateTime
+            .toIso8601String(); // Full ISO string
       }
-      
+
       // Add extra cost fields if provided
       if (extraCost != null && extraCost > 0) {
         body['extra_cost'] = extraCost;
@@ -216,9 +279,9 @@ class ConstructionService {
           body['extra_cost_notes'] = extraCostNotes;
         }
       }
-      
+
       print('🔍 [SUBMIT] Request body: $body');
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/construction/labour/'),
         headers: headers,
@@ -232,7 +295,32 @@ class ConstructionService {
 
       if (response.statusCode == 201) {
         print('✅ [SUBMIT] Labour submitted successfully!');
-        return {'success': true, 'message': data['message']};
+        return {
+          'success': true,
+          'message': data['message'],
+          'entry_type': data['entry_type'],
+        };
+      } else if (response.statusCode == 423) {
+        // Entry locked by another supervisor
+        print('🔒 [SUBMIT] Entry locked by: ${data['locked_by']}');
+        return {
+          'success': false,
+          'locked': true,
+          'error': data['error'],
+          'locked_by': data['locked_by'],
+          'locked_at': data['locked_at'],
+          'entry_type': data['entry_type'],
+        };
+      } else if (response.statusCode == 409) {
+        // Conflict - duplicate entry
+        print('⚠️ [SUBMIT] Conflict: ${data['error']}');
+        return {
+          'success': false,
+          'conflict': true,
+          'error': data['error'],
+          'can_edit': data['can_edit'] ?? false,
+          'retry': data['retry'] ?? false,
+        };
       } else {
         print('❌ [SUBMIT] Failed: ${data['error']}');
         return {'success': false, 'error': data['error'] ?? 'Failed to submit'};
@@ -251,18 +339,21 @@ class ConstructionService {
     DateTime? customDateTime, // Add custom date/time parameter
   }) async {
     try {
-      final body = {
-        'site_id': siteId,
-        'materials': materials,
-      };
-      
+      final body = {'site_id': siteId, 'materials': materials};
+
       // Add custom date/time if provided
       if (customDateTime != null) {
-        body['custom_date'] = customDateTime.toIso8601String().split('T')[0]; // YYYY-MM-DD
-        body['custom_time'] = customDateTime.toIso8601String().split('T')[1].split('.')[0]; // HH:MM:SS
-        body['custom_datetime'] = customDateTime.toIso8601String(); // Full ISO string
+        body['custom_date'] = customDateTime.toIso8601String().split(
+          'T',
+        )[0]; // YYYY-MM-DD
+        body['custom_time'] = customDateTime
+            .toIso8601String()
+            .split('T')[1]
+            .split('.')[0]; // HH:MM:SS
+        body['custom_datetime'] = customDateTime
+            .toIso8601String(); // Full ISO string
       }
-      
+
       // Add extra cost fields if provided
       if (extraCost != null && extraCost > 0) {
         body['extra_cost'] = extraCost;
@@ -270,9 +361,9 @@ class ConstructionService {
           body['extra_cost_notes'] = extraCostNotes;
         }
       }
-      
+
       print('🔍 [MATERIAL] Request body: $body');
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/construction/material-balance/'),
         headers: await _getHeaders(),
@@ -336,13 +427,19 @@ class ConstructionService {
     }
   }
 
-  Future<Map<String, dynamic>?> getEntriesByDate(String siteId, DateTime date) async {
+  Future<Map<String, dynamic>?> getEntriesByDate(
+    String siteId,
+    DateTime date,
+  ) async {
     try {
       // Format date as YYYY-MM-DD
-      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-      
+      final dateStr =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
       final response = await http.get(
-        Uri.parse('$baseUrl/construction/entries-by-date/?site_id=$siteId&date=$dateStr'),
+        Uri.parse(
+          '$baseUrl/construction/entries-by-date/?site_id=$siteId&date=$dateStr',
+        ),
         headers: await _getHeaders(),
       );
 
@@ -438,7 +535,9 @@ class ConstructionService {
   // ACCOUNTANT APIS
   // ============================================
 
-  Future<List<Map<String, dynamic>>> getLabourEntriesForVerification(String date) async {
+  Future<List<Map<String, dynamic>>> getLabourEntriesForVerification(
+    String date,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/accountant/labour-entries/?date=$date'),
@@ -465,10 +564,7 @@ class ConstructionService {
       final response = await http.put(
         Uri.parse('$baseUrl/accountant/modify-labour/$entryId/'),
         headers: await _getHeaders(),
-        body: json.encode({
-          'labour_count': labourCount,
-          'reason': reason,
-        }),
+        body: json.encode({'labour_count': labourCount, 'reason': reason}),
       );
 
       final data = json.decode(response.body);
@@ -566,23 +662,20 @@ class ConstructionService {
     try {
       final headers = await _getHeaders();
       print('🔍 [HISTORY] Headers: ${headers.keys}');
-      
+
       // Build URL with optional site filter
       String url = '$baseUrl/construction/supervisor/history/';
       if (siteId != null && siteId.isNotEmpty) {
         url += '?site_id=$siteId';
       }
-      
+
       print('🔍 [HISTORY] URL: $url');
-      
-      final response = await http.get(
-        Uri.parse(url),
-        headers: headers,
-      );
+
+      final response = await http.get(Uri.parse(url), headers: headers);
 
       print('📊 [HISTORY] Response status: ${response.statusCode}');
       print('📊 [HISTORY] Response body length: ${response.body.length}');
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final labourCount = (data['labour_entries'] as List?)?.length ?? 0;
@@ -590,33 +683,51 @@ class ConstructionService {
         print('✅ [HISTORY] Labour entries: $labourCount');
         print('✅ [HISTORY] Material entries: $materialCount');
         print('🏗️ [HISTORY] Site filter: ${data['site_filter'] ?? 'None'}');
-        
+
         if (labourCount > 0) {
-          print('📝 [HISTORY] First labour entry: ${data['labour_entries'][0]}');
-          
+          print(
+            '📝 [HISTORY] First labour entry: ${data['labour_entries'][0]}',
+          );
+
           // Debug: Check for Jan 26 entries specifically
-          final jan26Labour = (data['labour_entries'] as List).where((entry) => 
-            entry['entry_date']?.toString().contains('2026-01-26') == true).toList();
-          print('📅 [HISTORY] Jan 26 labour entries found: ${jan26Labour.length}');
-          
+          final jan26Labour = (data['labour_entries'] as List)
+              .where(
+                (entry) =>
+                    entry['entry_date']?.toString().contains('2026-01-26') ==
+                    true,
+              )
+              .toList();
+          print(
+            '📅 [HISTORY] Jan 26 labour entries found: ${jan26Labour.length}',
+          );
+
           if (jan26Labour.isNotEmpty) {
             print('📝 [HISTORY] Jan 26 labour sample: ${jan26Labour[0]}');
           }
         }
-        
+
         if (materialCount > 0) {
-          print('📦 [HISTORY] First material entry: ${data['material_entries'][0]}');
-          
+          print(
+            '📦 [HISTORY] First material entry: ${data['material_entries'][0]}',
+          );
+
           // Debug: Check for Jan 26 entries specifically
-          final jan26Material = (data['material_entries'] as List).where((entry) => 
-            entry['entry_date']?.toString().contains('2026-01-26') == true).toList();
-          print('📅 [HISTORY] Jan 26 material entries found: ${jan26Material.length}');
-          
+          final jan26Material = (data['material_entries'] as List)
+              .where(
+                (entry) =>
+                    entry['entry_date']?.toString().contains('2026-01-26') ==
+                    true,
+              )
+              .toList();
+          print(
+            '📅 [HISTORY] Jan 26 material entries found: ${jan26Material.length}',
+          );
+
           if (jan26Material.isNotEmpty) {
             print('📦 [HISTORY] Jan 26 material sample: ${jan26Material[0]}');
           }
         }
-        
+
         return data;
       } else {
         print('❌ [HISTORY] Error response: ${response.body}');
@@ -628,25 +739,24 @@ class ConstructionService {
     }
   }
 
-  Future<Map<String, dynamic>> getTodayEntriesForSupervisor({String? siteId}) async {
+  Future<Map<String, dynamic>> getTodayEntriesForSupervisor({
+    String? siteId,
+  }) async {
     print('🔍 [TODAY] Calling aggregated today entries API...');
     try {
       final headers = await _getHeaders();
       String url = '$baseUrl/construction/aggregated-today-entries/';
-      
+
       if (siteId != null) {
         url += '?site_id=$siteId';
       }
-      
+
       print('🔍 [TODAY] URL: $url');
-      
-      final response = await http.get(
-        Uri.parse(url),
-        headers: headers,
-      );
+
+      final response = await http.get(Uri.parse(url), headers: headers);
 
       print('📊 [TODAY] Response status: ${response.statusCode}');
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         print('✅ [TODAY] Data received: ${data.keys}');
@@ -672,16 +782,13 @@ class ConstructionService {
     try {
       final headers = await _getHeaders();
       final url = '$baseUrl/construction/history-by-day/?site_id=$siteId';
-      
+
       print('🔍 [HISTORY_BY_DAY] URL: $url');
-      
-      final response = await http.get(
-        Uri.parse(url),
-        headers: headers,
-      );
+
+      final response = await http.get(Uri.parse(url), headers: headers);
 
       print('📊 [HISTORY_BY_DAY] Response status: ${response.statusCode}');
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         print('✅ [HISTORY_BY_DAY] Data received successfully');
@@ -700,8 +807,10 @@ class ConstructionService {
     print('🔍 [ACCOUNTANT] Calling accountant entries API...');
     try {
       final headers = await _getHeaders();
-      print('🔍 [ACCOUNTANT] URL: $baseUrl/construction/accountant/all-entries/');
-      
+      print(
+        '🔍 [ACCOUNTANT] URL: $baseUrl/construction/accountant/all-entries/',
+      );
+
       final response = await http.get(
         Uri.parse('$baseUrl/construction/accountant/all-entries/'),
         headers: headers,
@@ -709,18 +818,20 @@ class ConstructionService {
 
       print('📊 [ACCOUNTANT] Response status: ${response.statusCode}');
       print('📊 [ACCOUNTANT] Response body length: ${response.body.length}');
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final labourCount = (data['labour_entries'] as List?)?.length ?? 0;
         final materialCount = (data['material_entries'] as List?)?.length ?? 0;
         print('✅ [ACCOUNTANT] Labour entries: $labourCount');
         print('✅ [ACCOUNTANT] Material entries: $materialCount');
-        
+
         if (labourCount > 0) {
-          print('📝 [ACCOUNTANT] First labour entry: ${data['labour_entries'][0]}');
+          print(
+            '📝 [ACCOUNTANT] First labour entry: ${data['labour_entries'][0]}',
+          );
         }
-        
+
         return data;
       } else {
         print('❌ [ACCOUNTANT] Error response: ${response.body}');
@@ -741,11 +852,11 @@ class ConstructionService {
     print('🔍 [ACCOUNTANT PHOTOS] Calling accountant photos API...');
     try {
       final headers = await _getHeaders();
-      
+
       // Build URL with optional filters
       String url = '$baseUrl/construction/accountant/all-photos/';
       List<String> queryParams = [];
-      
+
       if (siteId != null && siteId.isNotEmpty) {
         queryParams.add('site_id=$siteId');
       }
@@ -758,30 +869,31 @@ class ConstructionService {
       if (dateTo != null && dateTo.isNotEmpty) {
         queryParams.add('date_to=$dateTo');
       }
-      
+
       if (queryParams.isNotEmpty) {
         url += '?${queryParams.join('&')}';
       }
-      
+
       print('🔍 [ACCOUNTANT PHOTOS] URL: $url');
-      
-      final response = await http.get(
-        Uri.parse(url),
-        headers: headers,
-      );
+
+      final response = await http.get(Uri.parse(url), headers: headers);
 
       print('📊 [ACCOUNTANT PHOTOS] Response status: ${response.statusCode}');
-      print('📊 [ACCOUNTANT PHOTOS] Response body length: ${response.body.length}');
-      
+      print(
+        '📊 [ACCOUNTANT PHOTOS] Response body length: ${response.body.length}',
+      );
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final photosCount = (data['photos'] as List?)?.length ?? 0;
         print('✅ [ACCOUNTANT PHOTOS] Photos found: $photosCount');
-        
+
         if (photosCount > 0) {
-          print('📸 [ACCOUNTANT PHOTOS] First photo: ${data['photos'][0]['full_site_name']} - ${data['photos'][0]['update_type']}');
+          print(
+            '📸 [ACCOUNTANT PHOTOS] First photo: ${data['photos'][0]['full_site_name']} - ${data['photos'][0]['update_type']}',
+          );
         }
-        
+
         return data;
       } else {
         print('❌ [ACCOUNTANT PHOTOS] Error response: ${response.body}');
@@ -807,7 +919,9 @@ class ConstructionService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
-      print('❌ [SUPERVISOR PHOTOS] Error: ${response.statusCode} ${response.body}');
+      print(
+        '❌ [SUPERVISOR PHOTOS] Error: ${response.statusCode} ${response.body}',
+      );
       return {'photos': [], 'count': 0};
     } catch (e) {
       print('❌ [SUPERVISOR PHOTOS] Exception: $e');
@@ -829,28 +943,35 @@ class ConstructionService {
     try {
       final headers = await _getHeaders();
       headers.remove('Content-Type'); // Let http handle multipart content type
-      
+
       final request = http.MultipartRequest(
         'POST',
         Uri.parse('$baseUrl/construction/upload-architect-document/'),
       );
-      
+
       request.headers.addAll(headers);
       request.fields['site_id'] = siteId;
       request.fields['document_type'] = documentType;
       request.fields['title'] = title;
       if (description != null) request.fields['description'] = description;
-      
+
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
-      
+
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
       final data = json.decode(responseBody);
-      
+
       if (response.statusCode == 201) {
-        return {'success': true, 'message': data['message'], 'document_id': data['document_id']};
+        return {
+          'success': true,
+          'message': data['message'],
+          'document_id': data['document_id'],
+        };
       } else {
-        return {'success': false, 'error': data['error'] ?? 'Failed to upload document'};
+        return {
+          'success': false,
+          'error': data['error'] ?? 'Failed to upload document',
+        };
       }
     } catch (e) {
       return {'success': false, 'error': 'Network error: $e'};
@@ -878,9 +999,16 @@ class ConstructionService {
       final data = json.decode(response.body);
 
       if (response.statusCode == 201) {
-        return {'success': true, 'message': data['message'], 'complaint_id': data['complaint_id']};
+        return {
+          'success': true,
+          'message': data['message'],
+          'complaint_id': data['complaint_id'],
+        };
       } else {
-        return {'success': false, 'error': data['error'] ?? 'Failed to submit complaint'};
+        return {
+          'success': false,
+          'error': data['error'] ?? 'Failed to submit complaint',
+        };
       }
     } catch (e) {
       return {'success': false, 'error': 'Network error: $e'};
@@ -897,7 +1025,7 @@ class ConstructionService {
       // Build URL with optional filters
       String url = '$baseUrl/construction/architect-documents/';
       List<String> queryParams = [];
-      
+
       if (siteId != null && siteId.isNotEmpty) {
         queryParams.add('site_id=$siteId');
       }
@@ -910,11 +1038,11 @@ class ConstructionService {
       if (dateTo != null && dateTo.isNotEmpty) {
         queryParams.add('date_to=$dateTo');
       }
-      
+
       if (queryParams.isNotEmpty) {
         url += '?${queryParams.join('&')}';
       }
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(),
@@ -946,7 +1074,7 @@ class ConstructionService {
       // Build URL with optional filters
       String url = '$baseUrl/construction/architect-complaints/';
       List<String> queryParams = [];
-      
+
       if (siteId != null && siteId.isNotEmpty) {
         queryParams.add('site_id=$siteId');
       }
@@ -962,11 +1090,11 @@ class ConstructionService {
       if (dateTo != null && dateTo.isNotEmpty) {
         queryParams.add('date_to=$dateTo');
       }
-      
+
       if (queryParams.isNotEmpty) {
         url += '?${queryParams.join('&')}';
       }
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(),
@@ -988,32 +1116,31 @@ class ConstructionService {
   }
 
   Future<Map<String, dynamic>> getArchitectHistory({String? siteId}) async {
-    print('🔍 [ARCHITECT HISTORY] Calling architect history API... (siteId: $siteId)');
+    print(
+      '🔍 [ARCHITECT HISTORY] Calling architect history API... (siteId: $siteId)',
+    );
     try {
       final headers = await _getHeaders();
-      
+
       // Build URL with optional site filter
       String url = '$baseUrl/construction/architect-history/';
       if (siteId != null && siteId.isNotEmpty) {
         url += '?site_id=$siteId';
       }
-      
+
       print('🔍 [ARCHITECT HISTORY] URL: $url');
-      
-      final response = await http.get(
-        Uri.parse(url),
-        headers: headers,
-      );
+
+      final response = await http.get(Uri.parse(url), headers: headers);
 
       print('📊 [ARCHITECT HISTORY] Response status: ${response.statusCode}');
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final documentsCount = (data['documents'] as List?)?.length ?? 0;
         final complaintsCount = (data['complaints'] as List?)?.length ?? 0;
         print('✅ [ARCHITECT HISTORY] Documents: $documentsCount');
         print('✅ [ARCHITECT HISTORY] Complaints: $complaintsCount');
-        
+
         return data;
       } else {
         print('❌ [ARCHITECT HISTORY] Error response: ${response.body}');
@@ -1041,12 +1168,12 @@ class ConstructionService {
         'entry_type': entryType,
         'request_message': requestMessage,
       };
-      
+
       // Add proposed changes if provided
       if (proposedChanges != null && proposedChanges.isNotEmpty) {
         requestBody['proposed_changes'] = proposedChanges;
       }
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/construction/request-change/'),
         headers: await _getHeaders(),
@@ -1058,7 +1185,10 @@ class ConstructionService {
       if (response.statusCode == 201) {
         return {'success': true, 'request_id': data['request_id']};
       } else {
-        return {'success': false, 'error': data['error'] ?? 'Failed to request change'};
+        return {
+          'success': false,
+          'error': data['error'] ?? 'Failed to request change',
+        };
       }
     } catch (e) {
       return {'success': false, 'error': 'Network error: $e'};
@@ -1074,10 +1204,7 @@ class ConstructionService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return {
-          'success': true,
-          'change_requests': data['change_requests'],
-        };
+        return {'success': true, 'change_requests': data['change_requests']};
       } else {
         return {'success': false, 'error': 'Failed to load change requests'};
       }
@@ -1095,10 +1222,7 @@ class ConstructionService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return {
-          'success': true,
-          'change_requests': data['change_requests'],
-        };
+        return {'success': true, 'change_requests': data['change_requests']};
       } else {
         return {'success': false, 'error': 'Failed to load pending requests'};
       }
@@ -1127,7 +1251,10 @@ class ConstructionService {
       if (response.statusCode == 200) {
         return {'success': true, 'message': data['message']};
       } else {
-        return {'success': false, 'error': data['error'] ?? 'Failed to handle request'};
+        return {
+          'success': false,
+          'error': data['error'] ?? 'Failed to handle request',
+        };
       }
     } catch (e) {
       return {'success': false, 'error': 'Network error: $e'};
@@ -1159,7 +1286,7 @@ class ConstructionService {
   // ============================================
   // SUPERVISOR: UPLOAD PHOTOS
   // ============================================
-  
+
   Future<Map<String, dynamic>> uploadSupervisorPhotos({
     required String siteId,
     required List<dynamic> photos, // List of XFile
@@ -1167,19 +1294,19 @@ class ConstructionService {
   }) async {
     try {
       final token = await _authService.getToken();
-      
+
       var request = http.MultipartRequest(
         'POST',
         Uri.parse('$baseUrl/construction/supervisor-upload-photos/'),
       );
-      
+
       // Add headers
       request.headers['Authorization'] = 'Bearer ${token ?? ''}';
-      
+
       // Add fields
       request.fields['site_id'] = siteId;
       request.fields['time_of_day'] = timeOfDay;
-      
+
       // Add photos - Web and Mobile compatible
       for (var photo in photos) {
         // Read photo as bytes (works on both web and mobile)
@@ -1191,12 +1318,12 @@ class ConstructionService {
         );
         request.files.add(file);
       }
-      
+
       // Send request
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
@@ -1206,30 +1333,28 @@ class ConstructionService {
       } else {
         return {
           'success': false,
-          'error': data['error'] ?? data['message'] ?? 'Failed to upload photos',
+          'error':
+              data['error'] ?? data['message'] ?? 'Failed to upload photos',
         };
       }
     } catch (e) {
       print('Error uploading photos: $e');
-      return {
-        'success': false,
-        'error': 'Network error: $e',
-      };
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
 
   // ============================================
   // GET SUPERVISOR UPLOADED PHOTOS
   // ============================================
-  
+
   Future<Map<String, dynamic>> getSupervisorUploadedPhotos({
     required String siteId,
   }) async {
     try {
       final token = await _authService.getToken();
-      
+
       print('🖼️ [PHOTOS] Fetching uploaded photos for site: $siteId');
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/construction/supervisor-photos/?site_id=$siteId'),
         headers: {
@@ -1237,19 +1362,16 @@ class ConstructionService {
           'Authorization': 'Bearer ${token ?? ''}',
         },
       );
-      
+
       print('🖼️ [PHOTOS] Response status: ${response.statusCode}');
       print('🖼️ [PHOTOS] Response body: ${response.body}');
-      
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200) {
         final photos = List<Map<String, dynamic>>.from(data['photos'] ?? []);
         print('🖼️ [PHOTOS] Loaded ${photos.length} photos');
-        return {
-          'success': true,
-          'photos': photos,
-        };
+        return {'success': true, 'photos': photos};
       } else {
         print('🖼️ [PHOTOS] Error: ${data['error']}');
         return {
@@ -1259,21 +1381,18 @@ class ConstructionService {
       }
     } catch (e) {
       print('🖼️ [PHOTOS] Exception: $e');
-      return {
-        'success': false,
-        'error': 'Network error: $e',
-      };
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
 
   // ============================================
   // WORKING SITES (Accountant assigns to Supervisor)
   // ============================================
-  
+
   Future<Map<String, dynamic>> getAllSites() async {
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/construction/all-sites/'),
         headers: {
@@ -1281,9 +1400,9 @@ class ConstructionService {
           'Authorization': 'Bearer ${token ?? ''}',
         },
       );
-      
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200) {
         return {
           'success': true,
@@ -1297,17 +1416,14 @@ class ConstructionService {
       }
     } catch (e) {
       print('Error loading sites: $e');
-      return {
-        'success': false,
-        'error': 'Network error: $e',
-      };
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
-  
+
   Future<Map<String, dynamic>> getSupervisorsList() async {
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/construction/supervisors-list/'),
         headers: {
@@ -1315,13 +1431,15 @@ class ConstructionService {
           'Authorization': 'Bearer ${token ?? ''}',
         },
       );
-      
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200) {
         return {
           'success': true,
-          'supervisors': List<Map<String, dynamic>>.from(data['supervisors'] ?? []),
+          'supervisors': List<Map<String, dynamic>>.from(
+            data['supervisors'] ?? [],
+          ),
         };
       } else {
         return {
@@ -1331,10 +1449,7 @@ class ConstructionService {
       }
     } catch (e) {
       print('Error loading supervisors: $e');
-      return {
-        'success': false,
-        'error': 'Network error: $e',
-      };
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
 
@@ -1343,20 +1458,18 @@ class ConstructionService {
   }) async {
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/construction/assign-working-sites/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',
         },
-        body: json.encode({
-          'sites': sites,
-        }),
+        body: json.encode({'sites': sites}),
       );
-      
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
@@ -1371,10 +1484,7 @@ class ConstructionService {
       }
     } catch (e) {
       print('Error assigning sites: $e');
-      return {
-        'success': false,
-        'error': 'Network error: $e',
-      };
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
 
@@ -1383,10 +1493,10 @@ class ConstructionService {
       final token = await _authService.getToken();
       final user = await _authService.getCurrentUser();
       final userRole = user?['role'] ?? '';
-      
+
       print('🔍 [SERVICE] getWorkingSites called');
       print('🔍 [SERVICE] User role: $userRole');
-      
+
       // Use different endpoint based on role
       String endpoint;
       if (userRole == 'Admin') {
@@ -1396,9 +1506,9 @@ class ConstructionService {
         endpoint = '$baseUrl/construction/working-sites/';
         print('✅ [SERVICE] Using SUPERVISOR endpoint: $endpoint');
       }
-      
+
       print('🔍 [SERVICE] Making request to: $endpoint');
-      
+
       final response = await http.get(
         Uri.parse(endpoint),
         headers: {
@@ -1406,19 +1516,16 @@ class ConstructionService {
           'Authorization': 'Bearer ${token ?? ''}',
         },
       );
-      
+
       print('📊 [SERVICE] Response status: ${response.statusCode}');
       print('📊 [SERVICE] Response body: ${response.body}');
-      
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200) {
         final sites = List<Map<String, dynamic>>.from(data['sites'] ?? []);
         print('✅ [SERVICE] Success! Returning ${sites.length} sites');
-        return {
-          'success': true,
-          'sites': sites,
-        };
+        return {'success': true, 'sites': sites};
       } else {
         print('❌ [SERVICE] Error response: ${data['error']}');
         return {
@@ -1428,17 +1535,14 @@ class ConstructionService {
       }
     } catch (e) {
       print('❌ [SERVICE] Exception: $e');
-      return {
-        'success': false,
-        'error': 'Network error: $e',
-      };
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
 
   Future<Map<String, dynamic>> getTodaySitesWithEntries() async {
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/construction/today-sites-with-data/'),
         headers: {
@@ -1446,9 +1550,9 @@ class ConstructionService {
           'Authorization': 'Bearer ${token ?? ''}',
         },
       );
-      
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200) {
         return {
           'success': true,
@@ -1462,17 +1566,14 @@ class ConstructionService {
       }
     } catch (e) {
       print('Error loading today sites with data: $e');
-      return {
-        'success': false,
-        'error': 'Network error: $e',
-      };
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
 
   Future<Map<String, dynamic>> getTotalCounts() async {
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/construction/total-counts/'),
         headers: {
@@ -1480,9 +1581,9 @@ class ConstructionService {
           'Authorization': 'Bearer ${token ?? ''}',
         },
       );
-      
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200) {
         return {
           'success': true,
@@ -1498,15 +1599,16 @@ class ConstructionService {
       }
     } catch (e) {
       print('Error loading total counts: $e');
-      return {
-        'success': false,
-        'error': 'Network error: $e',
-      };
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
 
   // Add client requirement
-  Future<bool> addClientRequirement(String siteId, String description, double amount) async {
+  Future<bool> addClientRequirement(
+    String siteId,
+    String description,
+    double amount,
+  ) async {
     try {
       final token = await _authService.getToken();
       if (token == null) return false;
@@ -1527,7 +1629,9 @@ class ConstructionService {
       if (response.statusCode == 201) {
         return true;
       } else {
-        print('❌ Failed to add client requirement: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Failed to add client requirement: ${response.statusCode} - ${response.body}',
+        );
         return false;
       }
     } catch (e) {
@@ -1552,7 +1656,7 @@ class ConstructionService {
         print('✅ [CLIENT] Site details loaded');
         return data;
       }
-      
+
       print('❌ [CLIENT] Error: ${response.statusCode}');
       return {'sites': []};
     } catch (e) {
@@ -1573,7 +1677,7 @@ class ConstructionService {
         print('✅ [CLIENT] Materials loaded: ${data['count']} items');
         return data;
       }
-      
+
       print('❌ [CLIENT MATERIALS] Error: ${response.statusCode}');
       return {'materials': []};
     } catch (e) {
@@ -1591,7 +1695,7 @@ class ConstructionService {
       if (filterDate != null && filterDate.isNotEmpty) {
         url += '&date=$filterDate';
       }
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(),
@@ -1600,13 +1704,15 @@ class ConstructionService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         print('✅ [CLIENT PHOTOS] Loaded: ${data['total_photos']} photos');
-        print('   Supervisor: ${data['supervisor_photos']}, Engineer: ${data['engineer_photos']}');
+        print(
+          '   Supervisor: ${data['supervisor_photos']}, Engineer: ${data['engineer_photos']}',
+        );
         if (filterDate != null) {
           print('   Filtered by date: $filterDate');
         }
         return data;
       }
-      
+
       print('❌ [CLIENT PHOTOS] Error: ${response.statusCode}');
       return {'photos_by_date': {}, 'dates': [], 'total_photos': 0};
     } catch (e) {
@@ -1627,10 +1733,12 @@ class ConstructionService {
         print('✅ [CLIENT BUDGET] Budget allocation loaded for site: $siteId');
         return data;
       } else if (response.statusCode == 404) {
-        print('ℹ️ [CLIENT BUDGET] No budget allocation found for site: $siteId');
+        print(
+          'ℹ️ [CLIENT BUDGET] No budget allocation found for site: $siteId',
+        );
         return null;
       }
-      
+
       print('❌ [CLIENT BUDGET] Error: ${response.statusCode}');
       return null;
     } catch (e) {
@@ -1649,7 +1757,7 @@ class ConstructionService {
       if (siteId != null && siteId.isNotEmpty) {
         url += '?site_id=$siteId';
       }
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(),
@@ -1660,7 +1768,7 @@ class ConstructionService {
         print('✅ [CLIENT] Complaints loaded: ${data['total_count']} items');
         return data;
       }
-      
+
       print('❌ [CLIENT COMPLAINTS] Error: ${response.statusCode}');
       return {'complaints': [], 'total_count': 0};
     } catch (e) {
@@ -1694,19 +1802,13 @@ class ConstructionService {
         print('✅ [CLIENT] Complaint created: ${data['complaint']['id']}');
         return data;
       }
-      
+
       print('❌ [CLIENT CREATE COMPLAINT] Error: ${response.statusCode}');
       print('Response: ${response.body}');
-      return {
-        'success': false,
-        'error': 'Failed to create complaint'
-      };
+      return {'success': false, 'error': 'Failed to create complaint'};
     } catch (e) {
       print('❌ [CLIENT CREATE COMPLAINT] Exception: $e');
-      return {
-        'success': false,
-        'error': e.toString()
-      };
+      return {'success': false, 'error': e.toString()};
     }
   }
 
@@ -1722,7 +1824,7 @@ class ConstructionService {
         print('✅ [CLIENT] Messages loaded: ${data['total_count']} items');
         return data;
       }
-      
+
       print('❌ [CLIENT MESSAGES] Error: ${response.statusCode}');
       return {'messages': [], 'total_count': 0};
     } catch (e) {
@@ -1739,9 +1841,7 @@ class ConstructionService {
       final response = await http.post(
         Uri.parse('$baseUrl/client/complaints/$complaintId/messages/send/'),
         headers: await _getHeaders(),
-        body: json.encode({
-          'message': message,
-        }),
+        body: json.encode({'message': message}),
       );
 
       if (response.statusCode == 201) {
@@ -1749,18 +1849,12 @@ class ConstructionService {
         print('✅ [CLIENT] Message sent');
         return data;
       }
-      
+
       print('❌ [CLIENT SEND MESSAGE] Error: ${response.statusCode}');
-      return {
-        'success': false,
-        'error': 'Failed to send message'
-      };
+      return {'success': false, 'error': 'Failed to send message'};
     } catch (e) {
       print('❌ [CLIENT SEND MESSAGE] Exception: $e');
-      return {
-        'success': false,
-        'error': e.toString()
-      };
+      return {'success': false, 'error': e.toString()};
     }
   }
 
@@ -1775,18 +1869,18 @@ class ConstructionService {
     try {
       String url = '$baseUrl/construction/client-complaints/';
       List<String> params = [];
-      
+
       if (siteId != null && siteId.isNotEmpty) {
         params.add('site_id=$siteId');
       }
       if (status != null && status.isNotEmpty) {
         params.add('status=$status');
       }
-      
+
       if (params.isNotEmpty) {
         url += '?${params.join('&')}';
       }
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(),
@@ -1794,10 +1888,12 @@ class ConstructionService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ [ARCHITECT] Client complaints loaded: ${data['total_count']} items');
+        print(
+          '✅ [ARCHITECT] Client complaints loaded: ${data['total_count']} items',
+        );
         return data;
       }
-      
+
       print('❌ [ARCHITECT CLIENT COMPLAINTS] Error: ${response.statusCode}');
       return {'complaints': [], 'total_count': 0};
     } catch (e) {
@@ -1806,7 +1902,9 @@ class ConstructionService {
     }
   }
 
-  Future<Map<String, dynamic>> getComplaintMessagesArchitect(String complaintId) async {
+  Future<Map<String, dynamic>> getComplaintMessagesArchitect(
+    String complaintId,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/construction/complaints/$complaintId/messages/'),
@@ -1818,7 +1916,7 @@ class ConstructionService {
         print('✅ [ARCHITECT] Messages loaded: ${data['total_count']} items');
         return data;
       }
-      
+
       print('❌ [ARCHITECT MESSAGES] Error: ${response.statusCode}');
       return {'messages': [], 'total_count': 0};
     } catch (e) {
@@ -1833,11 +1931,11 @@ class ConstructionService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/construction/complaints/$complaintId/messages/send/'),
+        Uri.parse(
+          '$baseUrl/construction/complaints/$complaintId/messages/send/',
+        ),
         headers: await _getHeaders(),
-        body: json.encode({
-          'message': message,
-        }),
+        body: json.encode({'message': message}),
       );
 
       if (response.statusCode == 201) {
@@ -1845,18 +1943,12 @@ class ConstructionService {
         print('✅ [ARCHITECT] Message sent');
         return data;
       }
-      
+
       print('❌ [ARCHITECT SEND MESSAGE] Error: ${response.statusCode}');
-      return {
-        'success': false,
-        'error': 'Failed to send message'
-      };
+      return {'success': false, 'error': 'Failed to send message'};
     } catch (e) {
       print('❌ [ARCHITECT SEND MESSAGE] Exception: $e');
-      return {
-        'success': false,
-        'error': e.toString()
-      };
+      return {'success': false, 'error': e.toString()};
     }
   }
 
@@ -1875,7 +1967,7 @@ class ConstructionService {
   }) async {
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/construction/material-requirements/'),
         headers: {
@@ -1891,18 +1983,22 @@ class ConstructionService {
           'notes': notes,
         }),
       );
-      
+
       // Check if response is JSON
-      if (response.headers['content-type']?.contains('application/json') != true) {
-        print('Error: Server returned non-JSON response (status ${response.statusCode})');
+      if (response.headers['content-type']?.contains('application/json') !=
+          true) {
+        print(
+          'Error: Server returned non-JSON response (status ${response.statusCode})',
+        );
         return {
           'success': false,
-          'error': 'Backend endpoint not ready. Please wait for deployment to complete.',
+          'error':
+              'Backend endpoint not ready. Please wait for deployment to complete.',
         };
       }
-      
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 201) {
         return {
           'success': true,
@@ -1919,7 +2015,8 @@ class ConstructionService {
       print('Error submitting material requirement: $e');
       return {
         'success': false,
-        'error': 'Backend not ready yet. Please try again after deployment completes.',
+        'error':
+            'Backend not ready yet. Please try again after deployment completes.',
       };
     }
   }
@@ -1928,7 +2025,7 @@ class ConstructionService {
   Future<Map<String, dynamic>> getMaterialRequirements() async {
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/construction/material-requirements/list/'),
         headers: {
@@ -1936,9 +2033,9 @@ class ConstructionService {
           'Authorization': 'Bearer ${token ?? ''}',
         },
       );
-      
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200) {
         return {
           'success': true,
@@ -1953,10 +2050,7 @@ class ConstructionService {
       }
     } catch (e) {
       print('Error loading material requirements: $e');
-      return {
-        'success': false,
-        'error': 'Network error: $e',
-      };
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
 
@@ -1967,20 +2061,20 @@ class ConstructionService {
   }) async {
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.put(
-        Uri.parse('$baseUrl/construction/material-requirements/$requirementId/status/'),
+        Uri.parse(
+          '$baseUrl/construction/material-requirements/$requirementId/status/',
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',
         },
-        body: json.encode({
-          'status': status,
-        }),
+        body: json.encode({'status': status}),
       );
-      
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200) {
         return {
           'success': true,
@@ -1994,28 +2088,29 @@ class ConstructionService {
       }
     } catch (e) {
       print('Error updating material requirement status: $e');
-      return {
-        'success': false,
-        'error': 'Network error: $e',
-      };
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
 
   /// Delete material requirement
-  Future<Map<String, dynamic>> deleteMaterialRequirement(String requirementId) async {
+  Future<Map<String, dynamic>> deleteMaterialRequirement(
+    String requirementId,
+  ) async {
     try {
       final token = await _authService.getToken();
-      
+
       final response = await http.delete(
-        Uri.parse('$baseUrl/construction/material-requirements/$requirementId/delete/'),
+        Uri.parse(
+          '$baseUrl/construction/material-requirements/$requirementId/delete/',
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${token ?? ''}',
         },
       );
-      
+
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 200) {
         return {
           'success': true,
@@ -2029,10 +2124,7 @@ class ConstructionService {
       }
     } catch (e) {
       print('Error deleting material requirement: $e');
-      return {
-        'success': false,
-        'error': 'Network error: $e',
-      };
+      return {'success': false, 'error': 'Network error: $e'};
     }
   }
 
@@ -2041,8 +2133,13 @@ class ConstructionService {
   // ============================================
 
   /// Get entries by date and role for comparison
-  Future<List<Map<String, dynamic>>> getEntriesByDateAndRole(String date, String role) async {
-    print('🔍 [SERVICE] getEntriesByDateAndRole called - date: $date, role: $role');
+  Future<List<Map<String, dynamic>>> getEntriesByDateAndRole(
+    String date,
+    String role,
+  ) async {
+    print(
+      '🔍 [SERVICE] getEntriesByDateAndRole called - date: $date, role: $role',
+    );
     try {
       final token = await _authService.getToken();
       if (token == null) {
@@ -2050,7 +2147,8 @@ class ConstructionService {
         return [];
       }
 
-      final url = '$baseUrl/construction/entries-by-date-role/?date=$date&role=$role';
+      final url =
+          '$baseUrl/construction/entries-by-date-role/?date=$date&role=$role';
       print('🔍 [SERVICE] URL: $url');
 
       final response = await http.get(
@@ -2109,7 +2207,10 @@ class ConstructionService {
       if (response.statusCode == 201) {
         return {'success': true, 'message': data['message']};
       } else {
-        return {'success': false, 'error': data['error'] ?? 'Failed to confirm'};
+        return {
+          'success': false,
+          'error': data['error'] ?? 'Failed to confirm',
+        };
       }
     } catch (e) {
       print('Error confirming cash entry: $e');
@@ -2165,7 +2266,9 @@ class ConstructionService {
       if (token == null) return {'exists': false};
 
       final response = await http.get(
-        Uri.parse('$baseUrl/construction/check-cash-entry/?site_id=$siteId&date=$date'),
+        Uri.parse(
+          '$baseUrl/construction/check-cash-entry/?site_id=$siteId&date=$date',
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

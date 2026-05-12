@@ -5,7 +5,7 @@ import '../providers/admin_provider.dart';
 import '../utils/smooth_animations.dart';
 
 class AdminSiteComparisonScreen extends StatefulWidget {
-  const AdminSiteComparisonScreen({super.key});
+  const AdminSiteComparisonScreen({super.key, required List<Map<String, dynamic>> sites});
 
   @override
   State<AdminSiteComparisonScreen> createState() => _AdminSiteComparisonScreenState();
