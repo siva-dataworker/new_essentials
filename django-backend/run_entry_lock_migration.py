@@ -225,9 +225,9 @@ def run_migration():
                 conn.commit()
                 print_success(f"Removed {deleted_rows} duplicate entries")
             
-            # Create the index
+            # Create the index (without CONCURRENTLY to allow running in transaction)
             cursor.execute("""
-                CREATE UNIQUE INDEX CONCURRENTLY idx_labour_entry_lock 
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_labour_entry_lock 
                 ON labour_entries(site_id, entry_date, entry_type, labour_type);
             """)
             conn.commit()
