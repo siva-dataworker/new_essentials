@@ -1924,9 +1924,12 @@ def get_entries_by_date(request):
                 l.notes,
                 l.extra_cost,
                 l.extra_cost_notes,
+                l.submitted_by_role,
+                COALESCE(u.full_name, u.phone_number) as supervisor_name,
                 lsr.daily_rate,
                 (l.labour_count * COALESCE(lsr.daily_rate, 0)) AS total_cost
             FROM labour_entries l
+            LEFT JOIN users u ON l.supervisor_id = u.id
             LEFT JOIN labour_salary_rates lsr
                 ON lsr.site_id IS NULL
                 AND lsr.labour_type = l.labour_type
@@ -1966,6 +1969,18 @@ def get_entries_by_date(request):
         """, (site_id, entry_date, user_id))
         photo_count = photo_count_result['count'] if photo_count_result else 0
         
+        # Check if any site engineer submitted today for this site
+        has_site_engineer_entry = any(
+            (e.get('submitted_by_role') or '').lower() == 'site engineer'
+            for e in labour_entries
+        )
+        # Name of the site engineer who submitted (for lock banner)
+        site_engineer_name = next(
+            (e.get('supervisor_name') for e in labour_entries
+             if (e.get('submitted_by_role') or '').lower() == 'site engineer'),
+            None
+        )
+        
         return Response({
             'labour_entries': [
                 {
@@ -1980,6 +1995,8 @@ def get_entries_by_date(request):
                     'extra_cost_notes': e.get('extra_cost_notes', ''),
                     'daily_rate': float(e['daily_rate']) if e.get('daily_rate') else None,
                     'total_cost': float(e['total_cost']) if e.get('total_cost') else None,
+                    'submitted_by_role': e.get('submitted_by_role', ''),
+                    'supervisor_name': e.get('supervisor_name', ''),
                 }
                 for e in labour_entries
             ],
@@ -1998,6 +2015,8 @@ def get_entries_by_date(request):
             ],
             'photo_count': photo_count,
             'material_submitted_today': material_submitted_today,
+            'has_site_engineer_entry': has_site_engineer_entry,
+            'site_engineer_name': site_engineer_name,
         }, status=status.HTTP_200_OK)
         
     except Exception as e:

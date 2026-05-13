@@ -44,6 +44,11 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
   bool _isLoadingEveningData = false;
   bool _isSubmitting = false;
 
+  // Lock state — set when site engineer entries already exist for this site today
+  bool _isLockedForToday = false;
+  String? _lockedByName; // name of the engineer who submitted
+  bool _isCheckingLock = true; // show loading while checking
+
   @override
   void initState() {
     super.initState();
@@ -54,8 +59,8 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
       }
     });
     _fetchRates();
-    // Pre-load morning entries so evening tab is ready immediately
-    _loadEveningHistory();
+    // Check lock and load morning entries together
+    _checkTodayLockAndLoad();
   }
 
   @override
@@ -98,6 +103,48 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
       print('✅ [Site Engineer] Loaded ${loaded.length} labour types from admin');
     } else {
       setState(() => _isLoadingRates = false);
+    }
+  }
+
+  Future<void> _checkTodayLockAndLoad() async {
+    setState(() => _isCheckingLock = true);
+    try {
+      final today = DateTime.now();
+      final entries = await _constructionService.getEntriesByDate(
+        widget.siteId,
+        today,
+      );
+
+      if (entries != null && mounted) {
+        final labourEntries = List<Map<String, dynamic>>.from(
+          entries['labour_entries'] ?? [],
+        );
+
+        // Use the backend-computed flag directly
+        final hasSiteEngineerEntry = entries['has_site_engineer_entry'] == true;
+        final engineerName = entries['site_engineer_name'] as String?;
+
+        if (hasSiteEngineerEntry) {
+          setState(() {
+            _isLockedForToday = true;
+            _lockedByName = engineerName ?? 'A site engineer';
+          });
+        }
+
+        // Populate evening history — morning entries only (hour < 12)
+        final morningEntries = labourEntries.where((e) {
+          final t = (e['entry_time'] as String?) ?? '';
+          final hour = int.tryParse(t.split(':').first) ?? -1;
+          return hour < 12;
+        }).toList();
+        setState(() {
+          _eveningHistoryData = morningEntries;
+        });
+      }
+    } catch (e) {
+      print('Error checking today lock: $e');
+    } finally {
+      if (mounted) setState(() => _isCheckingLock = false);
     }
   }
 
@@ -242,8 +289,10 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
       ),
       floatingActionButton: _tabController.index == 0
           ? FloatingActionButton.extended(
-              onPressed: _isSubmitting ? null : _submitMorningEntry,
-              backgroundColor: AppColors.safetyOrange,
+              onPressed: (_isLockedForToday || _isSubmitting) ? null : _submitMorningEntry,
+              backgroundColor: _isLockedForToday
+                  ? Colors.green.shade600
+                  : AppColors.safetyOrange,
               icon: _isSubmitting
                   ? SizedBox(
                       width: 20.w,
@@ -253,8 +302,14 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
                         color: Colors.white,
                       ),
                     )
-                  : const Icon(Icons.check),
-              label: Text(_isSubmitting ? 'Submitting...' : 'Submit Entry'),
+                  : Icon(_isLockedForToday ? Icons.check_circle : Icons.check),
+              label: Text(
+                _isSubmitting
+                    ? 'Submitting...'
+                    : _isLockedForToday
+                        ? 'Submitted ✓'
+                        : 'Submit Entry',
+              ),
             )
           : FloatingActionButton.extended(
               onPressed: () {
@@ -276,8 +331,8 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
   }
 
   Widget _buildMorningTab() {
-    // Show loading indicator while rates are being fetched
-    if (_isLoadingRates) {
+    // Show loading while checking lock
+    if (_isCheckingLock || _isLoadingRates) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -285,11 +340,8 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
             const CircularProgressIndicator(),
             SizedBox(height: 16.h),
             Text(
-              'Loading labour types...',
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: AppColors.textSecondary,
-              ),
+              _isCheckingLock ? 'Checking entry status...' : 'Loading labour types...',
+              style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -334,6 +386,45 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Lock banner — shown when another site engineer already submitted today
+          if (_isLockedForToday) ...[
+            Container(
+              padding: EdgeInsets.all(14.r),
+              margin: EdgeInsets.only(bottom: 16.h),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: Colors.orange.shade400, width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.lock, color: Colors.orange.shade700, size: 22.sp),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Entry Locked — Read Only',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade800,
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          'Submitted by $_lockedByName today. Only one entry per site per day.',
+                          style: TextStyle(fontSize: 12.sp, color: Colors.orange.shade700),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           // Labour counts
           Container(
             decoration: BoxDecoration(
@@ -571,9 +662,9 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
           Row(
             children: [
               IconButton(
-                onPressed: () => setState(() => counts[type] = (count - 1).clamp(0, 50)),
+                onPressed: _isLockedForToday ? null : () => setState(() => counts[type] = (count - 1).clamp(0, 50)),
                 icon: Icon(Icons.remove_circle_outline, size: 28.sp),
-                color: count > 0 ? AppColors.safetyOrange : AppColors.textSecondary,
+                color: _isLockedForToday ? Colors.grey.shade300 : (count > 0 ? AppColors.safetyOrange : AppColors.textSecondary),
               ),
               Container(
                 width: 40.w,
@@ -583,14 +674,14 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
                   style: TextStyle(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
+                    color: _isLockedForToday ? Colors.grey.shade400 : AppColors.deepNavy,
                   ),
                 ),
               ),
               IconButton(
-                onPressed: () => setState(() => counts[type] = (count + 1).clamp(0, 50)),
+                onPressed: _isLockedForToday ? null : () => setState(() => counts[type] = (count + 1).clamp(0, 50)),
                 icon: Icon(Icons.add_circle_outline, size: 28.sp),
-                color: AppColors.safetyOrange,
+                color: _isLockedForToday ? Colors.grey.shade300 : AppColors.safetyOrange,
               ),
             ],
           ),

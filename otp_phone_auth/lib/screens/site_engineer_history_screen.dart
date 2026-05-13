@@ -48,7 +48,8 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
       // Filter only Site Engineer entries
       final siteEngineerEntries = constructionProvider.labourEntries.where((e) {
         final role = (e['user_role'] as String? ?? '').toLowerCase();
-        return role == 'site engineer';
+        final submittedByRole = (e['submitted_by_role'] as String? ?? '').toLowerCase();
+        return role == 'site engineer' || submittedByRole == 'site engineer';
       });
 
       for (var entry in siteEngineerEntries) {
@@ -131,9 +132,11 @@ class _SiteEngineerHistoryScreenState extends State<SiteEngineerHistoryScreen> {
       body: Consumer<ConstructionProvider>(
         builder: (context, provider, child) {
           // Filter only Site Engineer labour entries
+          // Check both user_role (from roles table) and submitted_by_role (stored at submission)
           final siteEngineerLabourEntries = provider.labourEntries.where((e) {
             final role = (e['user_role'] as String? ?? '').toLowerCase();
-            return role == 'site engineer';
+            final submittedByRole = (e['submitted_by_role'] as String? ?? '').toLowerCase();
+            return role == 'site engineer' || submittedByRole == 'site engineer';
           }).toList();
 
           if (_isLoading) {
