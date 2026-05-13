@@ -1957,6 +1957,14 @@ def get_entries_by_date(request):
         """
         material_entries = fetch_all(material_query, (site_id, entry_date))
         
+        # Get photo count for this site, date, and supervisor
+        photo_count_result = fetch_one("""
+            SELECT COUNT(*) as count
+            FROM site_photos
+            WHERE site_id = %s AND upload_date = %s AND uploaded_by = %s
+        """, (site_id, entry_date, user_id))
+        photo_count = photo_count_result['count'] if photo_count_result else 0
+        
         return Response({
             'labour_entries': [
                 {
@@ -1986,7 +1994,8 @@ def get_entries_by_date(request):
                     'extra_cost_notes': e.get('extra_cost_notes', ''),
                 }
                 for e in material_entries
-            ]
+            ],
+            'photo_count': photo_count,
         }, status=status.HTTP_200_OK)
         
     except Exception as e:

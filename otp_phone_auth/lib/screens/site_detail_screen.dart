@@ -12,14 +12,13 @@ import 'supervisor_history_screen.dart';
 import 'supervisor_photo_upload_screen.dart';
 
 enum _SiteEntryStatus {
-  none, // no entries today — FAB fully active
-  morningOnly, // morning done, evening pending — FAB opens evening tab
-  complete, // both done — FAB locked (green check)
+  none,         // no entries today — FAB opens locked quick actions
+  dailyComplete, // labour + material + photo all done — FAB green, unlocked view
   lockedByOther, // another supervisor entered today — FAB locked (grey lock)
 }
 
 /// Entry session management for workflow lock
-class EntrySession {
+class EntrySession extends ChangeNotifier {
   bool isActive = false;
   String? sessionId;
   DateTime? startTime;
@@ -36,18 +35,20 @@ class EntrySession {
     return DateTime.now().difference(startTime!) > timeout;
   }
 
-  bool get canExit => (isLabourComplete && isMaterialComplete) || isExpired;
+  bool get canExit => (isLabourComplete && isMaterialComplete && isPhotoComplete) || isExpired;
 
   void start() {
     isActive = true;
     sessionId = DateTime.now().millisecondsSinceEpoch.toString();
     startTime = DateTime.now();
     completedSteps.clear();
+    notifyListeners();
   }
 
   void markComplete(String step) {
     if (!completedSteps.contains(step)) {
       completedSteps.add(step);
+      notifyListeners();
     }
   }
 
@@ -56,6 +57,7 @@ class EntrySession {
     sessionId = null;
     startTime = null;
     completedSteps.clear();
+    notifyListeners();
   }
 }
 
@@ -196,31 +198,80 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
   }
 
   void _showQuickActions() {
+    // Start session when quick actions opens
+    if (!_entrySession.isActive) {
+      _entrySession.start();
+      print('✅ [ENTRY_SESSION] Session started from quick actions');
+    }
+
+    // Pre-populate session from already-submitted data for today
+    // (handles case where supervisor submitted labour but not material yet)
+    final labourEntries = List<Map<String, dynamic>>.from(
+      _todayEntries?['labour_entries'] ?? [],
+    );
+    final materialEntries = List<Map<String, dynamic>>.from(
+      _todayEntries?['material_entries'] ?? [],
+    );
+    final photoCount = (_todayEntries?['photo_count'] as num?)?.toInt() ?? 0;
+    if (labourEntries.isNotEmpty) _entrySession.markComplete('labour');
+    if (materialEntries.isNotEmpty) _entrySession.markComplete('material');
+    if (photoCount > 0) _entrySession.markComplete('photo');
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => _QuickActionsSheet(
-        onLabourTap: () {
-          Navigator.pop(context);
-          _checkEntryLockAndOpen();
+      isDismissible: false,       // locked — cannot tap outside to dismiss
+      enableDrag: false,          // locked — cannot swipe down to dismiss
+      builder: (context) => PopScope(
+        canPop: false,            // block Android back button
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop && _entrySession.isActive && !_entrySession.canExit) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Complete Labour, Material and Photo to exit. '
+                  '(${_entrySession.isLabourComplete ? "✅" : "⬜"} Labour  '
+                  '${_entrySession.isMaterialComplete ? "✅" : "⬜"} Material  '
+                  '${_entrySession.isPhotoComplete ? "✅" : "⬜"} Photo)',
+                ),
+                backgroundColor: Colors.orange.shade700,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         },
-        onMaterialTap: () {
-          Navigator.pop(context);
-          _showMaterialEntry();
-        },
-        onPhotoTap: () {
-          Navigator.pop(context);
-          _showPhotoUpload();
-        },
-        onHistoryTap: () {
-          Navigator.pop(context);
-          _openHistory();
-        },
-        onMaterialRequirementTap: () {
-          Navigator.pop(context);
-          _showMaterialRequirementDialog();
-        },
+        child: _QuickActionsSheet(
+          entrySession: _entrySession,
+          onLabourTap: () {
+            // Show labour entry ON TOP of quick actions (don't pop first)
+            _showLabourEntry();
+          },
+          onMaterialTap: () {
+            // Show material entry ON TOP of quick actions (don't pop first)
+            _showMaterialEntry();
+          },
+          onPhotoTap: () {
+            // Photo uses Navigator.push — pop sheet first, re-open after return
+            Navigator.pop(context);
+            _showPhotoUpload();
+          },
+          onHistoryTap: () {
+            if (_entrySession.canExit) {
+              Navigator.pop(context);
+              _openHistory();
+            }
+          },
+          onMaterialRequirementTap: () {
+            // Show material requirement ON TOP of quick actions
+            _showMaterialRequirementDialog();
+          },
+          onAllComplete: () {
+            _entrySession.end();
+            Navigator.pop(context);
+            print('✅ [ENTRY_SESSION] Session ended — all steps complete');
+          },
+        ),
       ),
     );
   }
@@ -439,9 +490,8 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
               _entrySession.isMaterialComplete,
             ),
             _buildRequirementRow(
-              'Photos (Optional)',
+              'Site Photo',
               _entrySession.isPhotoComplete,
-              optional: true,
             ),
             if (_entrySession.isExpired) ...[
               const SizedBox(height: 12),
@@ -536,108 +586,42 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
         siteId: widget.site['id'],
         defaultToEvening: startAtEvening,
         onSuccess: () {
+          // Entry sheet already called Navigator.pop before this callback.
+          // Just mark complete (notifies listeners → quick actions sheet rebuilds).
           _entrySession.markComplete('labour');
           print('✅ [ENTRY_SESSION] Labour marked complete');
           _invalidateCache();
           _loadTodayEntries();
           SupervisorHistoryScreen.invalidateCache(widget.site['id']);
-
-          // Check if can exit or prompt for next step
-          if (_entrySession.canExit) {
-            _showCompletionDialog();
-          } else {
-            _promptNextStep();
-          }
         },
       ),
     );
   }
 
-  /// Prompt user to continue to next step
-  void _promptNextStep() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green.shade600, size: 28),
-            const SizedBox(width: 12),
-            const Text('Labour Submitted'),
-          ],
-        ),
-        content: const Text('Please proceed to update material balances.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showMaterialEntry();
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.deepNavy),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Show completion dialog when all required steps are done
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green.shade600, size: 28),
-            const SizedBox(width: 12),
-            const Text('Entry Complete!'),
-          ],
-        ),
-        content: const Text(
-          'All required entries have been submitted successfully.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _entrySession.end();
-              print('✅ [ENTRY_SESSION] Session ended');
-              Navigator.pop(context); // Close dialog
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.deepNavy),
-            child: const Text('Done'),
-          ),
-        ],
-      ),
-    );
-  }
+  /// Silently re-open quick actions so supervisor can pick the next step (kept for reference)
+  // ignore: unused_element
+  void _promptNextStep() => _showQuickActions();
 
   void _showMaterialEntry() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withOpacity(
-        0.3,
-      ), // Reduced opacity for less blur
+      barrierColor: Colors.black.withOpacity(0.3),
       enableDrag: true,
       isDismissible: true,
       builder: (context) => _MaterialEntrySheet(
         siteId: widget.site['id'],
         onSuccess: () {
+          // Entry sheet already called Navigator.pop before this callback.
+          // Just mark complete (notifies listeners → quick actions sheet rebuilds).
           _entrySession.markComplete('material');
           print('✅ [ENTRY_SESSION] Material marked complete');
-          // Invalidate cache and reload
           _invalidateCache();
           _loadTodayEntries();
-          // Also invalidate history screen cache
           SupervisorHistoryScreen.invalidateCache(widget.site['id']);
-
-          // Check if all required steps are complete
-          if (_entrySession.canExit) {
-            _showCompletionDialog();
-          }
         },
         onMaterialUpdated: () {
-          // Reload available materials when material usage is submitted
           _loadTodayEntries();
         },
       ),
@@ -700,7 +684,25 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
       MaterialPageRoute(
         builder: (context) => SupervisorPhotoUploadScreen(site: widget.site),
       ),
-    );
+    ).then((_) {
+      // Reload entries to get updated photo_count from server
+      _loadTodayEntries().then((_) {
+        if (!mounted) return;
+        if (_entrySession.isActive && !_entrySession.isPhotoComplete) {
+          _entrySession.markComplete('photo');
+          print('✅ [ENTRY_SESSION] Photo marked complete');
+        }
+        // If day is now complete, FAB will show green check — no need to re-open sheet
+        // If still incomplete, re-open quick actions so supervisor can finish
+        if (_entrySession.isActive && !_entrySession.canExit) {
+          _showQuickActions();
+        } else {
+          // Day complete or session ended — just refresh the UI
+          _entrySession.end();
+          setState(() {}); // rebuild FAB to green check
+        }
+      });
+    });
   }
 
   void _openHistory() {
@@ -878,39 +880,37 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
 
   _SiteEntryStatus get _todayEntryStatus {
     if (!_isToday()) return _SiteEntryStatus.none;
-    final entries = List<Map<String, dynamic>>.from(
+
+    final labourEntries = List<Map<String, dynamic>>.from(
       _todayEntries?['labour_entries'] ?? [],
     );
-    if (entries.isEmpty) return _SiteEntryStatus.none;
+    final materialEntries = List<Map<String, dynamic>>.from(
+      _todayEntries?['material_entries'] ?? [],
+    );
+    final photoCount = (_todayEntries?['photo_count'] as num?)?.toInt() ?? 0;
 
-    // Requirement 2: block if any entry belongs to a different supervisor
+    // No labour at all → not started
+    if (labourEntries.isEmpty) return _SiteEntryStatus.none;
+
+    // Check if locked by another supervisor
     if (_userId != null) {
-      final hasOther = entries.any((e) {
+      final hasOther = labourEntries.any((e) {
         final sid = (e['supervisor_id'] ?? e['user_id'])?.toString();
         return sid != null && sid != _userId;
       });
       if (hasOther) return _SiteEntryStatus.lockedByOther;
     }
 
-    // Requirement 1: determine morning vs evening by entry_time hour
-    bool hasMorning = false;
-    bool hasEvening = false;
-    for (final e in entries) {
-      final t = (e['entry_time'] as String?) ?? '';
-      final hour = int.tryParse(t.split(':').first) ?? -1;
-      if (hour < 0) {
-        // No time info — assume morning for safety
-        hasMorning = true;
-      } else if (hour < 12) {
-        hasMorning = true;
-      } else {
-        hasEvening = true;
-      }
+    // All three required: labour + material + photo
+    final hasLabour = labourEntries.isNotEmpty;
+    final hasMaterial = materialEntries.isNotEmpty;
+    final hasPhoto = photoCount > 0;
+
+    if (hasLabour && hasMaterial && hasPhoto) {
+      return _SiteEntryStatus.dailyComplete;
     }
 
-    if (hasMorning && hasEvening) return _SiteEntryStatus.complete;
-    if (hasMorning) return _SiteEntryStatus.morningOnly;
-    // evening-only edge case: treat same as morningOnly (open morning tab)
+    // Partially done — still needs more entries
     return _SiteEntryStatus.none;
   }
 
@@ -1260,20 +1260,22 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
 
   Widget _buildEntryStatusBanner() {
     final status = _todayEntryStatus;
+    // Also show partial progress when session is active
+    final labourEntries = List<Map<String, dynamic>>.from(
+      _todayEntries?['labour_entries'] ?? [],
+    );
+    final materialEntries = List<Map<String, dynamic>>.from(
+      _todayEntries?['material_entries'] ?? [],
+    );
+    final photoCount = (_todayEntries?['photo_count'] as num?)?.toInt() ?? 0;
+
     switch (status) {
-      case _SiteEntryStatus.complete:
+      case _SiteEntryStatus.dailyComplete:
         return _statusBanner(
           icon: Icons.check_circle,
-          label: 'Morning & Evening submitted — Day complete',
+          label: 'Day complete — Labour, Material & Photo submitted ✓',
           color: Colors.green.shade600,
           bgColor: Colors.green.shade50,
-        );
-      case _SiteEntryStatus.morningOnly:
-        return _statusBanner(
-          icon: Icons.wb_sunny,
-          label: 'Morning done — Tap + to add Evening entry',
-          color: Colors.orange.shade700,
-          bgColor: Colors.orange.shade50,
         );
       case _SiteEntryStatus.lockedByOther:
         return _statusBanner(
@@ -1283,9 +1285,22 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
           bgColor: Colors.grey.shade100,
         );
       default:
+        // Show partial progress if any data exists
+        if (labourEntries.isNotEmpty || materialEntries.isNotEmpty || photoCount > 0) {
+          final parts = <String>[];
+          if (labourEntries.isNotEmpty) parts.add('Labour ✓');
+          if (materialEntries.isNotEmpty) parts.add('Material ✓');
+          if (photoCount > 0) parts.add('Photo ✓');
+          return _statusBanner(
+            icon: Icons.pending_outlined,
+            label: 'In progress: ${parts.join(', ')} — Tap + to complete',
+            color: Colors.orange.shade700,
+            bgColor: Colors.orange.shade50,
+          );
+        }
         return _statusBanner(
           icon: Icons.add_circle_outline,
-          label: 'No entries yet — Tap + to add Morning entry',
+          label: 'No entries yet — Tap + to start daily entry',
           color: AppColors.deepNavy,
           bgColor: AppColors.deepNavy.withValues(alpha: 0.05),
         );
@@ -1820,26 +1835,16 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
   Widget _buildCentralFAB() {
     final status = _todayEntryStatus;
 
-    // Fully locked states
-    if (status == _SiteEntryStatus.complete ||
-        status == _SiteEntryStatus.lockedByOther) {
-      final isComplete = status == _SiteEntryStatus.complete;
+    // Locked by another supervisor
+    if (status == _SiteEntryStatus.lockedByOther) {
       return GestureDetector(
         onTap: () {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                isComplete
-                    ? 'Both morning & evening entries submitted. Day complete!'
-                    : 'Entry already submitted by another supervisor today.',
-              ),
-              backgroundColor: isComplete
-                  ? Colors.green.shade700
-                  : Colors.grey.shade700,
+              content: const Text('Entry already submitted by another supervisor today.'),
+              backgroundColor: Colors.grey.shade700,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
           );
         },
@@ -1847,80 +1852,37 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
           width: 64.w,
           height: 64.h,
           decoration: BoxDecoration(
-            color: isComplete ? Colors.green.shade600 : Colors.grey.shade500,
+            color: Colors.grey.shade500,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(
-                color: (isComplete ? Colors.green : Colors.grey).withValues(
-                  alpha: 0.35,
-                ),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
+              BoxShadow(color: Colors.grey.withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 8)),
             ],
           ),
-          child: Icon(
-            isComplete ? Icons.check_circle : Icons.lock,
-            size: 30,
-            color: Colors.white,
-          ),
+          child: const Icon(Icons.lock, size: 30, color: Colors.white),
         ),
       );
     }
 
-    // Morning done — FAB opens evening tab directly, shows amber badge
-    if (status == _SiteEntryStatus.morningOnly) {
-      return Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: Colors.orange.shade700,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.orange.withValues(alpha: 0.4),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _checkEntryLockAndOpen(startAtEvening: true),
-                borderRadius: BorderRadius.circular(32),
-                child: const Icon(Icons.add, size: 32, color: Colors.white),
-              ),
-            ),
+    // Day complete — green check, tapping opens unlocked view
+    if (status == _SiteEntryStatus.dailyComplete) {
+      return GestureDetector(
+        onTap: _showDailyCompleteView,
+        child: Container(
+          width: 64.w,
+          height: 64.h,
+          decoration: BoxDecoration(
+            color: Colors.green.shade600,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: Colors.green.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 8)),
+            ],
           ),
-          // Badge: "EVE" indicating evening still needed
-          Positioned(
-            top: -4,
-            right: -4,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.red.shade600,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'EVE',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
+          child: const Icon(Icons.check_circle, size: 30, color: Colors.white),
+        ),
       );
     }
 
-    // Default active state (no entries yet)
+    // Default — needs entries, opens locked quick actions
     return Container(
       width: 64,
       height: 64,
@@ -1928,11 +1890,7 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
         gradient: AppColors.orangeGradient,
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(
-            color: AppColors.safetyOrange.withValues(alpha: 0.4),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
+          BoxShadow(color: AppColors.safetyOrange.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 8)),
         ],
       ),
       child: Material(
@@ -1945,26 +1903,164 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
       ),
     );
   }
+
+  /// Opens a read-only view of today's completed entries (no lock)
+  void _showDailyCompleteView() {
+    final labourEntries = List<Map<String, dynamic>>.from(
+      _todayEntries?['labour_entries'] ?? [],
+    );
+    final materialEntries = List<Map<String, dynamic>>.from(
+      _todayEntries?['material_entries'] ?? [],
+    );
+    final photoCount = (_todayEntries?['photo_count'] as num?)?.toInt() ?? 0;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.cleanWhite,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textSecondary.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_circle, color: Colors.green.shade600, size: 24),
+                const SizedBox(width: 8),
+                const Text(
+                  'Today\'s Entry Complete',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'All data submitted for today. You can add more photos anytime.',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            _buildSummaryRow(Icons.people_outline, 'Labour Count', '${labourEntries.length} entr${labourEntries.length == 1 ? 'y' : 'ies'}', Colors.green.shade600),
+            const SizedBox(height: 12),
+            _buildSummaryRow(Icons.inventory_2_outlined, 'Material Balance', '${materialEntries.length} entr${materialEntries.length == 1 ? 'y' : 'ies'}', Colors.green.shade600),
+            const SizedBox(height: 12),
+            _buildSummaryRow(Icons.add_a_photo_outlined, 'Photos', '$photoCount photo${photoCount == 1 ? '' : 's'}', Colors.green.shade600),
+            const SizedBox(height: 20),
+            // Add more photos button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showPhotoUpload();
+                },
+                icon: const Icon(Icons.add_a_photo_outlined),
+                label: const Text('Add More Photos'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.safetyOrange,
+                  side: BorderSide(color: AppColors.safetyOrange),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(IconData icon, String title, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(width: 12),
+          Expanded(child: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.deepNavy))),
+          Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
 }
 
-// Quick Actions Sheet
-class _QuickActionsSheet extends StatelessWidget {
+// Quick Actions Sheet — locked until labour + material + photo are done
+class _QuickActionsSheet extends StatefulWidget {
+  final EntrySession entrySession;
   final VoidCallback onLabourTap;
   final VoidCallback onMaterialTap;
   final VoidCallback onPhotoTap;
   final VoidCallback onHistoryTap;
   final VoidCallback onMaterialRequirementTap;
+  final VoidCallback onAllComplete;
 
   const _QuickActionsSheet({
+    required this.entrySession,
     required this.onLabourTap,
     required this.onMaterialTap,
     required this.onPhotoTap,
     required this.onHistoryTap,
     required this.onMaterialRequirementTap,
+    required this.onAllComplete,
   });
 
   @override
+  State<_QuickActionsSheet> createState() => _QuickActionsSheetState();
+}
+
+class _QuickActionsSheetState extends State<_QuickActionsSheet> {
+  @override
+  void initState() {
+    super.initState();
+    // Listen to session changes so the sheet rebuilds when steps complete
+    widget.entrySession.addListener(_onSessionChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.entrySession.removeListener(_onSessionChanged);
+    super.dispose();
+  }
+
+  void _onSessionChanged() {
+    if (mounted) {
+      setState(() {}); // rebuild when session state changes
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final session = widget.entrySession;
+    final allDone = session.isLabourComplete &&
+        session.isMaterialComplete &&
+        session.isPhotoComplete;
+
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.cleanWhite,
@@ -1974,64 +2070,93 @@ class _QuickActionsSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.textSecondary.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(2),
-            ),
+          // No drag handle — sheet is locked
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Quick Actions',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.deepNavy,
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (!allDone)
+                Icon(Icons.lock, size: 16, color: Colors.grey.shade500),
+            ],
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'Quick Actions',
+          const SizedBox(height: 6),
+          Text(
+            allDone
+                ? 'All steps complete — tap Done to go back'
+                : 'Complete all 3 steps to go back',
             style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.deepNavy,
+              fontSize: 12,
+              color: allDone ? Colors.green.shade600 : Colors.grey.shade500,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           _buildActionCard(
             icon: Icons.people_outline,
             title: 'Labour Count',
             subtitle: 'Add workers by type',
             color: AppColors.deepNavy,
-            onTap: onLabourTap,
+            isDone: session.isLabourComplete,
+            onTap: session.isLabourComplete ? null : widget.onLabourTap,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildActionCard(
             icon: Icons.inventory_2_outlined,
             title: 'Material Balance',
             subtitle: 'Update materials',
             color: AppColors.statusCompleted,
-            onTap: onMaterialTap,
+            isDone: session.isMaterialComplete,
+            onTap: session.isMaterialComplete ? null : widget.onMaterialTap,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildActionCard(
             icon: Icons.add_a_photo_outlined,
             title: 'Add Photo',
             subtitle: 'Upload site progress pictures',
             color: AppColors.safetyOrange,
-            onTap: onPhotoTap,
+            isDone: session.isPhotoComplete,
+            onTap: session.isPhotoComplete ? null : widget.onPhotoTap,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildActionCard(
             icon: Icons.add_shopping_cart_outlined,
             title: 'Material Requirement',
             subtitle: 'Request materials needed',
-            color: Color(0xFF1E3A8A),
-            onTap: onMaterialRequirementTap,
+            color: const Color(0xFF1E3A8A),
+            isDone: false,
+            onTap: widget.onMaterialRequirementTap,
           ),
-          const SizedBox(height: 16),
-          _buildActionCard(
-            icon: Icons.history_outlined,
-            title: 'View History',
-            subtitle: 'Labour, materials & modifications',
-            color: Color(0xFF6366F1),
-            onTap: onHistoryTap,
+          const SizedBox(height: 20),
+          // Done button — only enabled when all 3 required steps are complete
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: allDone ? widget.onAllComplete : null,
+              icon: Icon(
+                allDone ? Icons.check_circle : Icons.lock,
+                size: 20,
+              ),
+              label: Text(allDone ? 'Done' : 'Complete all steps to go back'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    allDone ? Colors.green.shade600 : Colors.grey.shade300,
+                foregroundColor: allDone ? Colors.white : Colors.grey.shade600,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -2042,10 +2167,14 @@ class _QuickActionsSheet extends StatelessWidget {
     required String title,
     required String subtitle,
     required Color color,
-    required VoidCallback onTap,
+    required bool isDone,
+    required VoidCallback? onTap,
   }) {
+    final effectiveColor = isDone ? Colors.green.shade600 : color;
     return Material(
-      color: color.withValues(alpha: 0.1),
+      color: isDone
+          ? Colors.green.withValues(alpha: 0.08)
+          : effectiveColor.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -2058,10 +2187,16 @@ class _QuickActionsSheet extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
+                  color: isDone
+                      ? Colors.green.withValues(alpha: 0.2)
+                      : effectiveColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: color, size: 24),
+                child: Icon(
+                  isDone ? Icons.check_circle : icon,
+                  color: effectiveColor,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -2073,21 +2208,26 @@ class _QuickActionsSheet extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: color,
+                        color: effectiveColor,
+                        decoration:
+                            isDone ? TextDecoration.lineThrough : null,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      subtitle,
+                      isDone ? 'Completed ✓' : subtitle,
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: isDone
+                            ? Colors.green.shade600
+                            : AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, size: 16, color: color),
+              if (!isDone)
+                Icon(Icons.arrow_forward_ios, size: 16, color: effectiveColor),
             ],
           ),
         ),
