@@ -27,6 +27,10 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
   String? _selectedEntryType; // 'supervisor' or 'site_engineer'
   bool _isConfirming = false;
 
+  // Lock state — set when cash entry already confirmed for this site+date
+  bool _isLockedForSite = false;
+  Map<String, dynamic>? _lockInfo; // {source_type, accountant_name, created_at}
+
   @override
   void initState() {
     super.initState();
@@ -57,6 +61,8 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _isLockedForSite = false;
+      _lockInfo = null;
     });
 
     try {
@@ -66,32 +72,25 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
 
       // Load supervisor entries
       final supervisorData = await _constructionService.getEntriesByDateAndRole(dateStr, 'Supervisor');
-      print('📊 [COMPARE] Supervisor data: ${supervisorData.length} sites');
-      if (supervisorData.isNotEmpty) {
-        print('📊 [COMPARE] First supervisor entry: ${supervisorData[0]}');
-      }
-
       // Load site engineer entries
       final engineerData = await _constructionService.getEntriesByDateAndRole(dateStr, 'Site Engineer');
-      print('📊 [COMPARE] Engineer data: ${engineerData.length} sites');
-      if (engineerData.isNotEmpty) {
-        print('📊 [COMPARE] First engineer entry: ${engineerData[0]}');
-      }
 
       if (mounted) {
         setState(() {
-          // Filter by selected site if one is selected
           if (_selectedSite != null) {
-            print('🔍 [COMPARE] Filtering by site: $_selectedSite');
             _supervisorEntries = supervisorData.where((entry) => entry['site_id'] == _selectedSite).toList();
             _engineerEntries = engineerData.where((entry) => entry['site_id'] == _selectedSite).toList();
-            print('📊 [COMPARE] After filter - Supervisor: ${_supervisorEntries.length}, Engineer: ${_engineerEntries.length}');
           } else {
             _supervisorEntries = supervisorData;
             _engineerEntries = engineerData;
           }
           _isLoading = false;
         });
+
+        // Check lock status for the selected site
+        if (_selectedSite != null) {
+          await _checkLockStatus(dateStr, _selectedSite!);
+        }
       }
     } catch (e) {
       print('❌ [COMPARE] Error: $e');
@@ -101,6 +100,23 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _checkLockStatus(String dateStr, String siteId) async {
+    try {
+      final result = await _constructionService.checkCashEntryExists(
+        siteId: siteId,
+        date: dateStr,
+      );
+      if (mounted) {
+        setState(() {
+          _isLockedForSite = result['exists'] == true;
+          _lockInfo = result['entry'] as Map<String, dynamic>?;
+        });
+      }
+    } catch (e) {
+      print('❌ [COMPARE] Lock check error: $e');
     }
   }
 
@@ -345,8 +361,8 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                     : _buildComparisonView(),
           ),
 
-          // Confirm button at bottom
-          if (_selectedEntryId != null)
+          // Confirm button at bottom — hidden when site is already locked
+          if (_selectedEntryId != null && !_isLockedForSite)
             Container(
               padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
@@ -443,6 +459,46 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
     return ListView(
       padding: EdgeInsets.all(16.r),
       children: [
+        // Lock banner — shown when this site+date is already confirmed
+        if (_isLockedForSite && _lockInfo != null) ...[
+          Container(
+            margin: EdgeInsets.only(bottom: 16.h),
+            padding: EdgeInsets.all(14.r),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(color: Colors.green.shade400, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.lock, color: Colors.green.shade700, size: 22.sp),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Entry Confirmed — Read Only',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade800,
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        'Confirmed by ${_lockInfo!['accountant_name'] ?? 'an accountant'} '
+                        '· Source: ${(_lockInfo!['source_type'] as String? ?? '').replaceAll('_', ' ').toUpperCase()}',
+                        style: TextStyle(fontSize: 12.sp, color: Colors.green.shade700),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
         // Supervisor Section
         _buildSectionHeader(
           'Supervisor Entries',
@@ -522,6 +578,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
     final siteId = entry['site_id'] ?? '';
     final labourEntries = entry['labour_entries'] as List? ?? [];
     final submittedBy = entry['submitted_by'] ?? 'Unknown';
+    final isLocked = _isLockedForSite; // read-only when site is confirmed
     final submittedAt = entry['submitted_at'] as String?;
 
     final color = isSupervisor ? const Color(0xFF059669) : const Color(0xFF2563EB);
@@ -540,7 +597,8 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
       ),
       child: Column(
         children: [
-          // Selection checkbox row
+          // Selection checkbox row — hidden when site is locked (already confirmed)
+          if (!isLocked)
           InkWell(
             onTap: () {
               setState(() {

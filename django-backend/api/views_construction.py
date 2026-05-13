@@ -5766,9 +5766,10 @@ def check_cash_entry_exists(request):
                           status=status.HTTP_400_BAD_REQUEST)
         
         existing = fetch_one("""
-            SELECT id, source_type, created_at
-            FROM cash_entries
-            WHERE site_id = %s AND entry_date = %s
+            SELECT ce.id, ce.source_type, ce.created_at, u.full_name as accountant_name
+            FROM cash_entries ce
+            LEFT JOIN users u ON ce.accountant_id = u.id
+            WHERE ce.site_id = %s AND ce.entry_date = %s
             LIMIT 1
         """, (site_id, date_str))
         
@@ -5777,7 +5778,8 @@ def check_cash_entry_exists(request):
             'entry': {
                 'id': str(existing['id']),
                 'source_type': existing['source_type'],
-                'created_at': existing['created_at'].isoformat()
+                'created_at': existing['created_at'].isoformat(),
+                'accountant_name': existing.get('accountant_name', 'An accountant'),
             } if existing else None
         }, status=status.HTTP_200_OK)
         

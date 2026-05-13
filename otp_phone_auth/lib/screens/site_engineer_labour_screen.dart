@@ -54,6 +54,8 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
       }
     });
     _fetchRates();
+    // Pre-load morning entries so evening tab is ready immediately
+    _loadEveningHistory();
   }
 
   @override
@@ -102,29 +104,31 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
   Future<void> _loadEveningHistory() async {
     setState(() => _isLoadingEveningData = true);
     try {
-      final response = await _constructionService.getHistoryByDay(siteId: widget.siteId);
+      // Use getEntriesByDate for today — returns labour entries with daily_rate and total_cost
+      final today = DateTime.now();
+      final entries = await _constructionService.getEntriesByDate(
+        widget.siteId,
+        today,
+      );
 
-      if (response['success']) {
-        final data = response['data'] as Map<String, dynamic>;
-        final labourByDay = data['labour_by_day'] as Map<String, dynamic>? ?? {};
-
-        // Get today's date
-        final today = DateTime.now();
-        final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-
-        List<Map<String, dynamic>> todayEntries = [];
-        labourByDay.forEach((day, entries) {
-          if (entries is List && day == todayStr) {
-            todayEntries.addAll(List<Map<String, dynamic>>.from(entries));
-          }
-        });
-
+      if (entries != null) {
+        final labourEntries = List<Map<String, dynamic>>.from(
+          entries['labour_entries'] ?? [],
+        );
+        // Filter to morning entries only (entry_time hour < 12)
+        final morningEntries = labourEntries.where((e) {
+          final t = (e['entry_time'] as String?) ?? '';
+          final hour = int.tryParse(t.split(':').first) ?? -1;
+          // hour < 0 means no time info — include it (assume morning)
+          // hour < 12 means AM — morning entry
+          return hour < 12;
+        }).toList();
         setState(() {
-          _eveningHistoryData = todayEntries;
+          _eveningHistoryData = morningEntries;
         });
       }
     } catch (e) {
-      print('Error loading evening history: $e');
+      print('Error loading morning entries for evening tab: $e');
     } finally {
       setState(() => _isLoadingEveningData = false);
     }
@@ -414,12 +418,24 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
   }
 
   Widget _buildEveningTab() {
+    // Calculate totals from morning entries
+    final totalWorkers = _eveningHistoryData.fold<int>(
+      0, (sum, e) => sum + (e['labour_count'] as int? ?? 0));
+    final totalCost = _eveningHistoryData.fold<double>(
+      0, (sum, e) {
+        final count = (e['labour_count'] as num?)?.toDouble() ?? 0;
+        final rate = (e['daily_rate'] as num?)?.toDouble() ??
+            _rates[e['labour_type'] as String? ?? ''] ?? 0;
+        final stored = (e['total_cost'] as num?)?.toDouble();
+        return sum + (stored ?? count * rate);
+      });
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(16.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Morning entered details (read-only)
+          // Morning entries card
           Container(
             padding: EdgeInsets.all(16.r),
             decoration: BoxDecoration(
@@ -432,15 +448,21 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
               children: [
                 Row(
                   children: [
-                    Icon(Icons.wb_sunny, color: Colors.blue.shade700),
+                    Icon(Icons.wb_sunny, color: Colors.orange.shade700, size: 22.sp),
                     SizedBox(width: 8.w),
                     Text(
-                      'Morning Entries',
+                      'Morning Entries — Today',
                       style: TextStyle(
-                        fontSize: 18.sp,
+                        fontSize: 17.sp,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade900,
+                        color: AppColors.deepNavy,
                       ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: Icon(Icons.refresh, size: 20.sp, color: AppColors.deepNavy),
+                      onPressed: _loadEveningHistory,
+                      tooltip: 'Refresh',
                     ),
                   ],
                 ),
@@ -448,17 +470,60 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
                 if (_isLoadingEveningData)
                   const Center(child: CircularProgressIndicator())
                 else if (_eveningHistoryData.isEmpty)
-                  const Text(
-                    'No morning entries found for today',
-                    style: TextStyle(color: Colors.grey),
+                  Container(
+                    padding: EdgeInsets.all(16.r),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.grey.shade400, size: 20.sp),
+                        SizedBox(width: 8.w),
+                        Text(
+                          'No morning entries found for today',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13.sp),
+                        ),
+                      ],
+                    ),
                   )
-                else
+                else ...[
                   ..._eveningHistoryData.map((entry) => _buildHistoryEntry(entry)),
+                  SizedBox(height: 8.h),
+                  // Total row
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                    decoration: BoxDecoration(
+                      color: AppColors.deepNavy,
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total: $totalWorkers worker${totalWorkers == 1 ? '' : 's'}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14.sp,
+                          ),
+                        ),
+                        Text(
+                          '₹${totalCost.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            color: Colors.green.shade300,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-
-          SizedBox(height: 80.h), // Space for FAB
+          SizedBox(height: 80.h),
         ],
       ),
     );
@@ -550,42 +615,63 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
   Widget _buildHistoryEntry(Map<String, dynamic> entry) {
     final labourType = entry['labour_type'] as String? ?? 'Unknown';
     final count = entry['labour_count'] as int? ?? 0;
-    final rate = _rates[labourType] ?? 0;
-    final total = count * rate;
+    // Use stored rate from entry if available, fall back to live rates map
+    final rate = (entry['daily_rate'] as num?)?.toDouble() ?? _rates[labourType] ?? 0;
+    final total = (entry['total_cost'] as num?)?.toDouble() ?? (count * rate);
+    final entryTime = entry['entry_time'] as String? ?? '';
 
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: Colors.blue.shade100),
       ),
       child: Row(
         children: [
-          Icon(_getLabourIcon(labourType), size: 20.sp, color: AppColors.deepNavy),
+          Container(
+            width: 40.w,
+            height: 40.h,
+            decoration: BoxDecoration(
+              color: AppColors.deepNavy.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Icon(_getLabourIcon(labourType), size: 20.sp, color: AppColors.deepNavy),
+          ),
           SizedBox(width: 12.w),
           Expanded(
-            child: Text(
-              labourType,
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  labourType,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.deepNavy,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  '$count worker${count == 1 ? '' : 's'} × ₹${rate.toStringAsFixed(0)}/day',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                if (entryTime.isNotEmpty)
+                  Text(
+                    _formatEntryTime(entryTime),
+                    style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade400),
+                  ),
+              ],
             ),
           ),
-          Text(
-            '$count workers',
-            style: TextStyle(
-              fontSize: 13.sp,
-              color: Colors.grey,
-            ),
-          ),
-          SizedBox(width: 12.w),
           Text(
             '₹${total.toStringAsFixed(0)}',
             style: TextStyle(
-              fontSize: 14.sp,
+              fontSize: 15.sp,
               fontWeight: FontWeight.bold,
               color: Colors.green.shade700,
             ),
@@ -593,6 +679,32 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
         ],
       ),
     );
+  }
+
+  String _formatEntryTime(String timeStr) {
+    try {
+      // Handle full ISO datetime string like "2026-05-13T13:40:34.361574"
+      if (timeStr.contains('T')) {
+        final dt = DateTime.parse(timeStr);
+        int hour = dt.hour;
+        final minute = dt.minute.toString().padLeft(2, '0');
+        final period = hour >= 12 ? 'PM' : 'AM';
+        if (hour > 12) hour -= 12;
+        if (hour == 0) hour = 12;
+        return '$hour:$minute $period';
+      }
+      // Handle HH:MM:SS format
+      final parts = timeStr.split(':');
+      if (parts.length >= 2) {
+        int hour = int.parse(parts[0]);
+        final minute = parts[1].padLeft(2, '0');
+        final period = hour >= 12 ? 'PM' : 'AM';
+        if (hour > 12) hour -= 12;
+        if (hour == 0) hour = 12;
+        return '$hour:$minute $period';
+      }
+    } catch (_) {}
+    return '';
   }
 
   IconData _getLabourIcon(String type) {
