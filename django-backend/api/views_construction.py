@@ -572,16 +572,16 @@ def submit_material_balance(request):
             entry_time = entry_meta['timestamp_ist']
             day_of_week = entry_meta['day_of_week']
         
-        # DAILY RESTRICTION: Check if already submitted today for this site
+        # DAILY RESTRICTION: Check if already submitted today for this site (any supervisor)
         existing_entry = fetch_one("""
             SELECT id FROM material_usage
-            WHERE supervisor_id = %s AND site_id = %s AND usage_date = %s
+            WHERE site_id = %s AND usage_date = %s
             LIMIT 1
-        """, (user_id, site_id, entry_date))
+        """, (site_id, entry_date))
         
         if existing_entry:
             return Response({
-                'error': f'Material balance already submitted for {entry_date} for this site. You can only submit once per day.'
+                'error': f'Material balance already submitted for {entry_date} for this site. It can only be submitted once per day per site.'
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Insert material usage records with custom or current time
@@ -1464,10 +1464,8 @@ def get_supervisor_history(request):
         material_base_conditions = "WHERE 1=1"
         material_params = []
         
-        # Filter by user for Supervisor/Site Engineer (but not for Accountant)
-        if user_role in ['Supervisor', 'Site Engineer']:
-            material_base_conditions += " AND m.supervisor_id = %s"
-            material_params.append(user_id)
+        # Material history is visible to ALL supervisors of the site — no user_id filter
+        # (any supervisor can see all material entries for the site)
         
         if site_id:
             material_base_conditions += " AND m.site_id = %s"
@@ -1940,22 +1938,25 @@ def get_entries_by_date(request):
         labour_entries = fetch_all(labour_query, labour_params)
         print(f"🔍 [ENTRIES_BY_DATE] Returned {len(labour_entries)} labour entries")
         
-        # Get material entries for this site and date
+        # Get material entries for this site and date (all supervisors — shared view)
         material_query = """
             SELECT 
                 m.id,
                 m.material_type,
-                m.quantity,
+                m.quantity_used as quantity,
                 m.unit,
-                m.entry_date,
-                m.updated_at,
-                m.extra_cost,
-                m.extra_cost_notes
-            FROM material_balances m
-            WHERE m.site_id = %s AND m.entry_date = %s
-            ORDER BY m.updated_at DESC
+                m.usage_date as entry_date,
+                m.created_at as updated_at,
+                0 as extra_cost,
+                m.notes as extra_cost_notes
+            FROM material_usage m
+            WHERE m.site_id = %s AND m.usage_date = %s
+            ORDER BY m.created_at DESC
         """
         material_entries = fetch_all(material_query, (site_id, entry_date))
+        
+        # Check if material already submitted today for this site (any supervisor)
+        material_submitted_today = len(material_entries) > 0
         
         # Get photo count for this site, date, and supervisor
         photo_count_result = fetch_one("""
@@ -1996,6 +1997,7 @@ def get_entries_by_date(request):
                 for e in material_entries
             ],
             'photo_count': photo_count,
+            'material_submitted_today': material_submitted_today,
         }, status=status.HTTP_200_OK)
         
     except Exception as e:

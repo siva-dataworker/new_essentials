@@ -35,7 +35,7 @@ class EntrySession extends ChangeNotifier {
     return DateTime.now().difference(startTime!) > timeout;
   }
 
-  bool get canExit => (isLabourComplete && isMaterialComplete && isPhotoComplete) || isExpired;
+  bool get canExit => (isLabourComplete && isPhotoComplete) || isExpired;
 
   void start() {
     isActive = true;
@@ -205,17 +205,15 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
     }
 
     // Pre-populate session from already-submitted data for today
-    // (handles case where supervisor submitted labour but not material yet)
+    // (handles case where supervisor submitted labour but not photo yet)
     final labourEntries = List<Map<String, dynamic>>.from(
       _todayEntries?['labour_entries'] ?? [],
     );
-    final materialEntries = List<Map<String, dynamic>>.from(
-      _todayEntries?['material_entries'] ?? [],
-    );
     final photoCount = (_todayEntries?['photo_count'] as num?)?.toInt() ?? 0;
+    final materialSubmittedToday = _todayEntries?['material_submitted_today'] == true;
     if (labourEntries.isNotEmpty) _entrySession.markComplete('labour');
-    if (materialEntries.isNotEmpty) _entrySession.markComplete('material');
     if (photoCount > 0) _entrySession.markComplete('photo');
+    // Material is tracked separately — not required for session unlock
 
     showModalBottomSheet(
       context: context,
@@ -243,6 +241,7 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
         },
         child: _QuickActionsSheet(
           entrySession: _entrySession,
+          materialSubmittedToday: materialSubmittedToday,
           onLabourTap: () {
             // Show labour entry ON TOP of quick actions (don't pop first)
             _showLabourEntry();
@@ -901,12 +900,11 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
       if (hasOther) return _SiteEntryStatus.lockedByOther;
     }
 
-    // All three required: labour + material + photo
+    // All three required for display: labour + photo (material is one-time but optional for unlock)
     final hasLabour = labourEntries.isNotEmpty;
-    final hasMaterial = materialEntries.isNotEmpty;
     final hasPhoto = photoCount > 0;
 
-    if (hasLabour && hasMaterial && hasPhoto) {
+    if (hasLabour && hasPhoto) {
       return _SiteEntryStatus.dailyComplete;
     }
 
@@ -1260,20 +1258,17 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
 
   Widget _buildEntryStatusBanner() {
     final status = _todayEntryStatus;
-    // Also show partial progress when session is active
     final labourEntries = List<Map<String, dynamic>>.from(
       _todayEntries?['labour_entries'] ?? [],
     );
-    final materialEntries = List<Map<String, dynamic>>.from(
-      _todayEntries?['material_entries'] ?? [],
-    );
     final photoCount = (_todayEntries?['photo_count'] as num?)?.toInt() ?? 0;
+    final materialSubmitted = _todayEntries?['material_submitted_today'] == true;
 
     switch (status) {
       case _SiteEntryStatus.dailyComplete:
         return _statusBanner(
           icon: Icons.check_circle,
-          label: 'Day complete — Labour, Material & Photo submitted ✓',
+          label: 'Day complete — Labour & Photo submitted ✓${materialSubmitted ? "  Material ✓" : ""}',
           color: Colors.green.shade600,
           bgColor: Colors.green.shade50,
         );
@@ -1285,11 +1280,10 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
           bgColor: Colors.grey.shade100,
         );
       default:
-        // Show partial progress if any data exists
-        if (labourEntries.isNotEmpty || materialEntries.isNotEmpty || photoCount > 0) {
+        if (labourEntries.isNotEmpty || photoCount > 0) {
           final parts = <String>[];
           if (labourEntries.isNotEmpty) parts.add('Labour ✓');
-          if (materialEntries.isNotEmpty) parts.add('Material ✓');
+          if (materialSubmitted) parts.add('Material ✓');
           if (photoCount > 0) parts.add('Photo ✓');
           return _statusBanner(
             icon: Icons.pending_outlined,
@@ -2013,6 +2007,7 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
 // Quick Actions Sheet — locked until labour + material + photo are done
 class _QuickActionsSheet extends StatefulWidget {
   final EntrySession entrySession;
+  final bool materialSubmittedToday;
   final VoidCallback onLabourTap;
   final VoidCallback onMaterialTap;
   final VoidCallback onPhotoTap;
@@ -2022,6 +2017,7 @@ class _QuickActionsSheet extends StatefulWidget {
 
   const _QuickActionsSheet({
     required this.entrySession,
+    required this.materialSubmittedToday,
     required this.onLabourTap,
     required this.onMaterialTap,
     required this.onPhotoTap,
@@ -2057,9 +2053,9 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet> {
   @override
   Widget build(BuildContext context) {
     final session = widget.entrySession;
-    final allDone = session.isLabourComplete &&
-        session.isMaterialComplete &&
-        session.isPhotoComplete;
+    final materialDone = widget.materialSubmittedToday;
+    // Unlock requires only labour + photo
+    final allDone = session.isLabourComplete && session.isPhotoComplete;
 
     return Container(
       decoration: const BoxDecoration(
@@ -2091,38 +2087,46 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet> {
           const SizedBox(height: 6),
           Text(
             allDone
-                ? 'All steps complete — tap Done to go back'
-                : 'Complete all 3 steps to go back',
+                ? 'Labour & Photo done — tap Done to go back'
+                : 'Complete Labour & Photo to go back',
             style: TextStyle(
               fontSize: 12,
               color: allDone ? Colors.green.shade600 : Colors.grey.shade500,
             ),
           ),
           const SizedBox(height: 20),
+          // Labour — required
           _buildActionCard(
             icon: Icons.people_outline,
             title: 'Labour Count',
             subtitle: 'Add workers by type',
             color: AppColors.deepNavy,
             isDone: session.isLabourComplete,
+            isLocked: false,
             onTap: session.isLabourComplete ? null : widget.onLabourTap,
           ),
           const SizedBox(height: 12),
+          // Material — one-time per site per day (optional for unlock)
           _buildActionCard(
             icon: Icons.inventory_2_outlined,
             title: 'Material Balance',
-            subtitle: 'Update materials',
+            subtitle: materialDone
+                ? 'Already submitted today (site-wide)'
+                : 'Update materials — once per day',
             color: AppColors.statusCompleted,
-            isDone: session.isMaterialComplete,
-            onTap: session.isMaterialComplete ? null : widget.onMaterialTap,
+            isDone: materialDone,
+            isLocked: materialDone,
+            onTap: materialDone ? null : widget.onMaterialTap,
           ),
           const SizedBox(height: 12),
+          // Photo — required
           _buildActionCard(
             icon: Icons.add_a_photo_outlined,
             title: 'Add Photo',
             subtitle: 'Upload site progress pictures',
             color: AppColors.safetyOrange,
             isDone: session.isPhotoComplete,
+            isLocked: false,
             onTap: session.isPhotoComplete ? null : widget.onPhotoTap,
           ),
           const SizedBox(height: 12),
@@ -2132,10 +2136,11 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet> {
             subtitle: 'Request materials needed',
             color: const Color(0xFF1E3A8A),
             isDone: false,
+            isLocked: false,
             onTap: widget.onMaterialRequirementTap,
           ),
           const SizedBox(height: 20),
-          // Done button — only enabled when all 3 required steps are complete
+          // Done button — enabled when labour + photo complete
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -2144,7 +2149,7 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet> {
                 allDone ? Icons.check_circle : Icons.lock,
                 size: 20,
               ),
-              label: Text(allDone ? 'Done' : 'Complete all steps to go back'),
+              label: Text(allDone ? 'Done' : 'Complete Labour & Photo to go back'),
               style: ElevatedButton.styleFrom(
                 backgroundColor:
                     allDone ? Colors.green.shade600 : Colors.grey.shade300,
@@ -2168,13 +2173,21 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet> {
     required String subtitle,
     required Color color,
     required bool isDone,
+    required bool isLocked,
     required VoidCallback? onTap,
   }) {
-    final effectiveColor = isDone ? Colors.green.shade600 : color;
+    // isLocked = greyed out, one-time submitted (material)
+    final effectiveColor = isDone
+        ? Colors.green.shade600
+        : isLocked
+            ? Colors.grey.shade400
+            : color;
     return Material(
       color: isDone
           ? Colors.green.withValues(alpha: 0.08)
-          : effectiveColor.withValues(alpha: 0.1),
+          : isLocked
+              ? Colors.grey.withValues(alpha: 0.06)
+              : effectiveColor.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -2189,11 +2202,13 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet> {
                 decoration: BoxDecoration(
                   color: isDone
                       ? Colors.green.withValues(alpha: 0.2)
-                      : effectiveColor.withValues(alpha: 0.2),
+                      : isLocked
+                          ? Colors.grey.withValues(alpha: 0.12)
+                          : effectiveColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  isDone ? Icons.check_circle : icon,
+                  isDone ? Icons.check_circle : isLocked ? Icons.lock_outline : icon,
                   color: effectiveColor,
                   size: 24,
                 ),
@@ -2220,7 +2235,9 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet> {
                         fontSize: 13,
                         color: isDone
                             ? Colors.green.shade600
-                            : AppColors.textSecondary,
+                            : isLocked
+                                ? Colors.grey.shade400
+                                : AppColors.textSecondary,
                       ),
                     ),
                   ],
