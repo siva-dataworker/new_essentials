@@ -662,6 +662,10 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     final totalLabourEntries = filteredLabourEntries.length;
     final totalMaterialEntries = _materialEntries.length;
     final totalWorkers = filteredLabourEntries.fold<int>(0, (sum, entry) => sum + (entry['labour_count'] as int? ?? 0));
+    final totalLabourCost = filteredLabourEntries.fold<double>(
+      0.0, (sum, entry) => sum + ((entry['total_cost'] as num?)?.toDouble() ?? 0.0));
+    final totalExtraCost = filteredLabourEntries.fold<double>(
+      0.0, (sum, entry) => sum + ((entry['extra_cost'] as num?)?.toDouble() ?? 0.0));
     
     // ── Confirmed salary from cash_entries (accountant-selected entries) ──
     // If a specific site is selected, show only that site's confirmed total.
@@ -861,6 +865,30 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   value: workingSitesCount.toString(),
                   icon: Icons.location_city,
                   color: const Color(0xFF1A1A2E),
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(height: 12.h),
+
+          Row(
+            children: [
+              Expanded(
+                child: SummaryCard(
+                  title: 'Estimated Labour Cost',
+                  value: '₹${_formatCurrency(totalLabourCost)}',
+                  icon: Icons.calculate,
+                  color: const Color(0xFF2196F3),
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: SummaryCard(
+                  title: 'Extra Cost',
+                  value: '₹${_formatCurrency(totalExtraCost)}',
+                  icon: Icons.add_circle_outline,
+                  color: const Color(0xFF9C27B0),
                 ),
               ),
             ],

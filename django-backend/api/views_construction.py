@@ -1587,9 +1587,9 @@ def get_all_entries_for_accountant(request):
         
         # Get labour entries with supervisor names, roles, timestamps, extra costs, and submitted_by_role
         # Use CASE to fall back to canonical defaults when no admin rate is set
-        # Use DISTINCT ON to avoid duplicates when multiple rates exist
+        # lsr subquery deduplicates by labour_type so no DISTINCT ON needed on outer query
         labour_query = """
-            SELECT DISTINCT ON (l.id)
+            SELECT
                 l.id,
                 l.site_id,
                 l.labour_type,
@@ -1643,8 +1643,8 @@ def get_all_entries_for_accountant(request):
                 )) AS total_cost
             FROM labour_entries l
             JOIN sites s ON l.site_id = s.id
-            JOIN users u ON l.supervisor_id = u.id
-            JOIN roles r ON u.role_id = r.id
+            LEFT JOIN users u ON l.supervisor_id = u.id
+            LEFT JOIN roles r ON u.role_id = r.id
             LEFT JOIN (
                 SELECT DISTINCT ON (labour_type) labour_type, daily_rate
                 FROM labour_salary_rates
