@@ -172,7 +172,7 @@ class _SupervisorDashboardWithProviderState extends State<SupervisorDashboardWit
             if (provider.selectedSite != null && provider.todayEntries != null) ...[
               SizedBox(height: 24.h),
               Text(
-                'Today\'s Entries',
+                'Today\'s Entriessss',
                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 8.h),

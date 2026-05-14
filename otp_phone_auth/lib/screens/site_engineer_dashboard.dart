@@ -320,9 +320,9 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
               crossAxisCount: 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.3,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.0,
               children: [
                 SummaryCard(
                   title: 'Total Sites',
@@ -369,46 +369,6 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
                     'View Sites',
                     Icons.location_city,
                     () => setState(() => _currentBottomIndex = 1),
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: _buildQuickActionButton(
-                    'Notifications',
-                    Icons.notifications,
-                    () => setState(() => _currentBottomIndex = 2),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12.h),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildQuickActionButton(
-                    'Material Inventory',
-                    Icons.inventory_2,
-                    _openMaterialInventory,
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: _buildQuickActionButton(
-                    'Labor Entry',
-                    Icons.people,
-                    _openLaborEntry,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12.h),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildQuickActionButton(
-                    'Documents',
-                    Icons.description,
-                    _openDocuments,
                   ),
                 ),
                 SizedBox(width: 12.w),
@@ -822,7 +782,11 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
           SizedBox(height: 32.h),
 
           // Profile Options
-          _buildProfileOption(Icons.person_outline, 'Edit Profile', _openEditProfile),
+          _buildProfileOption(
+            Icons.person_outline,
+            'Edit Profile',
+            _openEditProfile,
+          ),
           _buildProfileOption(Icons.lock_outline, 'Change Password', () {}),
           _buildProfileOption(Icons.settings_outlined, 'Settings', () {}),
           _buildProfileOption(Icons.help_outline, 'Help & Support', () {}),

@@ -9,8 +9,13 @@ import '../utils/time_validator.dart';
 
 class SupervisorPhotoUploadScreen extends StatefulWidget {
   final Map<String, dynamic> site;
+  final bool defaultToEvening;
 
-  const SupervisorPhotoUploadScreen({super.key, required this.site});
+  const SupervisorPhotoUploadScreen({
+    super.key,
+    required this.site,
+    this.defaultToEvening = false,
+  });
 
   @override
   State<SupervisorPhotoUploadScreen> createState() => _SupervisorPhotoUploadScreenState();
@@ -42,7 +47,11 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.defaultToEvening ? 1 : 0,
+    );
     _loadUploadedPhotos();
   }
 

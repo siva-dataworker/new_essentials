@@ -273,6 +273,16 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
     }
   }
 
+  /// Refresh dashboard data after returning from SiteDetailScreen so the
+  /// site cards immediately reflect submitted labour / photos.
+  Future<void> _refreshAfterSiteDetail() async {
+    await CacheService.clearTodaySitesWithData();
+    await CacheService.clearSupervisorWorkingSites();
+    if (!mounted) return;
+    _loadTodaySitesWithData();
+    _loadWorkingSites();
+  }
+
   void _onSiteChanged(String? siteId) {
     setState(() => _selectedSite = siteId);
 
@@ -284,7 +294,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
         MaterialPageRoute(
           builder: (context) => SiteDetailScreen(site: site),
         ),
-      );
+      ).then((_) => _refreshAfterSiteDetail());
     }
   }
 
@@ -857,7 +867,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
           MaterialPageRoute(
             builder: (context) => SiteDetailScreen(site: site),
           ),
-        );
+        ).then((_) => _refreshAfterSiteDetail());
       },
     );
   }
@@ -947,7 +957,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
           MaterialPageRoute(
             builder: (context) => SiteDetailScreen(site: site),
           ),
-        );
+        ).then((_) => _refreshAfterSiteDetail());
       },
     );
   }
@@ -1215,7 +1225,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                     MaterialPageRoute(
                       builder: (context) => SiteDetailScreen(site: site),
                     ),
-                  );
+                  ).then((_) => _refreshAfterSiteDetail());
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -1310,7 +1320,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
             MaterialPageRoute(
               builder: (context) => SiteDetailScreen(site: site),
             ),
-          );
+          ).then((_) => _refreshAfterSiteDetail());
         },
         contentPadding: EdgeInsets.all(12.r),
         leading: Container(
@@ -2014,7 +2024,7 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
                       MaterialPageRoute(
                         builder: (context) => SiteDetailScreen(site: siteForDetail),
                       ),
-                    );
+                    ).then((_) => _refreshAfterSiteDetail());
                   },
                 );
               }).toList(),

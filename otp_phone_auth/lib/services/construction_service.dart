@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
@@ -294,11 +295,17 @@ class ConstructionService {
       final data = json.decode(response.body);
 
       if (response.statusCode == 201) {
-        print('✅ [SUBMIT] Labour submitted successfully!');
+        print('✅ [SUBMIT] Labour submitted: '
+            'date=${data['entry_date']} type=${data['entry_type']} '
+            'count=${data['labour_count']}');
         return {
           'success': true,
           'message': data['message'],
+          'entry_id': data['entry_id'],
+          'entry_date': data['entry_date'],
           'entry_type': data['entry_type'],
+          'labour_type': data['labour_type'],
+          'labour_count': data['labour_count'],
         };
       } else if (response.statusCode == 423) {
         // Entry locked by another supervisor
@@ -1304,12 +1311,11 @@ class ConstructionService {
       request.headers['Authorization'] = 'Bearer ${token ?? ''}';
 
       // Add fields
-      request.fields['site_id'] = siteId;
+      request.fields['site_id'] = siteId.toString();
       request.fields['time_of_day'] = timeOfDay;
 
       // Add photos - Web and Mobile compatible
       for (var photo in photos) {
-        // Read photo as bytes (works on both web and mobile)
         final bytes = await photo.readAsBytes();
         final file = http.MultipartFile.fromBytes(
           'photos',
@@ -1319,10 +1325,24 @@ class ConstructionService {
         request.files.add(file);
       }
 
-      // Send request
-      final streamedResponse = await request.send();
+      // Send with 60s timeout so large photos don't hang forever
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 60),
+        onTimeout: () =>
+            throw TimeoutException('Upload timed out. Check your connection and try again.'),
+      );
       final response = await http.Response.fromStream(streamedResponse);
-      final data = json.decode(response.body);
+
+      // Guard against non-JSON responses (e.g. nginx 413 / 502 HTML pages)
+      Map<String, dynamic> data;
+      try {
+        data = json.decode(response.body) as Map<String, dynamic>;
+      } catch (_) {
+        return {
+          'success': false,
+          'error': 'Server error (${response.statusCode}). Please try again.',
+        };
+      }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
@@ -1333,13 +1353,13 @@ class ConstructionService {
       } else {
         return {
           'success': false,
-          'error':
-              data['error'] ?? data['message'] ?? 'Failed to upload photos',
+          'error': data['error'] ?? data['message'] ?? 'Failed to upload photos (${response.statusCode})',
         };
       }
     } catch (e) {
       print('Error uploading photos: $e');
-      return {'success': false, 'error': 'Network error: $e'};
+      final msg = e is TimeoutException ? e.message ?? 'Upload timed out' : 'Network error: $e';
+      return {'success': false, 'error': msg};
     }
   }
 
