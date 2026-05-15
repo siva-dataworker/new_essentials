@@ -273,14 +273,10 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
     }
   }
 
-  /// Refresh dashboard data after returning from SiteDetailScreen so the
-  /// site cards immediately reflect submitted labour / photos.
   Future<void> _refreshAfterSiteDetail() async {
     await CacheService.clearTodaySitesWithData();
-    await CacheService.clearSupervisorWorkingSites();
     if (!mounted) return;
     _loadTodaySitesWithData();
-    _loadWorkingSites();
   }
 
   void _onSiteChanged(String? siteId) {

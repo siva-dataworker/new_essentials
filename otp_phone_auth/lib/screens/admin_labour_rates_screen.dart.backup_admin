@@ -15,7 +15,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
 
   // Default labour types with default rates
   static const Map<String, double> _defaultRates = {
-    'General': 600,
+    'Sithal': 600,
     'Mason': 800,
     'Helper': 500,
     'Carpenter': 750,
@@ -243,12 +243,7 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
         backgroundColor: AppColors.cleanWhite,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.deepNavy),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.deepNavy),
-            onPressed: _loadRates,
-          ),
-        ],
+        
       ),
       body: _isLoading
           ? const Center(

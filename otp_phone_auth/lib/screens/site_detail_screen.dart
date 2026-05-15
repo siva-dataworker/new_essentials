@@ -2801,7 +2801,14 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet>
               ),
               child: TabBar(
                 controller: _tabController,
-                onTap: (_) => setState(() {}),
+                onTap: (index) {
+                  // Morning tab is blocked once morning entry is submitted
+                  if (index == 0 && widget.morningAlreadySubmitted) {
+                    _tabController.animateTo(1);
+                    return;
+                  }
+                  setState(() {});
+                },
                 indicator: BoxDecoration(
                   gradient: AppColors.orangeGradient,
                   borderRadius: BorderRadius.circular(12),
@@ -2816,9 +2823,14 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet>
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
-                tabs: const [
-                  Tab(text: '🌅 Morning'),
-                  Tab(text: '🌆 Evening'),
+                tabs: [
+                  Tab(
+                    child: Opacity(
+                      opacity: widget.morningAlreadySubmitted ? 0.4 : 1.0,
+                      child: const Text('🌅 Morning'),
+                    ),
+                  ),
+                  const Tab(text: '🌆 Evening'),
                 ],
               ),
             ),
@@ -2828,6 +2840,10 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet>
             Expanded(
               child: TabBarView(
                 controller: _tabController,
+                // Disable swipe to morning when morning is already submitted
+                physics: widget.morningAlreadySubmitted
+                    ? const NeverScrollableScrollPhysics()
+                    : null,
                 children: [
                   _buildTabContent(true), // Morning
                   _buildTabContent(false), // Evening

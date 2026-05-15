@@ -33,12 +33,12 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
   // Local profile state (updated on edit)
   late String _profileName;
   late String _profilePhone;
-  
+
   // Background refresh timers
   Timer? _labourRefreshTimer;
   Timer? _materialRefreshTimer;
   Timer? _dashboardRefreshTimer;
-  
+
   // Data variables
   List<Map<String, dynamic>> _labourEntries = [];
   List<Map<String, dynamic>> _materialEntries = [];
@@ -49,20 +49,21 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
   // Cash entries summary (source of truth for confirmed/approved salary)
   double _cashOverallTotal = 0.0;
-  List<Map<String, dynamic>> _cashBySite = []; // [{site_id, site_name, customer_name, total_cost, ...}]
-  
+  List<Map<String, dynamic>> _cashBySite =
+      []; // [{site_id, site_name, customer_name, total_cost, ...}]
+
   // Mismatch detection
   final _mismatchService = LaborMismatchService();
   Map<String, dynamic> _mismatchData = {};
   int _totalMismatches = 0;
-  
+
   // Role filter state
   String? _selectedLabourRole; // null = All
   static const _labourRoles = ['Supervisor', 'Site Engineer'];
-  
+
   // Date filter state
   DateTime? _selectedDate; // null = All dates
-  
+
   // Site filter state
   String? _selectedSiteId; // null = All sites
   List<Map<String, dynamic>> _sites = []; // Initialize as empty list
@@ -79,7 +80,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     _loadAccountantDataWithCache();
     _startBackgroundRefresh();
   }
-  
+
   @override
   void dispose() {
     _labourRefreshTimer?.cancel();
@@ -90,12 +91,12 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
   Future<void> _loadAccountantDataWithCache() async {
     print('🏗️ [ACCOUNTANT] Loading data with persistent cache...');
-    
+
     // Load from persistent cache FIRST (instant - 0ms)
     final cachedLabour = await CacheService.loadAccountantLabour();
     final cachedMaterial = await CacheService.loadAccountantMaterial();
     final cachedDashboard = await CacheService.loadAccountantDashboard();
-    
+
     // ALWAYS show UI immediately, even with empty cache
     setState(() {
       if (cachedLabour != null) _labourEntries = cachedLabour;
@@ -104,82 +105,91 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         _dashboardData = cachedDashboard;
         _workingSitesCount = cachedDashboard['working_sites_count'] ?? 0;
       }
-      _isLoading = false;  // Show UI immediately
+      _isLoading = false; // Show UI immediately
       _error = null;
     });
-    
+
     if (cachedLabour != null || cachedMaterial != null) {
       print('🎯 [ACCOUNTANT] Using persistent cached data - instant load');
     } else {
       print('📭 [ACCOUNTANT] No cache found - showing empty state');
     }
-    
+
     // Refresh from API in background (truly non-blocking)
-    _refreshAllDataInBackground().then((_) {
-      print('✅ [ACCOUNTANT] Background refresh completed');
-    }).catchError((e) {
-      print('⚠️ [ACCOUNTANT] Background refresh failed: $e');
-    });
+    _refreshAllDataInBackground()
+        .then((_) {
+          print('✅ [ACCOUNTANT] Background refresh completed');
+        })
+        .catchError((e) {
+          print('⚠️ [ACCOUNTANT] Background refresh failed: $e');
+        });
   }
-  
+
   void _startBackgroundRefresh() {
     // Refresh labour entries every 60 seconds
     _labourRefreshTimer = Timer.periodic(
       const Duration(seconds: 60),
       (_) => _refreshLabourInBackground(),
     );
-    
+
     // Refresh material entries every 60 seconds
     _materialRefreshTimer = Timer.periodic(
       const Duration(seconds: 60),
       (_) => _refreshMaterialInBackground(),
     );
-    
+
     // Refresh dashboard every 90 seconds
     _dashboardRefreshTimer = Timer.periodic(
       const Duration(seconds: 90),
       (_) => _refreshDashboardInBackground(),
     );
   }
-  
+
   Future<void> _refreshAllDataInBackground() async {
     try {
       final provider = context.read<ConstructionProvider>();
-      
+
       // Call API only ONCE
       await provider.loadAccountantData(forceRefresh: true);
-      
+
       // Get all data from provider
-      final labourData = List<Map<String, dynamic>>.from(provider.accountantLabourEntries);
-      final materialData = List<Map<String, dynamic>>.from(provider.accountantMaterialEntries);
-      
+      final labourData = List<Map<String, dynamic>>.from(
+        provider.accountantLabourEntries,
+      );
+      final materialData = List<Map<String, dynamic>>.from(
+        provider.accountantMaterialEntries,
+      );
+
       // Fetch working sites count
       await _fetchWorkingSitesCount();
-      
+
       // Fetch confirmed cash salary summary
       await _fetchCashEntriesSummary();
-      
+
       // Load mismatch data (non-blocking)
       _loadMismatchData().catchError((e) {
         print('⚠️ [ACCOUNTANT] Mismatch loading failed: $e');
       });
-      
+
       // Save to cache
       await Future.wait([
         CacheService.saveAccountantLabour(labourData),
         CacheService.saveAccountantMaterial(materialData),
       ]);
-      
+
       // Create and save dashboard data
       final dashboardData = {
         'total_labour_entries': labourData.length,
         'total_material_entries': materialData.length,
-        'total_workers': labourData.fold<int>(0, (sum, entry) => sum + (entry['labour_count'] as int? ?? 0)),
+        'total_workers': labourData.fold<int>(
+          0,
+          (sum, entry) => sum + (entry['labour_count'] as int? ?? 0),
+        ),
         'working_sites_count': _workingSitesCount,
         'last_updated': DateTime.now().toIso8601String(),
       };
       await CacheService.saveAccountantDashboard(dashboardData);
-      
+
       // Update UI
       if (mounted) {
         setState(() {
@@ -188,23 +198,23 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
           _dashboardData = dashboardData;
         });
       }
-      
+
       print('✅ [ACCOUNTANT] All data refreshed in background');
     } catch (e) {
       print('⚠️ [ACCOUNTANT] Background refresh failed: $e');
     }
   }
-  
+
   Future<void> _refreshLabourInBackground() async {
     // Deprecated - use _refreshAllDataInBackground instead
     await _refreshAllDataInBackground();
   }
-  
+
   Future<void> _refreshMaterialInBackground() async {
     // Deprecated - use _refreshAllDataInBackground instead
     await _refreshAllDataInBackground();
   }
-  
+
   Future<void> _refreshDashboardInBackground() async {
     // Deprecated - use _refreshAllDataInBackground instead
     await _refreshAllDataInBackground();
@@ -214,11 +224,15 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     try {
       final authService = AuthService();
       final token = await authService.getToken();
-      
-      final response = await http.get(
-        Uri.parse('${AuthService.baseUrl}/construction/accountant-working-sites-count/'),
-        headers: {'Authorization': 'Bearer $token'},
-      ).timeout(const Duration(seconds: 5));
+
+      final response = await http
+          .get(
+            Uri.parse(
+              '${AuthService.baseUrl}/construction/accountant-working-sites-count/',
+            ),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -229,7 +243,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         }
         print('📊 [WORKING SITES] Count fetched: $_workingSitesCount');
       } else {
-        print('⚠️ [WORKING SITES] Failed to fetch count: ${response.statusCode}');
+        print(
+          '⚠️ [WORKING SITES] Failed to fetch count: ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('⚠️ [WORKING SITES] Error fetching count: $e');
@@ -253,20 +269,29 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
       print('🔍 [CASH SUMMARY] Fetching confirmed salary summary...');
 
-      final response = await http.get(
-        Uri.parse('${AuthService.baseUrl}/construction/cash-entries/summary/$queryParams'),
-        headers: {'Authorization': 'Bearer $token'},
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .get(
+            Uri.parse(
+              '${AuthService.baseUrl}/construction/cash-entries/summary/$queryParams',
+            ),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (mounted) {
           setState(() {
-            _cashOverallTotal = (data['overall_total'] as num?)?.toDouble() ?? 0.0;
-            _cashBySite = List<Map<String, dynamic>>.from(data['by_site'] ?? []);
+            _cashOverallTotal =
+                (data['overall_total'] as num?)?.toDouble() ?? 0.0;
+            _cashBySite = List<Map<String, dynamic>>.from(
+              data['by_site'] ?? [],
+            );
           });
         }
-        print('✅ [CASH SUMMARY] Overall: ₹$_cashOverallTotal across ${_cashBySite.length} sites');
+        print(
+          '✅ [CASH SUMMARY] Overall: ₹$_cashOverallTotal across ${_cashBySite.length} sites',
+        );
       } else {
         print('⚠️ [CASH SUMMARY] Failed: ${response.statusCode}');
       }
@@ -279,7 +304,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     try {
       final authService = AuthService();
       final token = await authService.getToken();
-      
+
       final response = await http.get(
         Uri.parse('${AuthService.baseUrl}/construction/all-sites/'),
         headers: {'Authorization': 'Bearer $token'},
@@ -301,7 +326,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
   List<Map<String, dynamic>> get _filteredLabourEntries {
     var filtered = _labourEntries;
-    
+
     // Filter by role
     if (_selectedLabourRole != null) {
       filtered = filtered.where((entry) {
@@ -309,16 +334,17 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         return role == _selectedLabourRole;
       }).toList();
     }
-    
+
     // Filter by date
     if (_selectedDate != null) {
-      final dateStr = '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+      final dateStr =
+          '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
       filtered = filtered.where((entry) {
         final entryDate = entry['entry_date']?.toString() ?? '';
         return entryDate == dateStr;
       }).toList();
     }
-    
+
     // Filter by site
     if (_selectedSiteId != null) {
       filtered = filtered.where((entry) {
@@ -326,7 +352,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
         return siteId == _selectedSiteId;
       }).toList();
     }
-    
+
     return filtered;
   }
 
@@ -339,39 +365,45 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
     try {
       final provider = context.read<ConstructionProvider>();
-      
+
       // Use provider's caching instead of clearing it
       await provider.loadAccountantData(forceRefresh: false);
-      
+
       // Get the data directly from provider
-      _labourEntries = List<Map<String, dynamic>>.from(provider.accountantLabourEntries);
-      _materialEntries = List<Map<String, dynamic>>.from(provider.accountantMaterialEntries);
-      
+      _labourEntries = List<Map<String, dynamic>>.from(
+        provider.accountantLabourEntries,
+      );
+      _materialEntries = List<Map<String, dynamic>>.from(
+        provider.accountantMaterialEntries,
+      );
+
       // Fetch working sites count
       await _fetchWorkingSitesCount();
-      
+
       // Fetch confirmed cash salary summary
       await _fetchCashEntriesSummary();
-      
+
       // Load mismatch data
       await _loadMismatchData();
-      
+
       // Save to persistent cache
       await CacheService.saveAccountantLabour(_labourEntries);
       await CacheService.saveAccountantMaterial(_materialEntries);
-      
+
       // Create and save dashboard data
       final dashboardData = {
         'total_labour_entries': _labourEntries.length,
         'total_material_entries': _materialEntries.length,
-        'total_workers': _labourEntries.fold<int>(0, (sum, entry) => sum + (entry['labour_count'] as int? ?? 0)),
+        'total_workers': _labourEntries.fold<int>(
+          0,
+          (sum, entry) => sum + (entry['labour_count'] as int? ?? 0),
+        ),
         'working_sites_count': _workingSitesCount,
         'last_updated': DateTime.now().toIso8601String(),
       };
       await CacheService.saveAccountantDashboard(dashboardData);
-      
+
       print('💾 [ACCOUNTANT] Data cached successfully to persistent storage');
-      
     } catch (e) {
       _error = e.toString();
       print('❌ [ACCOUNTANT] Error loading data: $e');
@@ -409,20 +441,24 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     print('🔍 [DASHBOARD MISMATCH] Loading mismatch data for all sites');
     try {
       // Load mismatches for all sites (no site_id filter)
-      final result = await _mismatchService.detectLaborMismatches(
-        days: 7,
+      final result = await _mismatchService.detectLaborMismatches(days: 7);
+
+      print(
+        '🔍 [DASHBOARD MISMATCH] API response: ${result['success']}, total: ${result['total_mismatches']}',
       );
-      
-      print('🔍 [DASHBOARD MISMATCH] API response: ${result['success']}, total: ${result['total_mismatches']}');
-      
+
       if (result['success'] == true) {
         setState(() {
           _mismatchData = result;
           _totalMismatches = result['total_mismatches'] ?? 0;
         });
-        print('✅ [DASHBOARD MISMATCH] Loaded $_totalMismatches mismatches across all sites');
+        print(
+          '✅ [DASHBOARD MISMATCH] Loaded $_totalMismatches mismatches across all sites',
+        );
       } else {
-        print('⚠️ [DASHBOARD MISMATCH] API returned success=false: ${result['error']}');
+        print(
+          '⚠️ [DASHBOARD MISMATCH] API returned success=false: ${result['error']}',
+        );
       }
     } catch (e) {
       print('❌ [DASHBOARD MISMATCH] Error loading mismatch data: $e');
@@ -432,16 +468,22 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
   void _showMismatchDialog() {
     print('🔍 [DASHBOARD MISMATCH DIALOG] _showMismatchDialog called');
     print('🔍 [DASHBOARD MISMATCH DIALOG] _totalMismatches: $_totalMismatches');
-    
-    final mismatches = _mismatchData['mismatches'] as List<Map<String, dynamic>>? ?? [];
-    final summary = _mismatchData['summary'] as List<Map<String, dynamic>>? ?? [];
-    print('🔍 [DASHBOARD MISMATCH DIALOG] mismatches count: ${mismatches.length}');
+
+    final mismatches =
+        _mismatchData['mismatches'] as List<Map<String, dynamic>>? ?? [];
+    final summary =
+        _mismatchData['summary'] as List<Map<String, dynamic>>? ?? [];
+    print(
+      '🔍 [DASHBOARD MISMATCH DIALOG] mismatches count: ${mismatches.length}',
+    );
     print('🔍 [DASHBOARD MISMATCH DIALOG] summary count: ${summary.length}');
-    
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+        ),
         child: Container(
           padding: EdgeInsets.all(24.r),
           constraints: const BoxConstraints(maxHeight: 600, maxWidth: 500),
@@ -451,7 +493,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 32.sp),
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange,
+                    size: 32.sp,
+                  ),
                   SizedBox(width: 12.w),
                   const Expanded(
                     child: Text(
@@ -472,13 +518,19 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               SizedBox(height: 8.h),
               Text(
                 'Found $_totalMismatches mismatches between Supervisor and Site Engineer entries across all sites',
-                style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: AppColors.textSecondary,
+                ),
               ),
               SizedBox(height: 24.h),
               if (summary.isNotEmpty) ...[
                 Text(
                   'Summary by Site:',
-                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 SizedBox(height: 12.h),
                 Expanded(
@@ -490,7 +542,10 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                       return Card(
                         margin: EdgeInsets.only(bottom: 12.h),
                         child: ListTile(
-                          leading: const Icon(Icons.location_on, color: Colors.orange),
+                          leading: const Icon(
+                            Icons.location_on,
+                            color: Colors.orange,
+                          ),
                           title: Text(
                             site['site_name'] ?? 'Unknown Site',
                             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -499,7 +554,10 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                             '${site['total_mismatches']} mismatches on ${(site['dates_with_mismatches'] as List).length} days',
                           ),
                           trailing: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.w,
+                              vertical: 6.h,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.red,
                               borderRadius: BorderRadius.circular(12.r),
@@ -518,9 +576,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   ),
                 ),
               ] else ...[
-                const Center(
-                  child: Text('No mismatches found'),
-                ),
+                const Center(child: Text('No mismatches found')),
               ],
               SizedBox(height: 16.h),
               ElevatedButton(
@@ -586,7 +642,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 clipBehavior: Clip.none,
                 children: [
                   IconButton(
-                    icon: Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28.sp),
+                    icon: Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.orange,
+                      size: 28.sp,
+                    ),
                     tooltip: 'Labor Entry Mismatches',
                     onPressed: () {
                       print('🔍 [DASHBOARD BUTTON] Warning icon clicked!');
@@ -637,13 +697,13 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 message: 'Loading accountant data...',
               )
             : _error != null
-                ? CommonWidgets.buildErrorState(
-                    context,
-                    message: _error!,
-                    actionText: 'Retry',
-                    onAction: _forceRefresh,
-                  )
-                : _buildDashboardContent(),
+            ? CommonWidgets.buildErrorState(
+                context,
+                message: _error!,
+                actionText: 'Retry',
+                onAction: _forceRefresh,
+              )
+            : _buildDashboardContent(),
       ),
       floatingActionButton: CommonWidgets.buildFloatingActionButton(
         context,
@@ -657,12 +717,17 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
   Widget _buildDashboardContent() {
     // Use filtered labour entries (includes role, date, and site filters)
     final filteredLabourEntries = _filteredLabourEntries;
-    
+
     // Calculate totals from FILTERED data (for labour entries display)
     final totalLabourEntries = filteredLabourEntries.length;
+    print('check');
+    print(totalLabourEntries);
     final totalMaterialEntries = _materialEntries.length;
-    final totalWorkers = filteredLabourEntries.fold<int>(0, (sum, entry) => sum + (entry['labour_count'] as int? ?? 0));
-    
+    final totalWorkers = filteredLabourEntries.fold<int>(
+      0,
+      (sum, entry) => sum + (entry['labour_count'] as int? ?? 0),
+    );
+
     // ── Confirmed salary from cash_entries (accountant-selected entries) ──
     // If a specific site is selected, show only that site's confirmed total.
     // Otherwise show the overall confirmed total.
@@ -690,23 +755,31 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildRoleChip('All', _selectedLabourRole == null,
-                    () => setState(() => _selectedLabourRole = null)),
+                _buildRoleChip(
+                  'All',
+                  _selectedLabourRole == null,
+                  () => setState(() => _selectedLabourRole = null),
+                ),
                 SizedBox(width: 8.w),
-                ..._labourRoles.map((role) => Padding(
-                      padding: EdgeInsets.only(right: 8.w),
-                      child: _buildRoleChip(
-                        role,
-                        _selectedLabourRole == role,
-                        () => setState(() => _selectedLabourRole =
-                            _selectedLabourRole == role ? null : role),
+                ..._labourRoles.map(
+                  (role) => Padding(
+                    padding: EdgeInsets.only(right: 8.w),
+                    child: _buildRoleChip(
+                      role,
+                      _selectedLabourRole == role,
+                      () => setState(
+                        () => _selectedLabourRole = _selectedLabourRole == role
+                            ? null
+                            : role,
                       ),
-                    )),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
           SizedBox(height: 12.h),
-          
+
           // Date and Site Filters
           Row(
             children: [
@@ -728,7 +801,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   icon: Icon(
                     Icons.calendar_today,
                     size: 18.sp,
-                    color: _selectedDate != null ? AppColors.safetyOrange : AppColors.textSecondary,
+                    color: _selectedDate != null
+                        ? AppColors.safetyOrange
+                        : AppColors.textSecondary,
                   ),
                   label: Text(
                     _selectedDate != null
@@ -736,14 +811,20 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                         : 'All Dates',
                     style: TextStyle(
                       fontSize: 13.sp,
-                      color: _selectedDate != null ? AppColors.safetyOrange : AppColors.textSecondary,
+                      color: _selectedDate != null
+                          ? AppColors.safetyOrange
+                          : AppColors.textSecondary,
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: _selectedDate != null ? AppColors.safetyOrange : AppColors.lightSlate,
+                      color: _selectedDate != null
+                          ? AppColors.safetyOrange
+                          : AppColors.lightSlate,
                     ),
-                    backgroundColor: _selectedDate != null ? AppColors.safetyOrange.withValues(alpha: 0.1) : null,
+                    backgroundColor: _selectedDate != null
+                        ? AppColors.safetyOrange.withValues(alpha: 0.1)
+                        : null,
                   ),
                 ),
               ),
@@ -766,42 +847,60 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 child: DropdownButtonFormField<String>(
                   value: _selectedSiteId,
                   decoration: InputDecoration(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 8.h,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8.r),
                       borderSide: BorderSide(
-                        color: _selectedSiteId != null ? AppColors.safetyOrange : AppColors.lightSlate,
+                        color: _selectedSiteId != null
+                            ? AppColors.safetyOrange
+                            : AppColors.lightSlate,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8.r),
                       borderSide: BorderSide(
-                        color: _selectedSiteId != null ? AppColors.safetyOrange : AppColors.lightSlate,
+                        color: _selectedSiteId != null
+                            ? AppColors.safetyOrange
+                            : AppColors.lightSlate,
                       ),
                     ),
                     filled: _selectedSiteId != null,
-                    fillColor: _selectedSiteId != null ? AppColors.safetyOrange.withValues(alpha: 0.1) : null,
+                    fillColor: _selectedSiteId != null
+                        ? AppColors.safetyOrange.withValues(alpha: 0.1)
+                        : null,
                   ),
                   hint: Text('All Sites', style: TextStyle(fontSize: 13.sp)),
                   items: [
                     DropdownMenuItem<String>(
                       value: null,
-                      child: Text('All Sites', style: TextStyle(fontSize: 13.sp)),
-                    ),
-                    ..._sites.map((site) => DropdownMenuItem<String>(
-                      value: site['id'].toString(),
                       child: Text(
-                        '${site['customer_name']} - ${site['site_name']}',
+                        'All Sites',
                         style: TextStyle(fontSize: 13.sp),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    )).toList(),
+                    ),
+                    ..._sites
+                        .map(
+                          (site) => DropdownMenuItem<String>(
+                            value: site['id'].toString(),
+                            child: Text(
+                              '${site['customer_name']} - ${site['site_name']}',
+                              style: TextStyle(fontSize: 13.sp),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        )
+                        .toList(),
                   ],
                   onChanged: (value) => setState(() => _selectedSiteId = value),
                   isExpanded: true,
                   icon: Icon(
                     Icons.arrow_drop_down,
-                    color: _selectedSiteId != null ? AppColors.safetyOrange : AppColors.textSecondary,
+                    color: _selectedSiteId != null
+                        ? AppColors.safetyOrange
+                        : AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -914,7 +1013,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       ),
       child: Row(
         children: [
-          Icon(Icons.location_on_outlined, size: 18.sp, color: Color(0xFFFF9800)),
+          Icon(
+            Icons.location_on_outlined,
+            size: 18.sp,
+            color: Color(0xFFFF9800),
+          ),
           SizedBox(width: 10.w),
           Expanded(
             child: Column(
@@ -964,7 +1067,8 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
           borderRadius: BorderRadius.circular(20.r),
           border: Border.all(
             color: selected
-                ? AppColors.deepNavy : const Color(0xFF1A1A2E).withValues(alpha: 0.2),
+                ? AppColors.deepNavy
+                : const Color(0xFF1A1A2E).withValues(alpha: 0.2),
           ),
         ),
         child: Text(
@@ -1044,7 +1148,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       ..sort((a, b) => b.compareTo(a));
 
     final isExpanded = _expandedDates.contains('material');
-    final displayDates = isExpanded ? sortedDates : sortedDates.take(3).toList();
+    final displayDates = isExpanded
+        ? sortedDates
+        : sortedDates.take(3).toList();
 
     return Column(
       children: displayDates.map((date) {
@@ -1054,11 +1160,15 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     );
   }
 
-  Widget _buildDateDropdown(String date, List<Map<String, dynamic>> entries, bool isLabour) {
+  Widget _buildDateDropdown(
+    String date,
+    List<Map<String, dynamic>> entries,
+    bool isLabour,
+  ) {
     final dateKey = '${isLabour ? 'labour' : 'material'}_$date';
     final isExpanded = _expandedDates.contains(dateKey);
     final formattedDate = _formatDateForDropdown(date);
-    
+
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
       decoration: BoxDecoration(
@@ -1102,7 +1212,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                       ),
                       child: Icon(
                         isLabour ? Icons.people : Icons.inventory_2,
-                        color: isLabour ? const Color(0xFF4CAF50) : const Color(0xFF1A1A2E),
+                        color: isLabour
+                            ? const Color(0xFF4CAF50)
+                            : const Color(0xFF1A1A2E),
                         size: 20.sp,
                       ),
                     ),
@@ -1149,21 +1261,25 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             height: isExpanded ? null : 0,
-            child: isExpanded ? Container(
-              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
-              child: Column(
-                children: [
-                  const Divider(height: 1),
-                  SizedBox(height: 12.h),
-                  ...entries.map((entry) => Padding(
-                    padding: EdgeInsets.only(bottom: 8.h),
-                    child: isLabour 
-                        ? _buildCompactLabourCard(entry)
-                        : _buildCompactMaterialCard(entry),
-                  )),
-                ],
-              ),
-            ) : null,
+            child: isExpanded
+                ? Container(
+                    padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
+                    child: Column(
+                      children: [
+                        const Divider(height: 1),
+                        SizedBox(height: 12.h),
+                        ...entries.map(
+                          (entry) => Padding(
+                            padding: EdgeInsets.only(bottom: 8.h),
+                            child: isLabour
+                                ? _buildCompactLabourCard(entry)
+                                : _buildCompactMaterialCard(entry),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : null,
           ),
         ],
       ),
@@ -1177,7 +1293,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       final today = DateTime(now.year, now.month, now.day);
       final yesterday = today.subtract(const Duration(days: 1));
       final entryDate = DateTime(date.year, date.month, date.day);
-      
+
       if (entryDate == today) {
         return 'Today • ${_formatDateWithDay(date)}';
       } else if (entryDate == yesterday) {
@@ -1191,15 +1307,37 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
   }
 
   String _formatDateWithDay(DateTime date) {
-    final days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final days = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     final dayName = days[date.weekday % 7];
     return '$dayName, ${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
   Widget _buildCompactLabourCard(Map<String, dynamic> entry) {
-    final fullSiteName = '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim();
-    
+    final fullSiteName =
+        '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim();
+
     return Container(
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
@@ -1249,7 +1387,8 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
   }
 
   Widget _buildCompactMaterialCard(Map<String, dynamic> entry) {
-    final fullSiteName = '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim();
+    final fullSiteName =
+        '${entry['customer_name'] ?? ''} ${entry['site_name'] ?? ''}'.trim();
 
     return Container(
       padding: EdgeInsets.all(12.r),
@@ -1309,10 +1448,16 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
+          ),
           title: Row(
             children: [
-              Icon(Icons.edit_outlined, color: const Color(0xFF1A1A2E), size: 22.sp),
+              Icon(
+                Icons.edit_outlined,
+                color: const Color(0xFF1A1A2E),
+                size: 22.sp,
+              ),
               SizedBox(width: 8.w),
               Text(
                 'Edit Profile',
@@ -1334,15 +1479,24 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   controller: nameCtrl,
                   decoration: InputDecoration(
                     labelText: 'Full Name',
-                    prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF1A1A2E)),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
+                    prefixIcon: const Icon(
+                      Icons.person_outline,
+                      color: Color(0xFF1A1A2E),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.r),
-                      borderSide: const BorderSide(color: Color(0xFF1A1A2E), width: 2),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF1A1A2E),
+                        width: 2,
+                      ),
                     ),
                   ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Name is required'
+                      : null,
                 ),
                 SizedBox(height: 16.h),
                 // Phone field
@@ -1353,17 +1507,27 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: InputDecoration(
                     labelText: 'Phone Number',
-                    prefixIcon: const Icon(Icons.phone_outlined, color: Color(0xFF1A1A2E)),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
+                    prefixIcon: const Icon(
+                      Icons.phone_outlined,
+                      color: Color(0xFF1A1A2E),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.r),
-                      borderSide: const BorderSide(color: Color(0xFF1A1A2E), width: 2),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF1A1A2E),
+                        width: 2,
+                      ),
                     ),
                     counterText: '',
                   ),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Phone is required';
-                    if (v.trim().length != 10) return 'Phone must be exactly 10 digits';
+                    if (v == null || v.trim().isEmpty)
+                      return 'Phone is required';
+                    if (v.trim().length != 10)
+                      return 'Phone must be exactly 10 digits';
                     return null;
                   },
                 ),
@@ -1373,13 +1537,18 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
           actions: [
             TextButton(
               onPressed: isSaving ? null : () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: Color(0xFF6B7280))),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Color(0xFF6B7280)),
+              ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1A1A2E),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
               ),
               onPressed: isSaving
                   ? null
@@ -1396,15 +1565,21 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                       Navigator.pop(ctx);
                       if (result['success'] == true) {
                         setState(() {
-                          _profileName = newName.isNotEmpty ? newName : _profileName;
-                          _profilePhone = newPhone.isNotEmpty ? newPhone : _profilePhone;
+                          _profileName = newName.isNotEmpty
+                              ? newName
+                              : _profileName;
+                          _profilePhone = newPhone.isNotEmpty
+                              ? newPhone
+                              : _profilePhone;
                         });
                       }
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(result['success'] == true
-                              ? 'Profile updated successfully!'
-                              : result['error'] ?? 'Update failed'),
+                          content: Text(
+                            result['success'] == true
+                                ? 'Profile updated successfully!'
+                                : result['error'] ?? 'Update failed',
+                          ),
                           backgroundColor: result['success'] == true
                               ? const Color(0xFF4CAF50)
                               : Colors.red,
@@ -1416,7 +1591,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                       width: 18.w,
                       height: 18.h,
                       child: const CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Text('Save'),
             ),
@@ -1461,10 +1638,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
   Widget _buildProfileScreen() {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: CommonWidgets.buildAppBar(
-        context,
-        title: 'Profile',
-      ),
+      appBar: CommonWidgets.buildAppBar(context, title: 'Profile'),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.r),
         child: Column(
@@ -1490,7 +1664,11 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                     width: 80.w,
                     height: 80.h,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFF1A1A2E), Color(0xFF16213E)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
@@ -1536,15 +1714,23 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   SizedBox(height: 24.h),
 
                   // Info cards
-                  _buildSimpleProfileInfo('Email', widget.user.email ?? 'N/A', Icons.email_outlined),
+                  _buildSimpleProfileInfo(
+                    'Email',
+                    widget.user.email ?? 'N/A',
+                    Icons.email_outlined,
+                  ),
                   SizedBox(height: 12.h),
-                  _buildSimpleProfileInfo('Phone', _profilePhone.isNotEmpty ? _profilePhone : 'N/A', Icons.phone_outlined),
+                  _buildSimpleProfileInfo(
+                    'Phone',
+                    _profilePhone.isNotEmpty ? _profilePhone : 'N/A',
+                    Icons.phone_outlined,
+                  ),
                 ],
               ),
             ),
 
             SizedBox(height: 24.h),
-            
+
             // Profile Options
             _buildProfileOption(
               icon: Icons.edit_outlined,
@@ -1552,29 +1738,33 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               subtitle: 'Update your name and phone number',
               onTap: _showEditProfileDialog,
             ),
-            
+
             _buildProfileOption(
               icon: Icons.notifications_none,
               title: 'Notifications',
               subtitle: 'Manage your notification preferences',
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Notification settings coming soon!')),
+                  const SnackBar(
+                    content: Text('Notification settings coming soon!'),
+                  ),
                 );
               },
             ),
-            
+
             _buildProfileOption(
               icon: Icons.security_outlined,
               title: 'Security',
               subtitle: 'Change password and security settings',
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Security settings coming soon!')),
+                  const SnackBar(
+                    content: Text('Security settings coming soon!'),
+                  ),
                 );
               },
             ),
-            
+
             _buildProfileOption(
               icon: Icons.help_outline,
               title: 'Help & Support',
@@ -1585,7 +1775,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 );
               },
             ),
-            
+
             _buildProfileOption(
               icon: Icons.info_outline,
               title: 'About',
@@ -1595,7 +1785,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('About'),
-                    content: const Text('Construction Management App\nVersion 1.0.0\n\nBuilt for Essential Homes'),
+                    content: const Text(
+                      'Construction Management App\nVersion 1.0.0\n\nBuilt for Essential Homes',
+                    ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
@@ -1606,7 +1798,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 );
               },
             ),
-            
+
             SizedBox(height: 24.h),
 
             // Logout Button
@@ -1655,7 +1847,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FA),
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: const Color(0xFF1A1A2E).withValues(alpha: 0.1)),
+        border: Border.all(
+          color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
+        ),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF1A1A2E).withValues(alpha: 0.05),

@@ -1654,7 +1654,22 @@ def get_all_entries_for_accountant(request):
             ORDER BY l.entry_time DESC
             LIMIT 200
         """
-        labour_entries = fetch_all(labour_query)
+        try:
+            from .database import get_db_connection
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(labour_query)
+                    rows = cur.fetchall()
+                    if rows:
+                        columns = [desc[0] for desc in cur.description]
+                        labour_entries = [dict(zip(columns, row)) for row in rows]
+                    else:
+                        labour_entries = []
+            print(f"✅ [ACCOUNTANT DIRECT] Got {len(labour_entries)} labour rows")
+        except Exception as db_err:
+            print(f"❌ [ACCOUNTANT DIRECT] Labour query failed: {db_err}")
+            import traceback; traceback.print_exc()
+            return Response({'error': f'Labour query failed: {str(db_err)}'}, status=500)
         
         # Get material entries with supervisor names, roles, timestamps, extra costs, and submitted_by_role
         material_query = """
@@ -4342,9 +4357,9 @@ def get_working_sites(request):
                 'error': 'Only supervisors can view working sites'
             }, status=status.HTTP_403_FORBIDDEN)
         
-        # Get assigned sites
+        # Get assigned sites for this supervisor
         sites = fetch_all("""
-            SELECT 
+            SELECT
                 ws.id as assignment_id,
                 ws.site_id,
                 ws.description,
@@ -4359,6 +4374,53 @@ def get_working_sites(request):
             WHERE ws.supervisor_id = %s AND ws.is_active = TRUE
             ORDER BY ws.assigned_date DESC
         """, (user_id,))
+
+        # Auto-provision new supervisors: if no sites found, copy currently active
+        # accountant assignments so any supervisor logging in for the first time
+        # automatically sees the sites the accountant has selected.
+        if not sites:
+            active_assignments = fetch_all("""
+                SELECT DISTINCT ON (ws.site_id)
+                    ws.site_id,
+                    ws.description,
+                    ws.accountant_id,
+                    ws.last_reset_date
+                FROM working_sites ws
+                WHERE ws.is_active = TRUE
+                ORDER BY ws.site_id, ws.assigned_date DESC
+            """)
+            if active_assignments:
+                print(f"🆕 [WORKING_SITES] Auto-provisioning {len(active_assignments)} sites for new supervisor {user_id}")
+                for assignment in active_assignments:
+                    assignment_id = str(uuid.uuid4())
+                    execute_query("""
+                        INSERT INTO working_sites
+                            (id, accountant_id, supervisor_id, site_id, description, last_reset_date)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (supervisor_id, site_id) DO UPDATE
+                            SET is_active = TRUE,
+                                last_reset_date = EXCLUDED.last_reset_date,
+                                updated_at = CURRENT_TIMESTAMP
+                    """, (assignment_id, assignment['accountant_id'], user_id,
+                          assignment['site_id'], assignment.get('description', ''),
+                          assignment['last_reset_date']))
+                # Re-fetch after provisioning
+                sites = fetch_all("""
+                    SELECT
+                        ws.id as assignment_id,
+                        ws.site_id,
+                        ws.description,
+                        ws.assigned_date,
+                        s.site_name,
+                        s.customer_name,
+                        s.area,
+                        s.street,
+                        s.status
+                    FROM working_sites ws
+                    JOIN sites s ON ws.site_id = s.id
+                    WHERE ws.supervisor_id = %s AND ws.is_active = TRUE
+                    ORDER BY ws.assigned_date DESC
+                """, (user_id,))
         
         # Format sites
         formatted_sites = []
