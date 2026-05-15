@@ -720,13 +720,6 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
     // Calculate totals from FILTERED data (for labour entries display)
     final totalLabourEntries = filteredLabourEntries.length;
-    print('check');
-    print(totalLabourEntries);
-    final totalMaterialEntries = _materialEntries.length;
-    final totalWorkers = filteredLabourEntries.fold<int>(
-      0,
-      (sum, entry) => sum + (entry['labour_count'] as int? ?? 0),
-    );
 
     // ── Confirmed salary from cash_entries (accountant-selected entries) ──
     // If a specific site is selected, show only that site's confirmed total.
@@ -927,30 +920,6 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   value: totalLabourEntries.toString(),
                   icon: Icons.people,
                   color: const Color(0xFF4CAF50),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: SummaryCard(
-                  title: 'Material Entries',
-                  value: totalMaterialEntries.toString(),
-                  icon: Icons.inventory_2,
-                  color: const Color(0xFF1A1A2E),
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: 12.h),
-
-          Row(
-            children: [
-              Expanded(
-                child: SummaryCard(
-                  title: 'Total Workers',
-                  value: totalWorkers.toString(),
-                  icon: Icons.engineering,
-                  color: const Color(0xFF1A1A2E),
                 ),
               ),
               SizedBox(width: 12.w),
