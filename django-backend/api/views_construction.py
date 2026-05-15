@@ -132,6 +132,8 @@ def get_sites(request):
                     'id': str(s['id']),
                     'site_name': s['site_name'],
                     'customer_name': s['customer_name'],
+                    'area': s.get('area', ''),
+                    'street': s.get('street', ''),
                     'display_name': f"{s['customer_name']} {s['site_name']}"
                 }
                 for s in sites
