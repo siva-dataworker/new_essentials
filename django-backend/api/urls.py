@@ -195,7 +195,8 @@ urlpatterns = [
     path('construction/handle-change-request/<uuid:request_id>/', views_construction.handle_change_request, name='handle-change-request'),
     path('construction/modified-entries/', views_construction.get_modified_entries, name='modified-entries'),
     path('construction/entries-by-date-role/', views_construction.get_entries_by_date_and_role, name='entries-by-date-role'),
-    
+    path('construction/approved-entries/', views_construction.get_approved_entries, name='approved-entries'),
+
     # Cash Entries (Accountant)
     path('construction/confirm-cash-entry/', views_construction.confirm_cash_entry, name='confirm-cash-entry'),
     path('construction/create-custom-cash-entry/', views_construction.create_custom_cash_entry, name='create-custom-cash-entry'),

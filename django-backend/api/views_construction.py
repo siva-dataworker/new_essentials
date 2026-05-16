@@ -1804,8 +1804,12 @@ def get_entries_by_date_and_role(request):
                 FROM labour_entries l
                 JOIN sites s ON l.site_id = s.id
                 JOIN users u ON l.supervisor_id = u.id
-                WHERE l.entry_date = %s 
+                WHERE l.entry_date = %s
                   AND (l.submitted_by_role = 'Supervisor' OR l.submitted_by_role IS NULL)
+                  AND NOT EXISTS (
+                    SELECT 1 FROM cash_entries ce
+                    WHERE ce.site_id = l.site_id AND ce.entry_date = l.entry_date
+                  )
                 ORDER BY l.site_id, l.entry_time DESC
             """
         elif role == 'Site Engineer':
@@ -1827,6 +1831,10 @@ def get_entries_by_date_and_role(request):
                 JOIN sites s ON l.site_id = s.id
                 JOIN users u ON l.supervisor_id = u.id
                 WHERE l.entry_date = %s AND l.submitted_by_role = 'Site Engineer'
+                  AND NOT EXISTS (
+                    SELECT 1 FROM cash_entries ce
+                    WHERE ce.site_id = l.site_id AND ce.entry_date = l.entry_date
+                  )
                 ORDER BY l.site_id, l.entry_time DESC
             """
         else:
@@ -1846,11 +1854,15 @@ def get_entries_by_date_and_role(request):
                 FROM labour_entries l
                 JOIN sites s ON l.site_id = s.id
                 JOIN users u ON l.supervisor_id = u.id
-                WHERE l.entry_date = %s 
+                WHERE l.entry_date = %s
                   AND (l.submitted_by_role = 'Supervisor' OR l.submitted_by_role IS NULL)
-                
+                  AND NOT EXISTS (
+                    SELECT 1 FROM cash_entries ce
+                    WHERE ce.site_id = l.site_id AND ce.entry_date = l.entry_date
+                  )
+
                 UNION ALL
-                
+
                 SELECT
                     l.id,
                     l.site_id,
@@ -1866,7 +1878,11 @@ def get_entries_by_date_and_role(request):
                 JOIN sites s ON l.site_id = s.id
                 JOIN users u ON l.supervisor_id = u.id
                 WHERE l.entry_date = %s AND l.submitted_by_role = 'Site Engineer'
-                
+                  AND NOT EXISTS (
+                    SELECT 1 FROM cash_entries ce
+                    WHERE ce.site_id = l.site_id AND ce.entry_date = l.entry_date
+                  )
+
                 ORDER BY site_id, submitted_at DESC
             """
             entries = fetch_all(query, (entry_date, entry_date))
@@ -1907,6 +1923,125 @@ def get_entries_by_date_and_role(request):
         
     except Exception as e:
         print(f"❌ [BACKEND] Error fetching entries by date and role: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_approved_entries(request):
+    """
+    Accountant: Get approved entries grouped by site and date
+    GET /api/construction/approved-entries/?date=YYYY-MM-DD
+    """
+    try:
+        user_role = request.user.get('role', '')
+
+        if user_role != 'Accountant':
+            return Response({'error': 'Only Accountant can access this endpoint'},
+                          status=status.HTTP_403_FORBIDDEN)
+
+        date_str = request.query_params.get('date')
+
+        if not date_str:
+            return Response({'error': 'date is required'},
+                          status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            entry_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'error': 'Invalid date format. Use YYYY-MM-DD'},
+                          status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Step 1: Get approved sites+dates from cash_entries
+        approved_meta = fetch_all("""
+            SELECT DISTINCT ON (ce.site_id, ce.entry_date)
+                ce.site_id,
+                CONCAT(s.customer_name, ' ', s.site_name) as site_name,
+                ce.entry_date,
+                ce.source_type,
+                ce.created_at as approved_at,
+                COALESCE(u.full_name, u.phone) as approved_by
+            FROM cash_entries ce
+            JOIN sites s ON ce.site_id = s.id
+            LEFT JOIN users u ON ce.accountant_id = u.id
+            WHERE ce.entry_date = %s
+            ORDER BY ce.site_id, ce.entry_date, ce.created_at DESC
+        """, (entry_date,))
+
+        if not approved_meta:
+            return Response({'approved_entries': []}, status=status.HTTP_200_OK)
+
+        # Step 2: Get approved (confirmed) labour rows from cash_entries
+        selected_rows = fetch_all("""
+            SELECT site_id, entry_date, source_type,
+                   labour_type, labour_count, daily_rate, total_cost
+            FROM cash_entries
+            WHERE entry_date = %s
+            ORDER BY site_id
+        """, (entry_date,))
+
+        # Step 3: Get original labour_entries for all approved sites (both roles)
+        site_ids = list(set(str(a['site_id']) for a in approved_meta))
+        if site_ids:
+            original_entries = fetch_all("""
+                SELECT site_id, entry_date, labour_type, labour_count, submitted_by_role
+                FROM labour_entries
+                WHERE site_id = ANY(%s) AND entry_date = %s
+                ORDER BY site_id, submitted_by_role
+            """, (site_ids, entry_date))
+        else:
+            original_entries = []
+
+        # Group cash entry labour rows by site_id
+        from collections import defaultdict
+        selected_by_site = defaultdict(list)
+        for row in selected_rows:
+            site_id_str = str(row['site_id'])
+            selected_by_site[site_id_str].append({
+                'labour_type': row['labour_type'],
+                'labour_count': row['labour_count'],
+                'daily_rate': float(row['daily_rate']) if row['daily_rate'] else None,
+                'total_cost': float(row['total_cost']) if row['total_cost'] else None,
+            })
+
+        # Group original entries by site_id + role
+        supervisor_by_site = defaultdict(list)
+        engineer_by_site = defaultdict(list)
+        for e in original_entries:
+            site_id_str = str(e['site_id'])
+            role = (e.get('submitted_by_role') or '').lower()
+            entry_item = {
+                'labour_type': e['labour_type'],
+                'labour_count': e['labour_count'],
+            }
+            if 'engineer' in role:
+                engineer_by_site[site_id_str].append(entry_item)
+            else:
+                supervisor_by_site[site_id_str].append(entry_item)
+
+        # Build final list
+        result = []
+        for meta in approved_meta:
+            sid = str(meta['site_id'])
+            result.append({
+                'site_id': sid,
+                'site_name': meta['site_name'],
+                'entry_date': meta['entry_date'].isoformat(),
+                'source_type': meta['source_type'],
+                'approved_at': meta['approved_at'].isoformat(),
+                'approved_by': meta['approved_by'],
+                'selected_entries': selected_by_site[sid],
+                'supervisor_entries': supervisor_by_site[sid],
+                'site_engineer_entries': engineer_by_site[sid],
+            })
+
+        return Response({'approved_entries': result}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        print(f"❌ Error fetching approved entries: {str(e)}")
         import traceback
         traceback.print_exc()
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
