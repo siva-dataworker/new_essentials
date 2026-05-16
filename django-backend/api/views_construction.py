@@ -1695,12 +1695,20 @@ def get_all_entries_for_accountant(request):
             LIMIT 200
         """
         material_entries = fetch_all(material_query)
-        
+
+        # Count distinct approved entries (site_id, entry_date pairs in cash_entries)
+        approved_count_result = fetch_one("""
+            SELECT COUNT(DISTINCT site_id, entry_date) as count
+            FROM cash_entries
+        """)
+        approved_entries_count = approved_count_result['count'] if approved_count_result else 0
+
         # Debug logging BEFORE creating response
         print(f"📊 [ACCOUNTANT API] Returning {len(labour_entries)} labour entries, {len(material_entries)} material entries")
+        print(f"📊 [ACCOUNTANT API] Approved entries count (distinct site+date): {approved_entries_count}")
         total_salary = sum(float(e.get('total_cost', 0) or 0) for e in labour_entries)
         print(f"💰 [ACCOUNTANT API] Total salary: ₹{total_salary}")
-        
+
         response_data = {
             'labour_entries': [
                 {
@@ -1747,9 +1755,9 @@ def get_all_entries_for_accountant(request):
                 }
                 for e in material_entries
             ],
-            'total_labour_entries': len(labour_entries),
+            'total_labour_entries': approved_entries_count,  # Count of distinct approved entries
             'total_material_entries': len(material_entries),
-            'message': 'Showing ALL entries from ALL supervisors and sites for accountant'
+            'message': 'Showing approved entries from ALL supervisors and sites for accountant'
         }
         
         return Response(response_data, status=status.HTTP_200_OK)
