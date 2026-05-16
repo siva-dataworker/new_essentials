@@ -1955,6 +1955,7 @@ def get_approved_entries(request):
             return Response({'error': 'Invalid date format. Use YYYY-MM-DD'},
                           status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        from collections import defaultdict
         print(f"🔍 [APPROVED ENTRIES] Loading for date: {entry_date}")
 
         # Debug: Check if cash_entries table has any data for this date
@@ -2095,7 +2096,7 @@ def get_approved_entries(request):
         return Response({'approved_entries': result}, status=status.HTTP_200_OK)
 
     except Exception as e:
-        print(f"❌ Error fetching approved entries: {str(e)}")
+        print(f"❌ [APPROVED] Error: {str(e)}")
         import traceback
         traceback.print_exc()
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
