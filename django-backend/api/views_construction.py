@@ -1955,23 +1955,33 @@ def get_approved_entries(request):
             return Response({'error': 'Invalid date format. Use YYYY-MM-DD'},
                           status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Step 1: Get approved sites+dates from cash_entries
+        print(f"🔍 [APPROVED ENTRIES] Loading for date: {entry_date}")
+
+        # Debug: Check if cash_entries table has any data for this date
+        debug_check = fetch_all("SELECT COUNT(*) as count FROM cash_entries WHERE entry_date = %s", (entry_date,))
+        print(f"🔍 [DEBUG] Total cash_entries for {entry_date}: {debug_check[0]['count'] if debug_check else 0}")
+
+        # Step 1: Get unique approved sites+dates from cash_entries (grouped by site_id, entry_date)
         approved_meta = fetch_all("""
-            SELECT DISTINCT ON (ce.site_id, ce.entry_date)
+            SELECT DISTINCT
                 ce.site_id,
                 CONCAT(s.customer_name, ' ', s.site_name) as site_name,
                 ce.entry_date,
                 ce.source_type,
-                ce.created_at as approved_at,
+                MAX(ce.created_at) as approved_at,
                 COALESCE(u.full_name, u.phone) as approved_by
             FROM cash_entries ce
             JOIN sites s ON ce.site_id = s.id
             LEFT JOIN users u ON ce.accountant_id = u.id
             WHERE ce.entry_date = %s
-            ORDER BY ce.site_id, ce.entry_date, ce.created_at DESC
+            GROUP BY ce.site_id, s.customer_name, s.site_name, ce.entry_date, ce.source_type, u.full_name, u.phone
+            ORDER BY ce.site_id, ce.entry_date DESC
         """, (entry_date,))
 
+        print(f"✅ [APPROVED ENTRIES] Found {len(approved_meta)} approved sites")
+
         if not approved_meta:
+            print(f"ℹ️ [APPROVED ENTRIES] No entries found for {entry_date}")
             return Response({'approved_entries': []}, status=status.HTTP_200_OK)
 
         # Step 2: Get approved (confirmed) labour rows from cash_entries
@@ -1983,17 +1993,23 @@ def get_approved_entries(request):
             ORDER BY site_id
         """, (entry_date,))
 
+        print(f"✅ [APPROVED ENTRIES] Found {len(selected_rows)} labour rows in cash_entries")
+
         # Step 3: Get original labour_entries for all approved sites (both roles)
-        site_ids = list(set(str(a['site_id']) for a in approved_meta))
+        site_ids = tuple(a['site_id'] for a in approved_meta)
+        print(f"🔍 [APPROVED ENTRIES] Fetching original entries for sites: {site_ids}")
+
         if site_ids:
             original_entries = fetch_all("""
                 SELECT site_id, entry_date, labour_type, labour_count, submitted_by_role
                 FROM labour_entries
                 WHERE site_id = ANY(%s) AND entry_date = %s
                 ORDER BY site_id, submitted_by_role
-            """, (site_ids, entry_date))
+            """, (list(site_ids), entry_date))
         else:
             original_entries = []
+
+        print(f"✅ [APPROVED ENTRIES] Found {len(original_entries)} original labour entries")
 
         # Group cash entry labour rows by site_id
         from collections import defaultdict
