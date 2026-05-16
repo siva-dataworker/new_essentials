@@ -1983,9 +1983,9 @@ def get_approved_entries(request):
             combo_date = combo['entry_date']
             source_type = combo['source_type']
 
-            # Get site info
+            # Get site info including area and street
             site_info = fetch_one("""
-                SELECT CONCAT(customer_name, ' ', site_name) as site_name
+                SELECT CONCAT(customer_name, ' ', site_name) as site_name, area, street
                 FROM sites
                 WHERE id = %s
             """, (site_id,))
@@ -2010,6 +2010,8 @@ def get_approved_entries(request):
                 approved_meta.append({
                     'site_id': site_id,
                     'site_name': site_info['site_name'],
+                    'area': site_info.get('area', ''),
+                    'street': site_info.get('street', ''),
                     'entry_date': combo_date,
                     'source_type': source_type,
                     'approved_at': acc_info['created_at'] if acc_info else None,
@@ -2091,6 +2093,8 @@ def get_approved_entries(request):
             result.append({
                 'site_id': sid,
                 'site_name': meta['site_name'],
+                'area': meta.get('area', ''),
+                'street': meta.get('street', ''),
                 'entry_date': meta['entry_date'].isoformat() if meta['entry_date'] else None,
                 'source_type': meta['source_type'],
                 'approved_at': meta['approved_at'].isoformat() if meta['approved_at'] else None,
