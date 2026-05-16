@@ -314,20 +314,23 @@ def submit_labour_count(request):
               f"labour_type={labour_type} count={labour_count} role={user_role}")
 
         # ── Duplicate / lock check ────────────────────────────────────────
-        # One entry per (site, date, entry_type, labour_type) across all supervisors.
+        # One entry per (site, date, entry_type, labour_type, submitted_by_role) per user.
+        # This allows supervisor and site engineer to submit same labour type separately.
         existing = fetch_one("""
             SELECT le.id,
                    le.supervisor_id,
                    le.entry_time,
+                   le.submitted_by_role,
                    COALESCE(u.full_name, u.phone) AS supervisor_name
             FROM   labour_entries le
             LEFT JOIN users u ON u.id = le.supervisor_id
-            WHERE  le.site_id    = %s
-              AND  le.entry_date = %s
-              AND  le.entry_type = %s
-              AND  le.labour_type = %s
+            WHERE  le.site_id         = %s
+              AND  le.entry_date      = %s
+              AND  le.entry_type      = %s
+              AND  le.labour_type     = %s
+              AND  le.submitted_by_role = %s
             LIMIT 1
-        """, (site_id, entry_date, entry_type, labour_type))
+        """, (site_id, entry_date, entry_type, labour_type, user_role))
 
         if existing:
             if str(existing['supervisor_id']) == str(user_id):
@@ -343,7 +346,7 @@ def submit_labour_count(request):
                              if existing.get('entry_time') else 'earlier')
                 return Response({
                     'error': (f'{labour_type} ({entry_type}) already entered by '
-                              f'{existing["supervisor_name"]} at {locked_at}'),
+                              f'{existing["supervisor_name"]} ({existing["submitted_by_role"]}) at {locked_at}'),
                     'locked_by': existing['supervisor_name'],
                     'locked_at': locked_at,
                     'entry_type': entry_type,
