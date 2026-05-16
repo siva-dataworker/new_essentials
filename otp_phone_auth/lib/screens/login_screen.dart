@@ -36,11 +36,14 @@ class _LoginScreenState extends State<LoginScreen>
   void initState() {
     super.initState();
     _animCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 700));
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
     _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(
-            begin: const Offset(0, 0.12), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
+      begin: const Offset(0, 0.12),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
     _animCtrl.forward();
   }
 
@@ -130,7 +133,9 @@ class _LoginScreenState extends State<LoginScreen>
       }
 
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => dashboard));
+        context,
+        MaterialPageRoute(builder: (_) => dashboard),
+      );
     } else {
       if (authProvider.error?.contains('pending') == true ||
           authProvider.error?.contains('PENDING') == true) {
@@ -138,17 +143,21 @@ class _LoginScreenState extends State<LoginScreen>
           context,
           MaterialPageRoute(
             builder: (_) => PendingApprovalScreen(
-                username: _usernameController.text.trim()),
+              username: _usernameController.text.trim(),
+            ),
           ),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(authProvider.error ?? 'Login failed'),
-          backgroundColor: AppColors.statusOverdue,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error ?? 'Login failed'),
+            backgroundColor: AppColors.statusOverdue,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+          ),
+        );
       }
     }
   }
@@ -202,8 +211,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 borderRadius: BorderRadius.circular(24.r),
                                 boxShadow: [
                                   BoxShadow(
-                                    color:
-                                        Colors.black.withValues(alpha: 0.25),
+                                    color: Colors.black.withValues(alpha: 0.25),
                                     blurRadius: 24.r,
                                     offset: const Offset(0, 8),
                                   ),
@@ -217,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             SizedBox(height: 20.h),
                             Text(
-                              'Welcome Back',
+                              'Welcome',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 28.sp,
@@ -233,6 +241,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 fontSize: 15.sp,
                               ),
                             ),
+                            
                           ],
                         ),
                       ),
@@ -262,10 +271,10 @@ class _LoginScreenState extends State<LoginScreen>
                                   controller: _usernameController,
                                   label: 'Username',
                                   icon: Icons.person_outline_rounded,
-                                  validator: (v) =>
-                                      (v == null || v.isEmpty)
-                                          ? 'Enter your username'
-                                          : null,
+                                  textInputAction: TextInputAction.next,
+                                  validator: (v) => (v == null || v.isEmpty)
+                                      ? 'Enter your username'
+                                      : null,
                                 ),
                                 SizedBox(height: 16.h),
 
@@ -275,22 +284,27 @@ class _LoginScreenState extends State<LoginScreen>
                                   label: 'Password',
                                   icon: Icons.lock_outline_rounded,
                                   obscure: _obscurePassword,
+                                  textInputAction: TextInputAction.done,
+                                  onFieldSubmitted: (_) {
+                                    FocusScope.of(context).unfocus();
+                                    _login();
+                                  },
                                   suffix: IconButton(
                                     icon: Icon(
                                       _obscurePassword
                                           ? Icons.visibility_outlined
                                           : Icons.visibility_off_outlined,
-                                      color: AppColors.textSecondary,
+                                      color: Colors.grey,
                                       size: 20.sp,
                                     ),
                                     onPressed: () => setState(
-                                        () => _obscurePassword =
-                                            !_obscurePassword),
+                                      () =>
+                                          _obscurePassword = !_obscurePassword,
+                                    ),
                                   ),
-                                  validator: (v) =>
-                                      (v == null || v.isEmpty)
-                                          ? 'Enter your password'
-                                          : null,
+                                  validator: (v) => (v == null || v.isEmpty)
+                                      ? 'Enter your password'
+                                      : null,
                                 ),
                                 SizedBox(height: 28.h),
 
@@ -306,15 +320,17 @@ class _LoginScreenState extends State<LoginScreen>
                                     Text(
                                       "Don't have an account? ",
                                       style: TextStyle(
-                                          color: AppColors.textSecondary,
-                                          fontSize: 13.sp),
+                                        color: AppColors.textSecondary,
+                                        fontSize: 13.sp,
+                                      ),
                                     ),
                                     GestureDetector(
                                       onTap: () => Navigator.pushReplacement(
                                         context,
                                         MaterialPageRoute(
-                                            builder: (_) =>
-                                                const RegistrationScreen()),
+                                          builder: (_) =>
+                                              const RegistrationScreen(),
+                                        ),
                                       ),
                                       child: Text(
                                         'Register',
@@ -334,29 +350,37 @@ class _LoginScreenState extends State<LoginScreen>
                                   onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (_) =>
-                                            const GuestRegistrationScreen()),
+                                      builder: (_) =>
+                                          const GuestRegistrationScreen(),
+                                    ),
                                   ),
                                   child: Container(
                                     width: double.infinity,
                                     padding: EdgeInsets.symmetric(
-                                        vertical: 13.h),
+                                      vertical: 13.h,
+                                    ),
                                     decoration: BoxDecoration(
                                       border: Border.all(
-                                          color: AppColors.deepNavy
-                                              .withValues(alpha: 0.35)),
+                                        color: AppColors.deepNavy.withValues(
+                                          alpha: 0.35,
+                                        ),
+                                      ),
                                       borderRadius: BorderRadius.circular(12.r),
-                                      color: AppColors.deepNavy
-                                          .withValues(alpha: 0.04),
+                                      color: AppColors.deepNavy.withValues(
+                                        alpha: 0.04,
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.person_add_alt_1,
-                                            size: 18.sp,
-                                            color: AppColors.deepNavy
-                                                .withValues(alpha: 0.8)),
+                                        Icon(
+                                          Icons.person_add_alt_1,
+                                          size: 18.sp,
+                                          color: AppColors.deepNavy.withValues(
+                                            alpha: 0.8,
+                                          ),
+                                        ),
                                         SizedBox(width: 8.w),
                                         Text(
                                           'Guest Entry',
@@ -394,47 +418,58 @@ class _LoginScreenState extends State<LoginScreen>
     bool obscure = false,
     Widget? suffix,
     String? Function(String?)? validator,
+    TextInputAction? textInputAction,
+    void Function(String)? onFieldSubmitted,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: obscure,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onFieldSubmitted,
       style: TextStyle(
-          fontSize: 15.sp, color: AppColors.deepNavy, fontWeight: FontWeight.w500),
+        fontSize: 15.sp,
+        color: AppColors.deepNavy,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle:
-            TextStyle(color: AppColors.textSecondary, fontSize: 14.sp),
-        prefixIcon:
-            Icon(icon, color: AppColors.deepNavy.withValues(alpha: 0.6), size: 20.sp),
+        labelStyle: TextStyle(color: AppColors.textSecondary, fontSize: 14.sp),
+        prefixIcon: Icon(
+          icon,
+          color: AppColors.deepNavy.withValues(alpha: 0.6),
+          size: 20.sp,
+        ),
         suffixIcon: suffix,
         filled: true,
         fillColor: const Color(0xFFF4F6FA),
-        contentPadding:
-            EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16.r),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16.r),
-          borderSide:
-              const BorderSide(color: Color(0xFFE8ECF4), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFFE8ECF4), width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16.r),
-          borderSide:
-              const BorderSide(color: AppColors.deepNavy, width: 2),
+          borderSide: const BorderSide(color: AppColors.deepNavy, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16.r),
-          borderSide:
-              const BorderSide(color: AppColors.statusOverdue, width: 1.5),
+          borderSide: const BorderSide(
+            color: AppColors.statusOverdue,
+            width: 1.5,
+          ),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16.r),
-          borderSide:
-              const BorderSide(color: AppColors.statusOverdue, width: 2),
+          borderSide: const BorderSide(
+            color: AppColors.statusOverdue,
+            width: 2,
+          ),
         ),
+        errorStyle: TextStyle(color: Colors.red, fontSize: 12.sp),
       ),
       validator: validator,
     );
@@ -460,14 +495,18 @@ class _LoginScreenState extends State<LoginScreen>
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16.r)),
+            borderRadius: BorderRadius.circular(16.r),
+          ),
         ),
         child: authProvider.isLoading
             ? SizedBox(
                 width: 22.w,
                 height: 22.h,
                 child: const CircularProgressIndicator(
-                    strokeWidth: 2.5, color: Colors.white))
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -481,8 +520,11 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                   ),
                   SizedBox(width: 8.w),
-                  Icon(Icons.arrow_forward_rounded,
-                      color: Colors.white, size: 20.sp),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 20.sp,
+                  ),
                 ],
               ),
       ),
@@ -490,11 +532,8 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _circle(double size, Color color) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-        ),
-      );
+    width: size,
+    height: size,
+    decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+  );
 }

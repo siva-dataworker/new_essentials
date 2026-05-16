@@ -12,6 +12,8 @@ class CacheService {
   static const String _budgetAllocationKey = 'admin_budget_allocation_';
   static const String _budgetUtilizationKey = 'admin_budget_utilization_';
   static const String _budgetTimestampKey = 'admin_budget_timestamp_';
+  static const String _phasePaymentsKey = 'admin_phase_payments_';
+  static const String _phasePaymentsTimestampKey = 'admin_phase_payments_ts_';
   static const String _pendingUsersKey = 'admin_pending_users_cache';
   static const String _pendingUsersTimestampKey = 'admin_pending_users_timestamp';
   static const String _allUsersKey = 'admin_all_users_cache';
@@ -266,7 +268,48 @@ class CacheService {
       print('Error clearing budget utilization cache: $e');
     }
   }
-  
+
+  static Future<void> savePhasePayments(String siteId, Map<String, dynamic> phases) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('$_phasePaymentsKey$siteId', json.encode(phases));
+      await prefs.setInt('$_phasePaymentsTimestampKey$siteId', DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      print('Error saving phase payments cache: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>?> loadPhasePayments(String siteId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timestamp = prefs.getInt('$_phasePaymentsTimestampKey$siteId');
+      if (timestamp != null) {
+        final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        if (DateTime.now().difference(cacheTime) > _cacheExpiry) {
+          await clearPhasePayments(siteId);
+          return null;
+        }
+      }
+      final cached = prefs.getString('$_phasePaymentsKey$siteId');
+      if (cached != null) {
+        return json.decode(cached) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      print('Error loading phase payments cache: $e');
+    }
+    return null;
+  }
+
+  static Future<void> clearPhasePayments(String siteId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('$_phasePaymentsKey$siteId');
+      await prefs.remove('$_phasePaymentsTimestampKey$siteId');
+    } catch (e) {
+      print('Error clearing phase payments cache: $e');
+    }
+  }
+
   /// Clear all admin caches
   static Future<void> clearAllCache() async {
     try {

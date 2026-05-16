@@ -68,6 +68,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
   bool _budgetLoaded = false;
   bool _utilizationLoaded = false;
   bool _requirementsLoaded = false;
+  bool _phasesLoaded = false;
 
   // Excel export state
   bool _isExporting = false;
@@ -125,43 +126,40 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
   }
 
   Future<void> _loadBudgetAllocation({bool forceRefresh = false}) async {
-    // If forcing refresh, clear cache FIRST before loading
     if (forceRefresh) {
-      print('🗑️ [BUDGET] Clearing cache before refresh');
       await CacheService.clearBudgetAllocation(widget.siteId);
       _budgetLoaded = false;
     }
-    
-    // Load from persistent cache first (instant display)
-    if (!forceRefresh && !_budgetLoaded) {
+
+    // Serve from cache instantly for first display
+    if (!_budgetLoaded) {
       final cached = await CacheService.loadBudgetAllocation(widget.siteId);
       if (cached != null && mounted) {
-        setState(() {
-          _budgetAllocation = cached;
-          _budgetLoaded = true;
-        });
-        print('✅ [BUDGET] Loaded allocation from persistent cache');
+        setState(() => _budgetAllocation = cached);
       }
     }
-    
-    // Skip if already loaded and not forcing refresh
-    if (_budgetLoaded && !forceRefresh) return;
-    
-    setState(() => _isLoadingBudget = true);
-    final budget = await _budgetService.getBudgetAllocation(widget.siteId);
-    
-    if (budget != null) {
-      // Save to persistent cache
-      await CacheService.saveBudgetAllocation(widget.siteId, budget);
+
+    // Always validate against API — catches deletions and updates on server
+    // Only show spinner when there's nothing to show yet
+    if (_budgetAllocation == null) {
+      setState(() => _isLoadingBudget = true);
     }
-    
+
+    final budget = await _budgetService.getBudgetAllocation(widget.siteId);
+
+    if (budget != null) {
+      await CacheService.saveBudgetAllocation(widget.siteId, budget);
+    } else {
+      // Budget was deleted from DB — clear the stale cache entry
+      await CacheService.clearBudgetAllocation(widget.siteId);
+    }
+
     if (mounted) {
       setState(() {
-        _budgetAllocation = budget;
+        _budgetAllocation = budget; // null if deleted from DB
         _isLoadingBudget = false;
         _budgetLoaded = true;
       });
-      print('✅ [BUDGET] Loaded allocation from API and saved to cache');
     }
   }
 
@@ -183,16 +181,37 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
   }
 
   Future<void> _loadPhasePayments({bool forceRefresh = false}) async {
-    print('🔄 [PHASES] Loading phase payments...');
-    setState(() => _isLoadingPhases = true);
+    if (forceRefresh) {
+      await CacheService.clearPhasePayments(widget.siteId);
+      _phasesLoaded = false;
+    }
+
+    // Serve from cache instantly for first display
+    if (!_phasesLoaded) {
+      final cached = await CacheService.loadPhasePayments(widget.siteId);
+      if (cached != null && mounted) {
+        setState(() => _phasePayments = cached);
+      }
+    }
+
+    // Always validate against API — catches server-side deletions/changes
+    if (_phasePayments == null) {
+      setState(() => _isLoadingPhases = true);
+    }
+
     final phases = await _budgetService.getPhasePayments(widget.siteId);
-    print('📦 [PHASES] Received data: $phases');
+    if (phases != null) {
+      await CacheService.savePhasePayments(widget.siteId, phases);
+    } else {
+      await CacheService.clearPhasePayments(widget.siteId);
+    }
+
     if (mounted) {
       setState(() {
         _phasePayments = phases;
         _isLoadingPhases = false;
+        _phasesLoaded = true;
       });
-      print('✅ [PHASES] State updated, should rebuild now');
     }
   }
 
@@ -402,7 +421,7 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
   }
 
   Widget _buildPhasePaymentsSection() {
-    if (_phasePayments == null || _isLoadingPhases) {
+    if (_phasePayments == null) {
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(16),
@@ -2220,7 +2239,8 @@ Widget _buildBillsTab() {
     final notesController = TextEditingController(
       text: _budgetAllocation?['notes']?.toString() ?? '',
     );
-    bool isSubmitting = false; // Track submission state
+    bool isSubmitting = false;
+    final outerSetState = setState; // capture before StatefulBuilder shadows it
 
     showDialog(
       context: context,
@@ -2310,13 +2330,18 @@ Widget _buildBillsTab() {
 
               // Optimistically update UI immediately (before API call)
               if (mounted) {
-                setState(() {
-                  if (_budgetAllocation != null) {
-                    _budgetAllocation!['total_budget'] = total;
-                  }
-                  if (_phasePayments != null) {
-                    _phasePayments!['client_balance'] = clientBalance;
-                  }
+                outerSetState(() {
+                  _budgetAllocation ??= {
+                    'total_budget': total,
+                    'status': 'active',
+                    'allocated_by': '',
+                    'allocated_date': DateTime.now().toIso8601String(),
+                    'notes': notesController.text.trim().isEmpty ? null : notesController.text.trim(),
+                  };
+                  _budgetAllocation!['total_budget'] = total;
+                  _budgetAllocation!['notes'] = notesController.text.trim().isEmpty ? null : notesController.text.trim();
+                  _phasePayments ??= {'phases': [], 'client_balance': clientBalance, 'total_received': 0.0};
+                  _phasePayments!['client_balance'] = clientBalance;
                 });
               }
 

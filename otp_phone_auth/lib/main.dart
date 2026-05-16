@@ -1,9 +1,11 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'firebase_options.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-// Firebase imports kept for safety (not used)
-// import 'package:firebase_core/firebase_core.dart';
-// import 'firebase_options.dart';
+import 'services/push_notification_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/supervisor_dashboard_feed.dart';
 import 'screens/admin_dashboard.dart';
@@ -28,18 +30,13 @@ import 'providers/client_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Firebase initialization removed - using custom auth
-  // await Firebase.initializeApp(
-  //   options: DefaultFirebaseOptions.currentPlatform,
-  // );
-  
-  // Supabase initialization removed - using Django backend
-  // await SupabaseService.initialize(
-  //   supabaseUrl: SupabaseConfig.supabaseUrl,
-  //   supabaseAnonKey: SupabaseConfig.supabaseAnonKey,
-  // );
-  
+
+  // Initialise Firebase (mobile only — FCM not used on web)
+  if (!kIsWeb) {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  }
+
   runApp(const MyApp());
 }
 

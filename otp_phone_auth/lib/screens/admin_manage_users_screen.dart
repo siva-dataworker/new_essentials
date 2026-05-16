@@ -27,6 +27,9 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
   bool _isLoadingPending = false;
   bool _pendingLoaded = false;
 
+  // Tracks which user card is currently being approved/rejected
+  String? _processingUserId;
+
   // All Users state
   List<Map<String, dynamic>> _allUsers = [];
   bool _isLoadingAll = false;
@@ -181,6 +184,7 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
   }
 
   Future<void> _approveUser(String userId, String username) async {
+    setState(() => _processingUserId = userId);
     try {
       final token = await _authService.getToken();
       final response = await http.post(
@@ -212,10 +216,13 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _processingUserId = null);
     }
   }
 
   Future<void> _rejectUser(String userId, String username) async {
+    setState(() => _processingUserId = userId);
     try {
       final token = await _authService.getToken();
       final response = await http.post(
@@ -246,6 +253,8 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _processingUserId = null);
     }
   }
 
@@ -518,34 +527,73 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen>
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _approveUser(userId, username),
-                        icon: Icon(Icons.check_circle, size: 20.sp),
-                        label: const Text('Approve'),
+                      child: ElevatedButton(
+                        onPressed: _processingUserId != null
+                            ? null
+                            : () => _approveUser(userId, username),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF4CAF50),
                           foregroundColor: Colors.white,
+                          disabledBackgroundColor: const Color(0xFF4CAF50).withValues(alpha: 0.6),
                           padding: EdgeInsets.symmetric(vertical: 12.h),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12.r),
                           ),
                         ),
+                        child: _processingUserId == userId
+                            ? SizedBox(
+                                width: 20.w,
+                                height: 20.h,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.check_circle, size: 20.sp),
+                                  SizedBox(width: 6.w),
+                                  const Text('Approve'),
+                                ],
+                              ),
                       ),
                     ),
                     SizedBox(width: 12.w),
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _rejectUser(userId, username),
-                        icon: Icon(Icons.cancel, size: 20.sp),
-                        label: const Text('Reject'),
+                      child: OutlinedButton(
+                        onPressed: _processingUserId != null
+                            ? null
+                            : () => _rejectUser(userId, username),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
+                          side: BorderSide(
+                            color: _processingUserId != null
+                                ? Colors.red.withValues(alpha: 0.4)
+                                : Colors.red,
+                          ),
                           padding: EdgeInsets.symmetric(vertical: 12.h),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12.r),
                           ),
                         ),
+                        child: _processingUserId == userId
+                            ? SizedBox(
+                                width: 20.w,
+                                height: 20.h,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                                ),
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.cancel, size: 20.sp),
+                                  SizedBox(width: 6.w),
+                                  const Text('Reject'),
+                                ],
+                              ),
                       ),
                     ),
                   ],

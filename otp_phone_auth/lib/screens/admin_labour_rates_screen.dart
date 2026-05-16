@@ -50,8 +50,8 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
     _setByNames = names;
   }
 
-  Future<void> _loadRates() async {
-    // Try cache first
+  Future<void> _loadRates({bool silent = false}) async {
+    // Try cache first for instant display
     final cached = await CacheService.loadLabourRates();
     if (cached != null) {
       final cachedRates = cached['rates'] as List<dynamic>? ?? [];
@@ -64,9 +64,12 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
-    final allRates = await _budgetService.getLabourRates('global');
+    // Only show full-screen spinner on first load with no data
+    if (!silent && _rates.isEmpty) {
+      setState(() => _isLoading = true);
+    }
 
+    final allRates = await _budgetService.getLabourRates('global');
     await CacheService.saveLabourRates({'rates': allRates});
 
     if (mounted) {
@@ -252,12 +255,21 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
       return;
     }
 
-    setState(() => _isSaving = true);
+    final newType = nameCtrl.text.trim();
+    final newRate = double.parse(rateCtrl.text.trim());
+
+    // Optimistic update — show new type immediately
+    setState(() {
+      _rates[newType] = newRate;
+      _effectiveRates[newType] = newRate;
+      _isSaving = true;
+    });
+
     try {
       final result = await _budgetService.setLabourRate(
         siteId: 'global',
-        labourType: nameCtrl.text.trim(),
-        dailyRate: double.parse(rateCtrl.text.trim()),
+        labourType: newType,
+        dailyRate: newRate,
         notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
       );
 
@@ -265,15 +277,18 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
         if (result != null && result['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                'New labour type "${nameCtrl.text.trim()}" added with rate ₹${rateCtrl.text}/day',
-              ),
+              content: Text('New labour type "$newType" added with rate ₹${rateCtrl.text}/day'),
               backgroundColor: const Color(0xFF4CAF50),
             ),
           );
           await CacheService.clearLabourRates();
-          await _loadRates();
+          _loadRates(silent: true);
         } else {
+          // Revert optimistic add on failure
+          setState(() {
+            _rates.remove(newType);
+            _effectiveRates.remove(newType);
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result?['error'] ?? 'Failed to add labour type'),
@@ -284,6 +299,10 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _rates.remove(newType);
+          _effectiveRates.remove(newType);
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
@@ -493,7 +512,19 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
 
     if (confirmed != true || !mounted) return;
 
-    setState(() => _isSaving = true);
+    // Save snapshots for rollback
+    final savedRate = _rates[labourType];
+    final savedEffective = _effectiveRates[labourType];
+    final savedSetBy = _setByNames[labourType];
+
+    // Optimistic remove — disappears immediately
+    setState(() {
+      _rates.remove(labourType);
+      _effectiveRates.remove(labourType);
+      _setByNames.remove(labourType);
+      _isSaving = true;
+    });
+
     try {
       final result = await _budgetService.deleteLabourType(labourType);
 
@@ -506,8 +537,14 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
             ),
           );
           await CacheService.clearLabourRates();
-          await _loadRates();
+          _loadRates(silent: true);
         } else {
+          // Revert on failure
+          setState(() {
+            _rates[labourType] = savedRate;
+            _effectiveRates[labourType] = savedEffective!;
+            if (savedSetBy != null) _setByNames[labourType] = savedSetBy;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result['error'] ?? 'Failed to delete labour type'),
@@ -518,6 +555,11 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _rates[labourType] = savedRate;
+          _effectiveRates[labourType] = savedEffective!;
+          if (savedSetBy != null) _setByNames[labourType] = savedSetBy;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
@@ -670,27 +712,39 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
 
     if (confirmed != true || !mounted) return;
 
-    setState(() => _isSaving = true);
+    final newRate = double.parse(ctrl.text.trim());
+
+    // Optimistic update — reflect change instantly before API responds
+    setState(() {
+      _effectiveRates[labourType] = newRate;
+      _rates[labourType] = newRate;
+      _isSaving = true;
+    });
+
     try {
       final result = await _budgetService.setLabourRate(
         siteId: 'global',
         labourType: labourType,
-        dailyRate: double.parse(ctrl.text.trim()),
+        dailyRate: newRate,
         notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
       );
       if (mounted) {
         if (result != null && result['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                'Rate for $labourType updated to ₹${ctrl.text}/day',
-              ),
+              content: Text('Rate for $labourType updated to ₹${ctrl.text}/day'),
               backgroundColor: const Color(0xFF4CAF50),
             ),
           );
+          // Silent background sync to persist cache with server-confirmed data
           await CacheService.clearLabourRates();
-          await _loadRates();
+          _loadRates(silent: true);
         } else {
+          // Revert optimistic update on failure
+          setState(() {
+            _effectiveRates[labourType] = effectiveRate ?? newRate;
+            _rates[labourType] = null;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result?['error'] ?? 'Failed to update rate'),
@@ -700,7 +754,12 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
         }
       }
     } catch (e) {
+      // Revert optimistic update on error
       if (mounted) {
+        setState(() {
+          _effectiveRates[labourType] = effectiveRate ?? newRate;
+          _rates[labourType] = null;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
@@ -745,68 +804,35 @@ class _AdminLabourRatesScreenState extends State<AdminLabourRatesScreen> {
           ),
         ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
-      floatingActionButton: Theme(
-        // Inherit or override FAB theme properties
-        data: Theme.of(context).copyWith(useMaterial3: true),
-        child: PopupMenuButton<String>(
-          // Offset pushes the dropdown menu below the button
-          offset: const Offset(0, 64),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          onSelected: (String value) {
-            // Handle menu item selection
-            debugPrint('Selected: $value');
-          },
-          // Custom child transforms the popup trigger into a FAB shape
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: kElevationToShadow[6],
-            ),
-            child: Icon(
-              Icons.menu,
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
-            ),
-          ),
-          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            PopupMenuItem<String>(
-              value: 'Add Labour Type',
-              child: GestureDetector(
-                child: ListTile(
-                  leading: Icon(Icons.add_circle_outline),
-                  title: Text('Add Labour Type'),
-                  contentPadding: EdgeInsets.zero,
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'fab_local_rates',
+            tooltip: 'Local Labour Rates',
+            backgroundColor: const Color(0xFF16213E),
+            foregroundColor: Colors.white,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminLocalLabourRatesScreen(),
                 ),
-                onTap: () {
-                  _addNewLabourType;
-                },
-              ),
-            ),
-            PopupMenuItem<String>(
-              value: 'Local Rates',
-              child: GestureDetector(
-                child: ListTile(
-                  leading: Icon(Icons.location_on, size: 18),
-                  title: Text('Local rates'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AdminLocalLabourRatesScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+              );
+            },
+            child: const Icon(Icons.location_on),
+          ),
+          SizedBox(height: 12.h),
+          FloatingActionButton(
+            heroTag: 'fab_add_labour',
+            tooltip: 'Add Labour Type',
+            backgroundColor: const Color(0xFF1A1A2E),
+            foregroundColor: Colors.white,
+            onPressed: _addNewLabourType,
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(

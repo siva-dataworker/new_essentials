@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
 
@@ -108,6 +110,44 @@ class NotificationService {
     } catch (e) {
       print('Error marking notification as read: $e');
       return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Register this device's FCM token with the backend so the server can
+  /// send push notifications to the admin.
+  Future<void> registerFcmToken(String token) async {
+    try {
+      final platform = Platform.isAndroid ? 'android' : 'ios';
+      await http.post(
+        Uri.parse('$baseUrl/notifications/register-device/'),
+        headers: await _getHeaders(),
+        body: json.encode({'fcm_token': token, 'platform': platform}),
+      );
+      debugPrint('[FCM] token registered with backend');
+    } catch (e) {
+      debugPrint('[FCM] token registration error: $e');
+    }
+  }
+
+  /// Called from the guest check-in screen to push an alert to the admin.
+  /// No auth header — the guest is not logged in.
+  Future<void> sendGuestCheckinNotification({
+    required String guestName,
+    required String guestPhone,
+    required String ref,
+  }) async {
+    try {
+      await http.post(
+        Uri.parse('$baseUrl/notifications/guest-checkin/'),
+        headers: const {'Content-Type': 'application/json'},
+        body: json.encode({
+          'guest_name': guestName,
+          'guest_phone': guestPhone,
+          'ref': ref,
+        }),
+      );
+    } catch (e) {
+      debugPrint('[FCM] guest checkin notification error: $e');
     }
   }
 

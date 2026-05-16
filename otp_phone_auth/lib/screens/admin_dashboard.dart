@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../services/construction_service.dart';
 import '../services/notification_service.dart';
 import '../services/cache_service.dart';
+import '../services/push_notification_service.dart';
 import '../utils/smooth_animations.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -68,8 +69,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
     super.initState();
     _loadAdminUser();
     _loadData();
+    _loadGuestVisitors(); // always load guests at startup
     _loadAreas();
     _startBackgroundRefresh();
+    // Register this device for push notifications and get FCM token
+    PushNotificationService().initialise();
   }
   
   @override
@@ -83,9 +87,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
     _notificationsRefreshTimer = Timer.periodic(
       const Duration(seconds: 30),
       (timer) {
-        if (_selectedIndex == 2 && mounted) {
+        if (!mounted) return;
+        _loadGuestVisitors(); // always refresh guests
+        if (_selectedIndex == 2) {
           _loadNotifications(forceRefresh: true);
-          _loadGuestVisitors();
         }
       },
     );
@@ -1131,19 +1136,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
           ),
 
-          // Tab Views
+          // Tab Views — guest tab is never gated on _notificationsLoading
           Expanded(
-            child: _notificationsLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF1A1A2E)),
-                  )
-                : TabBarView(
-                    children: [
-                      _buildNotificationsList(labourNotifications, 'labour'),
-                      _buildNotificationsList(photosAndMaterialNotifications, 'photos_material'),
-                      _buildGuestVisitorsList(),
-                    ],
-                  ),
+            child: TabBarView(
+              children: [
+                _notificationsLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                            color: Color(0xFF1A1A2E)))
+                    : _buildNotificationsList(labourNotifications, 'labour'),
+                _notificationsLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                            color: Color(0xFF1A1A2E)))
+                    : _buildNotificationsList(
+                        photosAndMaterialNotifications, 'photos_material'),
+                _buildGuestVisitorsList(),
+              ],
+            ),
           ),
         ],
       ),
@@ -3182,8 +3192,18 @@ class _AdminStoryTabState extends State<_AdminStoryTab> {
         }
       }
 
-      // Step 4 — combine, sort newest-first, group by site
-      final allPhotos = [...rawSupervisor, ...rawAccountant];
+      // Step 4 — combine, keep only last 24 hours, sort newest-first, group by site
+      final cutoff = DateTime.now().subtract(const Duration(hours: 24));
+      final allPhotos = [...rawSupervisor, ...rawAccountant].where((p) {
+        final raw = ((p['update_date'] ?? p['upload_date']) as String?) ?? '';
+        if (raw.isEmpty) return false;
+        try {
+          return DateTime.parse(raw).isAfter(cutoff);
+        } catch (_) {
+          return true;
+        }
+      }).toList();
+
       allPhotos.sort((a, b) {
         final da = (a['update_date'] as String?) ?? '';
         final db = (b['update_date'] as String?) ?? '';
@@ -3920,28 +3940,6 @@ class _StoryViewerState extends State<_StoryViewer>
               ),
             ),
 
-            // ── Tap zones (left / right) ───────────────────────
-            Row(
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: GestureDetector(
-                    onTap: _prev,
-                    behavior: HitTestBehavior.translucent,
-                    child: const SizedBox.expand(),
-                  ),
-                ),
-                Expanded(flex: 1, child: const SizedBox.shrink()),
-                Expanded(
-                  flex: 1,
-                  child: GestureDetector(
-                    onTap: _next,
-                    behavior: HitTestBehavior.translucent,
-                    child: const SizedBox.expand(),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
