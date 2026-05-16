@@ -2084,9 +2084,9 @@ def get_approved_entries(request):
             result.append({
                 'site_id': sid,
                 'site_name': meta['site_name'],
-                'entry_date': meta['entry_date'].isoformat(),
+                'entry_date': meta['entry_date'].isoformat() if meta['entry_date'] else None,
                 'source_type': meta['source_type'],
-                'approved_at': meta['approved_at'].isoformat(),
+                'approved_at': meta['approved_at'].isoformat() if meta['approved_at'] else None,
                 'approved_by': meta['approved_by'],
                 'selected_entries': selected_by_site[sid],
                 'supervisor_entries': supervisor_by_site[sid],
