@@ -115,6 +115,7 @@ urlpatterns = [
     path('notifications/late-entry/', views_notifications.create_late_entry_notification, name='create-late-entry-notification'),
     path('notifications/register-device/', views_notifications.register_device_token, name='register-device-token'),
     path('notifications/guest-checkin/', views_notifications.guest_checkin_notification, name='guest-checkin-notification'),
+    path('notifications/guest-checkins/', views_notifications.get_guest_checkins, name='get-guest-checkins'),
     path('notifications/mark-all-read/', views_notifications.mark_all_notifications_read, name='mark-all-notifications-read'),
     path('notifications/', views_notifications.get_notifications, name='get-notifications'),
     path('notifications/<uuid:notification_id>/read/', views_notifications.mark_notification_read, name='mark-late-notification-read'),

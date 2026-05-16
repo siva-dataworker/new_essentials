@@ -156,13 +156,19 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
   void initState() {
     super.initState();
     _heroCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500));
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
     _cardCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 650));
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
     _heroFade = CurvedAnimation(parent: _heroCtrl, curve: Curves.easeOut);
     _cardFade = CurvedAnimation(parent: _cardCtrl, curve: Curves.easeOut);
-    _cardSlide = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _cardCtrl, curve: Curves.easeOut));
+    _cardSlide = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _cardCtrl, curve: Curves.easeOut));
     _heroCtrl.forward();
   }
 
@@ -201,23 +207,27 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
       };
       final prefs = await SharedPreferences.getInstance();
       final existing = prefs.getString(kGuestVisitorsKey);
-      final List<dynamic> list =
-          existing != null ? json.decode(existing) as List : [];
+      final List<dynamic> list = existing != null
+          ? json.decode(existing) as List
+          : [];
       list.insert(0, entry);
       await prefs.setString(kGuestVisitorsKey, json.encode(list));
 
       // Fire-and-forget: notify admin (errors logged internally)
-      NotificationService().sendGuestCheckinNotification(
-        guestName: name,
-        guestPhone: phone,
-        ref: ref,
-      ).catchError((e) => debugPrint('[Guest] notify error: $e'));
+      NotificationService()
+          .sendGuestCheckinNotification(
+            guestName: name,
+            guestPhone: phone,
+            ref: ref,
+          )
+          .catchError((e) => debugPrint('[Guest] notify error: $e'));
 
-      PushNotificationService().showLocalNotification(
-        title: '🔔 New Guest Check-In',
-        body: '$name ($phone) just checked in — Ref: $ref',
-      ).catchError((e) => debugPrint('[Guest] local notify error: $e'));
-
+      PushNotificationService()
+          .showLocalNotification(
+            title: '🔔 New Guest Check-In',
+            body: '$name ($phone) just checked in — Ref: $ref',
+          )
+          .catchError((e) => debugPrint('[Guest] local notify error: $e'));
     } catch (e) {
       debugPrint('Guest submit error: $e');
     } finally {
@@ -261,8 +271,11 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
             color: Colors.white.withValues(alpha: 0.15),
             shape: BoxShape.circle,
           ),
-          child: Icon(Icons.arrow_back_ios_new_rounded,
-              color: Colors.white, size: 16.sp),
+          child: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white,
+            size: 16.sp,
+          ),
         ),
         onPressed: () => Navigator.pop(context),
       ),
@@ -424,7 +437,10 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [_gold.withValues(alpha: 0.12), _gold.withValues(alpha: 0.04)],
+          colors: [
+            _gold.withValues(alpha: 0.12),
+            _gold.withValues(alpha: 0.04),
+          ],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
@@ -481,25 +497,32 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16.r)),
+            borderRadius: BorderRadius.circular(16.r),
+          ),
         ),
         child: _isSubmitting
             ? SizedBox(
                 width: 22.w,
                 height: 22.h,
                 child: const CircularProgressIndicator(
-                    color: Colors.white, strokeWidth: 2.5))
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                ),
+              )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.how_to_reg_rounded, size: 20.sp),
                   SizedBox(width: 8.w),
-                  Text('Check In',
-                      style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.3)),
+                  Text(
+                    'Check In',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
                 ],
               ),
       ),
@@ -535,15 +558,22 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Essential Homes Construction',
-                    style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.bold,
-                        color: _navy)),
+                Text(
+                  'Essential Homes Construction',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.bold,
+                    color: _navy,
+                  ),
+                ),
                 SizedBox(height: 3.h),
-                Text('10 active projects across Chennai',
-                    style:
-                        TextStyle(fontSize: 11.sp, color: Colors.grey.shade500)),
+                Text(
+                  '10 active projects across Chennai',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
               ],
             ),
           ),
@@ -551,11 +581,14 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
             children: [
               Icon(Icons.star_rounded, color: _gold, size: 14.sp),
               SizedBox(width: 3.w),
-              Text('4.9',
-                  style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.bold,
-                      color: _navy)),
+              Text(
+                '4.9',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.bold,
+                  color: _navy,
+                ),
+              ),
             ],
           ),
         ],
@@ -620,14 +653,19 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
                     _heroCtrl.forward(from: 0);
                   },
                   icon: Icon(Icons.refresh_rounded, size: 18.sp),
-                  label: Text('New Check-In',
-                      style: TextStyle(
-                          fontSize: 14.sp, fontWeight: FontWeight.w600)),
+                  label: Text(
+                    'New Check-In',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: _navy,
                     side: BorderSide(color: _navy.withValues(alpha: 0.4)),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14.r)),
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
                   ),
                 ),
               ),
@@ -671,9 +709,10 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
           Text(
             'Welcome, ${_nameCtrl.text.trim()}!',
             style: TextStyle(
-                color: Colors.white,
-                fontSize: 20.sp,
-                fontWeight: FontWeight.w800),
+              color: Colors.white,
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           SizedBox(height: 6.h),
           Text(
@@ -692,15 +731,19 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.confirmation_num_outlined,
-                    color: Colors.white, size: 14.sp),
+                Icon(
+                  Icons.confirmation_num_outlined,
+                  color: Colors.white,
+                  size: 14.sp,
+                ),
                 SizedBox(width: 6.w),
                 Text(
                   '$_refNumber  ·  $timeStr  ·  $dateStr',
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w700),
+                    color: Colors.white,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
@@ -731,15 +774,27 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
             padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
             child: Column(
               children: [
-                _detailRow(Icons.person_outline_rounded, 'Name',
-                    _nameCtrl.text.trim()),
-                _detailRow(Icons.phone_outlined, 'Phone',
-                    _phoneCtrl.text.trim()),
+                _detailRow(
+                  Icons.person_outline_rounded,
+                  'Name',
+                  _nameCtrl.text.trim(),
+                ),
+                _detailRow(
+                  Icons.phone_outlined,
+                  'Phone',
+                  _phoneCtrl.text.trim(),
+                ),
                 if (_purposeCtrl.text.trim().isNotEmpty)
-                  _detailRow(Icons.notes_outlined, 'Purpose',
-                      _purposeCtrl.text.trim()),
-                _detailRow(Icons.access_time_rounded, 'Check-in',
-                    '$timeStr on $dateStr'),
+                  _detailRow(
+                    Icons.notes_outlined,
+                    'Purpose',
+                    _purposeCtrl.text.trim(),
+                  ),
+                _detailRow(
+                  Icons.access_time_rounded,
+                  'Check-in',
+                  '$timeStr on $dateStr',
+                ),
               ],
             ),
           ),
@@ -753,8 +808,8 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
     final statusColor = site.status == 'Completed'
         ? _green
         : site.status == 'In Progress'
-            ? const Color(0xFF2563EB)
-            : _gold;
+        ? const Color(0xFF2563EB)
+        : _gold;
 
     return Container(
       margin: EdgeInsets.only(bottom: 14.h),
@@ -833,7 +888,9 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
                     children: [
                       Container(
                         padding: EdgeInsets.symmetric(
-                            horizontal: 8.w, vertical: 3.h),
+                          horizontal: 8.w,
+                          vertical: 3.h,
+                        ),
                         decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20.r),
@@ -841,16 +898,19 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
                         child: Text(
                           site.status,
                           style: TextStyle(
-                              fontSize: 9.sp,
-                              fontWeight: FontWeight.bold,
-                              color: statusColor),
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor,
+                          ),
                         ),
                       ),
                       const Spacer(),
                       Text(
                         site.year,
                         style: TextStyle(
-                            fontSize: 10.sp, color: Colors.grey.shade400),
+                          fontSize: 10.sp,
+                          color: Colors.grey.shade400,
+                        ),
                       ),
                     ],
                   ),
@@ -860,10 +920,11 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
                   Text(
                     site.name,
                     style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w700,
-                        color: _navy,
-                        height: 1.3),
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                      color: _navy,
+                      height: 1.3,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -872,12 +933,19 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
                   // Location
                   Row(
                     children: [
-                      Icon(Icons.location_on_rounded,
-                          size: 11.sp, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.location_on_rounded,
+                        size: 11.sp,
+                        color: Colors.grey.shade400,
+                      ),
                       SizedBox(width: 3.w),
-                      Text(site.location,
-                          style: TextStyle(
-                              fontSize: 10.sp, color: Colors.grey.shade400)),
+                      Text(
+                        site.location,
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
                     ],
                   ),
                   SizedBox(height: 5.h),
@@ -886,9 +954,10 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
                   Text(
                     site.detail,
                     style: TextStyle(
-                        fontSize: 10.5.sp,
-                        color: Colors.grey.shade600,
-                        height: 1.4),
+                      fontSize: 10.5.sp,
+                      color: Colors.grey.shade600,
+                      height: 1.4,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -904,10 +973,12 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
                             child: LinearProgressIndicator(
                               value: site.progress,
                               minHeight: 4.h,
-                              backgroundColor:
-                                  statusColor.withValues(alpha: 0.12),
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(statusColor),
+                              backgroundColor: statusColor.withValues(
+                                alpha: 0.12,
+                              ),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                statusColor,
+                              ),
                             ),
                           ),
                         ),
@@ -915,27 +986,38 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
                         Text(
                           '${(site.progress * 100).toInt()}%',
                           style: TextStyle(
-                              fontSize: 9.sp,
-                              fontWeight: FontWeight.bold,
-                              color: statusColor),
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor,
+                          ),
                         ),
                       ],
                     ),
                   ] else ...[
                     Row(
                       children: [
-                        Icon(Icons.check_circle_rounded,
-                            size: 12.sp, color: _green),
+                        Icon(
+                          Icons.check_circle_rounded,
+                          size: 12.sp,
+                          color: _green,
+                        ),
                         SizedBox(width: 4.w),
-                        Text('Delivered',
-                            style: TextStyle(
-                                fontSize: 10.sp,
-                                fontWeight: FontWeight.w600,
-                                color: _green)),
+                        Text(
+                          'Delivered',
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w600,
+                            color: _green,
+                          ),
+                        ),
                         const Spacer(),
-                        Text(site.area,
-                            style: TextStyle(
-                                fontSize: 9.sp, color: Colors.grey.shade400)),
+                        Text(
+                          site.area,
+                          style: TextStyle(
+                            fontSize: 9.sp,
+                            color: Colors.grey.shade400,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -977,22 +1059,33 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
                   color: Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10.r),
                 ),
-                child: Icon(Icons.support_agent_rounded,
-                    color: Colors.white, size: 18.sp),
+                child: Icon(
+                  Icons.support_agent_rounded,
+                  color: Colors.white,
+                  size: 18.sp,
+                ),
               ),
               SizedBox(width: 10.w),
-              Text('Contact & Office Hours',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.bold)),
+              Text(
+                'Contact & Office Hours',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           SizedBox(height: 14.h),
-          _contactRow(Icons.location_on_outlined,
-              '12/3 Construction Nagar, Chennai – 600 001'),
+          _contactRow(
+            Icons.location_on_outlined,
+            '12/3 Construction Nagar, Chennai – 600 001',
+          ),
           _contactRow(Icons.phone_outlined, '+91 98765 43210'),
-          _contactRow(Icons.access_time_outlined, 'Mon – Sat: 9:00 AM – 6:00 PM'),
+          _contactRow(
+            Icons.access_time_outlined,
+            'Mon – Sat: 9:00 AM – 6:00 PM',
+          ),
           _contactRow(Icons.email_outlined, 'info@ayotta-tech.com'),
         ],
       ),
@@ -1007,10 +1100,13 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
           Icon(icon, size: 14.sp, color: Colors.white60),
           SizedBox(width: 10.w),
           Expanded(
-            child: Text(text,
-                style: TextStyle(
-                    fontSize: 11.5.sp,
-                    color: Colors.white.withValues(alpha: 0.85))),
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 11.5.sp,
+                color: Colors.white.withValues(alpha: 0.85),
+              ),
+            ),
           ),
         ],
       ),
@@ -1030,11 +1126,14 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
           child: Icon(icon, color: _navy, size: 18.sp),
         ),
         SizedBox(width: 10.w),
-        Text(title,
-            style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w800,
-                color: _navy)),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w800,
+            color: _navy,
+          ),
+        ),
       ],
     );
   }
@@ -1057,11 +1156,14 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
             child: Icon(icon, color: _navy, size: 16.sp),
           ),
           SizedBox(width: 10.w),
-          Text(title,
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13.sp,
-                  color: _navy)),
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13.sp,
+              color: _navy,
+            ),
+          ),
         ],
       ),
     );
@@ -1077,20 +1179,26 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
           SizedBox(width: 8.w),
           Expanded(
             child: RichText(
-              text: TextSpan(children: [
-                TextSpan(
+              text: TextSpan(
+                children: [
+                  TextSpan(
                     text: '$label:  ',
                     style: TextStyle(
-                        fontSize: 11.5.sp,
-                        color: const Color(0xFF9CA3AF),
-                        fontWeight: FontWeight.w500)),
-                TextSpan(
+                      fontSize: 11.5.sp,
+                      color: const Color(0xFF9CA3AF),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  TextSpan(
                     text: value,
                     style: TextStyle(
-                        fontSize: 12.5.sp,
-                        color: _navy,
-                        fontWeight: FontWeight.w600)),
-              ]),
+                      fontSize: 12.5.sp,
+                      color: _navy,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -1116,21 +1224,29 @@ class _GuestRegistrationScreenState extends State<GuestRegistrationScreen>
       maxLines: maxLines,
       maxLength: maxLength,
       validator: validator,
-      style: TextStyle(fontSize: 14.sp, color: _navy, fontWeight: FontWeight.w500),
+      style: TextStyle(
+        fontSize: 14.sp,
+        color: _navy,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon:
-            Icon(icon, color: _navy.withValues(alpha: 0.45), size: 20.sp),
-        labelStyle:
-            TextStyle(color: _navy.withValues(alpha: 0.55), fontSize: 13.sp),
+        prefixIcon: Icon(
+          icon,
+          color: _navy.withValues(alpha: 0.45),
+          size: 20.sp,
+        ),
+        labelStyle: TextStyle(
+          color: _navy.withValues(alpha: 0.55),
+          fontSize: 13.sp,
+        ),
         hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13.sp),
         errorStyle: TextStyle(color: Colors.red, fontSize: 11.5.sp),
         filled: true,
         fillColor: const Color(0xFFF8F9FC),
         counterText: maxLength != null ? '' : null,
-        contentPadding:
-            EdgeInsets.symmetric(horizontal: 16.w, vertical: 15.h),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 15.h),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14.r),
           borderSide: BorderSide(color: Colors.grey.shade200),

@@ -223,7 +223,65 @@ def guest_checkin_notification(request):
 
 
 # ---------------------------------------------------------------------------
-# 4. Get notifications (admin only)
+# 4. Get guest checkins (admin only)
+# ---------------------------------------------------------------------------
+
+@csrf_exempt
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_guest_checkins(request):
+    """Return recent guest checkins for the admin dashboard."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        user_id = request.user.get('user_id')
+        if not _is_admin(cursor, user_id):
+            cursor.close()
+            conn.close()
+            return Response({'error': 'Unauthorized. Admin access required.'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        limit  = int(request.GET.get('limit', 100))
+        offset = int(request.GET.get('offset', 0))
+
+        cursor.execute("""
+            SELECT id, guest_name, guest_phone, ref, purpose, checkin_time
+            FROM guest_checkins
+            ORDER BY checkin_time DESC
+            LIMIT %s OFFSET %s
+        """, (limit, offset))
+        rows = cursor.fetchall()
+
+        cursor.execute("SELECT COUNT(*) FROM guest_checkins")
+        total = cursor.fetchone()[0]
+
+        cursor.close()
+        conn.close()
+
+        checkins = [
+            {
+                'id':           str(r[0]),
+                'guest_name':   r[1],
+                'guest_phone':  r[2],
+                'ref':          r[3],
+                'purpose':      r[4],
+                'checkin_time': r[5].isoformat() if r[5] else None,
+            }
+            for r in rows
+        ]
+
+        return Response({'success': True, 'checkins': checkins, 'total': total})
+
+    except Exception as e:
+        print(f'Error fetching guest checkins: {e}')
+        return Response({'error': str(e)},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ---------------------------------------------------------------------------
+# 5. Get notifications (admin only)
 # ---------------------------------------------------------------------------
 
 @csrf_exempt

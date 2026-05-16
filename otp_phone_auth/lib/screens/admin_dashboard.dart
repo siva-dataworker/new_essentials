@@ -144,19 +144,35 @@ class _AdminDashboardState extends State<AdminDashboard>
     }
   }
 
-  static const _kGuestKey = 'guest_visitors_local';
-
   Future<void> _loadGuestVisitors() async {
     if (_guestVisitorsLoading) return;
     setState(() => _guestVisitorsLoading = true);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_kGuestKey);
-      if (raw != null) {
-        final list = List<Map<String, dynamic>>.from(
-            (json.decode(raw) as List)
-                .map((e) => Map<String, dynamic>.from(e as Map)));
+      final authService = AuthService();
+      final token = await authService.getToken();
+      final response = await http.get(
+        Uri.parse('${AuthService.baseUrl}/notifications/guest-checkins/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final list = (data['checkins'] as List).map((e) {
+          final m = Map<String, dynamic>.from(e as Map);
+          return {
+            'name':       m['guest_name'] ?? 'Guest',
+            'phone':      m['guest_phone'] ?? '—',
+            'purpose':    m['purpose'] ?? '',
+            'visit_time': m['checkin_time'] ?? '',
+            'ref':        m['ref'] ?? '',
+            'is_new':     false,
+          };
+        }).toList();
         if (mounted) setState(() => _guestVisitors = list);
+      } else {
+        debugPrint('Guest checkins fetch failed: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('Guest load error: $e');
@@ -164,9 +180,7 @@ class _AdminDashboardState extends State<AdminDashboard>
     if (mounted) setState(() => _guestVisitorsLoading = false);
   }
 
-  Future<void> _clearGuestVisitors() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_kGuestKey);
+  void _clearGuestVisitors() {
     if (mounted) setState(() => _guestVisitors = []);
   }
 
