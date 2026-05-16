@@ -1586,8 +1586,7 @@ def get_all_entries_for_accountant(request):
                           status=status.HTTP_403_FORBIDDEN)
         
         # Get labour entries with supervisor names, roles, timestamps, extra costs, and submitted_by_role
-        # Use CASE to fall back to canonical defaults when no admin rate is set
-        # lsr subquery deduplicates by labour_type so no DISTINCT ON needed on outer query
+        # Use CASE for daily rates - removed problematic labour_salary_rates join
         labour_query = """
             SELECT
                 l.id,
@@ -1597,9 +1596,9 @@ def get_all_entries_for_accountant(request):
                 l.entry_date,
                 l.entry_time,
                 l.notes,
-                l.extra_cost,
+                COALESCE(l.extra_cost, 0) as extra_cost,
                 l.extra_cost_notes,
-                l.submitted_by_role,
+                COALESCE(l.submitted_by_role, 'Supervisor') as submitted_by_role,
                 s.site_name,
                 s.customer_name,
                 s.area,
@@ -1607,50 +1606,40 @@ def get_all_entries_for_accountant(request):
                 u.full_name as supervisor_name,
                 u.username as supervisor_username,
                 r.role_name as user_role,
-                COALESCE(lsr.daily_rate,
-                    CASE l.labour_type
-                        WHEN 'General' THEN 600
-                        WHEN 'Mason' THEN 800
-                        WHEN 'Helper' THEN 500
-                        WHEN 'Carpenter' THEN 750
-                        WHEN 'Plumber' THEN 700
-                        WHEN 'Electrician' THEN 750
-                        WHEN 'Painter' THEN 650
-                        WHEN 'Tile Layer' THEN 700
-                        WHEN 'Tile Layerhelper' THEN 700
-                        WHEN 'Kambi Fitter' THEN 900
-                        WHEN 'Concrete Kot' THEN 950
-                        WHEN 'Pile Labour' THEN 800
-                        ELSE 900
-                    END
-                ) AS daily_rate,
-                (l.labour_count * COALESCE(lsr.daily_rate,
-                    CASE l.labour_type
-                        WHEN 'General' THEN 600
-                        WHEN 'Mason' THEN 800
-                        WHEN 'Helper' THEN 500
-                        WHEN 'Carpenter' THEN 750
-                        WHEN 'Plumber' THEN 700
-                        WHEN 'Electrician' THEN 750
-                        WHEN 'Painter' THEN 650
-                        WHEN 'Tile Layer' THEN 700
-                        WHEN 'Tile Layerhelper' THEN 700
-                        WHEN 'Kambi Fitter' THEN 900
-                        WHEN 'Concrete Kot' THEN 950
-                        WHEN 'Pile Labour' THEN 800
-                        ELSE 900
-                    END
-                )) AS total_cost
+                CASE l.labour_type
+                    WHEN 'General' THEN 600
+                    WHEN 'Mason' THEN 800
+                    WHEN 'Helper' THEN 500
+                    WHEN 'Carpenter' THEN 750
+                    WHEN 'Plumber' THEN 700
+                    WHEN 'Electrician' THEN 750
+                    WHEN 'Painter' THEN 650
+                    WHEN 'Tile Layer' THEN 700
+                    WHEN 'Tile Layerhelper' THEN 700
+                    WHEN 'Kambi Fitter' THEN 900
+                    WHEN 'Concrete Kot' THEN 950
+                    WHEN 'Pile Labour' THEN 800
+                    ELSE 900
+                END AS daily_rate,
+                (l.labour_count * CASE l.labour_type
+                    WHEN 'General' THEN 600
+                    WHEN 'Mason' THEN 800
+                    WHEN 'Helper' THEN 500
+                    WHEN 'Carpenter' THEN 750
+                    WHEN 'Plumber' THEN 700
+                    WHEN 'Electrician' THEN 750
+                    WHEN 'Painter' THEN 650
+                    WHEN 'Tile Layer' THEN 700
+                    WHEN 'Tile Layerhelper' THEN 700
+                    WHEN 'Kambi Fitter' THEN 900
+                    WHEN 'Concrete Kot' THEN 950
+                    WHEN 'Pile Labour' THEN 800
+                    ELSE 900
+                END) AS total_cost
             FROM labour_entries l
             JOIN sites s ON l.site_id = s.id
             LEFT JOIN users u ON l.supervisor_id = u.id
             LEFT JOIN roles r ON u.role_id = r.id
-            LEFT JOIN (
-                SELECT DISTINCT ON (labour_type) labour_type, daily_rate
-                FROM labour_salary_rates
-                WHERE site_id IS NULL AND is_active = TRUE
-                ORDER BY labour_type, effective_from DESC
-            ) lsr ON lsr.labour_type = l.labour_type
             ORDER BY l.entry_time DESC
             LIMIT 200
         """
@@ -1673,7 +1662,7 @@ def get_all_entries_for_accountant(request):
         
         # Get material entries with supervisor names, roles, timestamps, extra costs, and submitted_by_role
         material_query = """
-            SELECT 
+            SELECT
                 m.id,
                 m.site_id,
                 m.material_type,
@@ -1688,13 +1677,13 @@ def get_all_entries_for_accountant(request):
                 s.customer_name,
                 s.area,
                 s.street,
-                u.full_name as supervisor_name,
-                u.username as supervisor_username,
-                r.role_name as user_role
+                COALESCE(u.full_name, 'Unknown') as supervisor_name,
+                COALESCE(u.username, '') as supervisor_username,
+                COALESCE(r.role_name, 'Unknown') as user_role
             FROM material_usage m
             JOIN sites s ON m.site_id = s.id
-            JOIN users u ON m.supervisor_id = u.id
-            JOIN roles r ON u.role_id = r.id
+            LEFT JOIN users u ON m.supervisor_id = u.id
+            LEFT JOIN roles r ON u.role_id = r.id
             ORDER BY m.created_at DESC
             LIMIT 200
         """
