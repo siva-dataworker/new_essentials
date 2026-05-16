@@ -1696,16 +1696,16 @@ def get_all_entries_for_accountant(request):
         """
         material_entries = fetch_all(material_query)
 
-        # Count distinct approved entries (site_id, entry_date pairs in cash_entries)
+        # Sum labour_count from cash_entries table (total workers approved)
         approved_count_result = fetch_one("""
-            SELECT COUNT(DISTINCT site_id, entry_date) as count
+            SELECT COALESCE(SUM(labour_count), 0) as count
             FROM cash_entries
         """)
         approved_entries_count = approved_count_result['count'] if approved_count_result else 0
 
         # Debug logging BEFORE creating response
         print(f"📊 [ACCOUNTANT API] Returning {len(labour_entries)} labour entries, {len(material_entries)} material entries")
-        print(f"📊 [ACCOUNTANT API] Approved entries count (distinct site+date): {approved_entries_count}")
+        print(f"📊 [ACCOUNTANT API] Total labour count from cash_entries: {approved_entries_count}")
         total_salary = sum(float(e.get('total_cost', 0) or 0) for e in labour_entries)
         print(f"💰 [ACCOUNTANT API] Total salary: ₹{total_salary}")
 
