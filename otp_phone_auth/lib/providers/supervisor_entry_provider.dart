@@ -5,11 +5,9 @@
 import 'package:flutter/foundation.dart';
 import '../models/supervisor_entry_model.dart';
 import '../services/construction_service.dart';
-import '../services/auth_service.dart';
 
 class SupervisorEntryProvider with ChangeNotifier {
   final ConstructionService _constructionService = ConstructionService();
-  final AuthService _authService = AuthService();
 
   // Current entry state
   DailyEntry? _currentEntry;

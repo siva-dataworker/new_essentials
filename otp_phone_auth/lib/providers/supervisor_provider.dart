@@ -44,8 +44,6 @@ class SupervisorProvider extends ChangeNotifier {
     }
   }
   
-  // Override getter to trigger initialization
-  @override
   List<String> get areas {
     _ensureInitialized();
     return _areas;

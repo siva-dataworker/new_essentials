@@ -40,7 +40,6 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
   bool _isLoadingPhotos = false;
   
   // Date filter
-  DateTime? _selectedDate;
   Map<String, List<Map<String, dynamic>>> _photosByDate = {};
   Set<String> _expandedDates = {};
 
@@ -517,45 +516,6 @@ class _SupervisorPhotoUploadScreenState extends State<SupervisorPhotoUploadScree
                 : _buildPhotosByDate(uploadedPhotos),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(String timeLabel) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: AppColors.borderColor),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_photo_alternate_outlined,
-              size: 80.sp,
-              color: AppColors.textSecondary,
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              'No $timeLabel Photos',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-                color: AppColors.deepNavy,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              'Take a photo or choose from gallery',
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

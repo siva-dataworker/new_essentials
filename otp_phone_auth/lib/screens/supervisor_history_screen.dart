@@ -961,32 +961,4 @@ class _SupervisorHistoryScreenState extends State<SupervisorHistoryScreen> with 
     );
   }
 
-  Widget _buildEditField(String label, TextEditingController controller, {bool isNumeric = false, int maxLines = 1}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.primaryPurple,
-          ),
-        ),
-        SizedBox(height: 4.h),
-        TextField(
-          controller: controller,
-          keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-            isDense: true,
-          ),
-        ),
-      ],
-    );
-  }
 }

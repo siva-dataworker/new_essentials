@@ -57,7 +57,6 @@ class _MaterialBillUploadDialogState extends State<MaterialBillUploadDialog> {
 
   final List<String> _units = ['nos', 'bags', 'kg', 'tons', 'sqft', 'boxes', 'pieces'];
   final List<String> _paymentStatuses = ['PENDING', 'PARTIAL', 'PAID'];
-  final List<String> _paymentModes = ['Cash', 'Cheque', 'Bank Transfer', 'UPI', 'Credit'];
 
   @override
   void dispose() {

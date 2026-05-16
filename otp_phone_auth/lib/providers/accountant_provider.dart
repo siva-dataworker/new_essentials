@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/construction_service.dart';
-import '../services/accountant_bills_service.dart';
 
 class AccountantProvider extends ChangeNotifier {
   final ConstructionService _constructionService = ConstructionService();
-  final AccountantBillsService _billsService = AccountantBillsService();
   
   // State
   bool _isLoading = false;
@@ -22,8 +20,6 @@ class AccountantProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _agreements = [];
   
   // Filters
-  String? _selectedArea;
-  String? _selectedStreet;
   String? _selectedSite;
   
   // Getters
@@ -87,7 +83,6 @@ class AccountantProvider extends ChangeNotifier {
   Future<void> loadStreets(String area) async {
     try {
       _streets = await _constructionService.getStreets(area);
-      _selectedArea = area;
       notifyListeners();
     } catch (e) {
       _error = e.toString();

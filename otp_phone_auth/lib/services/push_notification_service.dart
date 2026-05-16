@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'notification_service.dart';
+import 'notification_navigation_service.dart';
 
 // Must be top-level for Firebase background processing
 @pragma('vm:entry-point')
@@ -127,8 +128,9 @@ class PushNotificationService {
   }
 
   void _onNotificationTap(RemoteMessage message) {
-    // The admin dashboard already polls; a tap just brings the app to foreground.
     debugPrint('[FCM] notification tapped: ${message.data}');
+    final type = message.data['type'] as String? ?? '';
+    NotificationNavigationService().navigateTo(type);
   }
 
   /// Show an immediate local notification banner — used for:

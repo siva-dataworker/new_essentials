@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/export_service.dart';
-import '../utils/app_colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:open_filex/open_filex.dart';
 import 'admin_budget_management_screen.dart';
-import '../utils/smooth_animations.dart';
 
 class AdminSiteFullView extends StatefulWidget {
   final String siteId;
@@ -2389,9 +2387,6 @@ class _AdminSiteFullViewState extends State<AdminSiteFullView>
           ),
         ),
       );
-
-      // Try to open the document
-      final uri = Uri.parse(fullUrl);
 
       // Close loading dialog
       if (mounted) Navigator.pop(context);

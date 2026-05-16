@@ -4,10 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../providers/supervisor_provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/app_colors.dart';
-import '../widgets/common_widgets.dart';
 import 'login_screen.dart';
-import 'site_detail_screen.dart';
-import 'supervisor_history_screen.dart';
 
 class SupervisorDashboardWithProvider extends StatefulWidget {
   const SupervisorDashboardWithProvider({super.key});

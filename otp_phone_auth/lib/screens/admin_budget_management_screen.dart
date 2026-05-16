@@ -15,7 +15,6 @@ import '../services/accountant_bills_service.dart';
 import '../services/budget_management_service.dart';
 import '../services/cache_service.dart';
 import '../services/construction_service.dart';
-import '../utils/smooth_animations.dart';
 import 'site_engineer_material_screen.dart';
 
 class AdminBudgetManagementScreen extends StatefulWidget {
@@ -58,8 +57,6 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
   // Client requirements data
   List<Map<String, dynamic>> _clientRequirements = [];
   bool _isLoadingRequirements = false;
-  bool _requirementsExpanded = false;
-  
   // Phase payments data
   Map<String, dynamic>? _phasePayments;
   bool _isLoadingPhases = false;
@@ -809,132 +806,6 @@ class _AdminBudgetManagementScreenState extends State<AdminBudgetManagementScree
 Widget _buildBillsTab() {
   return _AdminBillsTab(siteId: widget.siteId, siteName: widget.siteName);
 }
-
-  Widget _buildRecentUpdatesDropdown() {
-    return Card(
-      elevation: 2,
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () {
-              setState(() => _requirementsExpanded = !_requirementsExpanded);
-            },
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
-                borderRadius: _requirementsExpanded
-                    ? const BorderRadius.vertical(top: Radius.circular(4))
-                    : BorderRadius.circular(4),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A2E).withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.update, color: const Color(0xFF1A1A2E), size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Recent Updates',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1A1A2E),
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A2E),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      '4',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    _requirementsExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: const Color(0xFF1A1A2E),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_requirementsExpanded) ...[
-            const Divider(height: 1),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _clientRequirements.length,
-              itemBuilder: (context, index) {
-                final req = _clientRequirements[index];
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Colors.grey.shade200),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              req['category'] ?? 'General',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1A1A2E),
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            req['date'] ?? '',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        req['requirement'] ?? '',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: const Color(0xFF1A1A2E),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 
   Widget _buildUtilizationTab() {
     return RefreshIndicator(
@@ -2946,7 +2817,6 @@ class _AdminDocumentTabState extends State<_AdminDocumentTab> {
           final title = doc['title'] as String? ?? doc['document_type'] as String? ?? 'Document';
           final docType = doc['document_type'] as String? ?? '';
           final uploadedBy = doc['uploaded_by'] as String? ?? doc['engineer_name'] as String? ?? doc['architect_name'] as String? ?? 'Unknown';
-          final role = doc['role'] as String? ?? '';
           final uploadDate = (doc['upload_date'] as String? ?? doc['uploaded_at'] as String? ?? '');
           final dateStr = uploadDate.length >= 10 ? uploadDate.substring(0, 10) : uploadDate;
           final fileUrl = doc['file_url'] as String? ?? '';

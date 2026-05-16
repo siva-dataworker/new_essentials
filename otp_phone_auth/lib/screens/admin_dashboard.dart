@@ -8,6 +8,7 @@ import '../services/construction_service.dart';
 import '../services/notification_service.dart';
 import '../services/cache_service.dart';
 import '../services/push_notification_service.dart';
+import '../services/notification_navigation_service.dart';
 import '../utils/smooth_animations.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -27,11 +28,14 @@ class AdminDashboard extends StatefulWidget {
   State<AdminDashboard> createState() => _AdminDashboardState();
 }
 
-class _AdminDashboardState extends State<AdminDashboard> {
+class _AdminDashboardState extends State<AdminDashboard>
+    with TickerProviderStateMixin {
   final _authService = AuthService();
   final _notificationService = NotificationService();
   int _selectedIndex = 0;
-  
+  TabController? _notifTabController;
+  StreamSubscription? _navSubscription;
+
   // Background refresh timers
   Timer? _notificationsRefreshTimer;
   Timer? _sitesRefreshTimer;
@@ -67,6 +71,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   void initState() {
     super.initState();
+    _notifTabController = TabController(length: 3, vsync: this);
+    _navSubscription = NotificationNavigationService().stream.listen((dest) {
+      if (!mounted) return;
+      setState(() => _selectedIndex = dest.mainTab);
+      Future.microtask(() =>
+          _notifTabController?.animateTo(dest.subTab));
+    });
     _loadAdminUser();
     _loadData();
     _loadGuestVisitors(); // always load guests at startup
@@ -78,6 +89,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   
   @override
   void dispose() {
+    _notifTabController?.dispose();
+    _navSubscription?.cancel();
     _stopBackgroundRefresh();
     super.dispose();
   }
@@ -1027,9 +1040,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       n['entry_type'] == 'material'
     ).toList();
     
-    return DefaultTabController(
-      length: 3,
-      child: Column(
+    return Column(
         children: [
           // Header with actions
           Container(
@@ -1098,6 +1109,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Container(
             color: Colors.white,
             child: TabBar(
+              controller: _notifTabController,
               labelColor: const Color(0xFF1A1A2E),
               unselectedLabelColor: Colors.grey,
               indicatorColor: const Color(0xFF1A1A2E),
@@ -1139,6 +1151,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           // Tab Views — guest tab is never gated on _notificationsLoading
           Expanded(
             child: TabBarView(
+              controller: _notifTabController,
               children: [
                 _notificationsLoading
                     ? const Center(
@@ -1156,7 +1169,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
           ),
         ],
-      ),
     );
   }
 
@@ -3717,7 +3729,6 @@ class _StoryViewerState extends State<_StoryViewer>
   @override
   Widget build(BuildContext context) {
     final photo = widget.photos[_currentIndex];
-    final url = widget.fullUrl(photo['image_url'] as String?);
     final updateType = (photo['update_type'] as String? ?? '');
     final timeOfDay = (photo['time_of_day'] as String? ?? '').toLowerCase();
     final isMorning = updateType == 'STARTED' || timeOfDay == 'morning';

@@ -4,7 +4,6 @@ import '../models/user_model.dart';
 import '../providers/construction_provider.dart';
 import '../utils/app_colors.dart';
 import 'login_screen.dart';
-import 'site_photo_gallery_screen.dart';
 import 'architect_site_detail_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -751,62 +750,6 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return ElevatedButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 20.sp),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-      ),
-    );
-  }
-
-  void _showEstimationSheet(Map<String, dynamic> site) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _EstimationSheet(site: site),
-    );
-  }
-
-  void _showPlansSheet(Map<String, dynamic> site) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _PlansSheet(site: site),
-    );
-  }
-
-  void _showComplaintsSheet(Map<String, dynamic> site) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _ComplaintsSheet(site: site),
-    );
-  }
-
-  void _viewPhotos(Map<String, dynamic> site) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SitePhotoGalleryScreen(site: site),
       ),
     );
   }

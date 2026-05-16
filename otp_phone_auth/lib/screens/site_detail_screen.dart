@@ -321,57 +321,6 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
     );
   }
 
-  /// Check entry lock before opening entry form
-  Future<void> _checkEntryLockAndOpen({bool startAtEvening = false}) async {
-    final now = DateTime.now();
-    final entryDate = DateFormat('yyyy-MM-dd').format(now);
-
-    print('🔍 [ENTRY_LOCK] Checking lock before opening entry form...');
-
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
-    final result = await _constructionService.checkEntryLock(
-      siteId: widget.site['id'].toString(),
-      entryDate: entryDate,
-    );
-
-    // Close loading indicator
-    if (mounted) Navigator.pop(context);
-
-    if (!result['success']) {
-      // Network error
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to check entry status: ${result['error']}'),
-            backgroundColor: Colors.red.shade600,
-          ),
-        );
-      }
-      return;
-    }
-
-    if (result['is_locked'] == true) {
-      // Site is locked by another supervisor
-      _showEntryLockedDialog(
-        lockedBy: result['locked_by'] ?? 'Another supervisor',
-        lockedAt: result['locked_at'] ?? 'earlier',
-        entries: List<Map<String, dynamic>>.from(result['entries'] ?? []),
-      );
-      return;
-    }
-
-    // Site is available - start entry session and open form
-    _entrySession.start();
-    print('✅ [ENTRY_SESSION] Session started: ${_entrySession.sessionId}');
-    _showLabourEntry(startAtEvening: startAtEvening);
-  }
-
   /// Show dialog when entry is locked by another supervisor
   void _showEntryLockedDialog({
     required String lockedBy,
@@ -960,9 +909,6 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
     final labourEntries = List<Map<String, dynamic>>.from(
       _todayEntries?['labour_entries'] ?? [],
     );
-    final materialEntries = List<Map<String, dynamic>>.from(
-      _todayEntries?['material_entries'] ?? [],
-    );
     final photoCount = (_todayEntries?['photo_count'] as num?)?.toInt() ?? 0;
 
     // No labour at all → not started
@@ -1005,35 +951,6 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
       'Dec',
     ];
     return '${months[_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}';
-  }
-
-  String _formatShortDate() {
-    if (_isToday()) {
-      return 'Today';
-    }
-
-    final yesterday = DateTime.now().subtract(const Duration(days: 1));
-    if (_selectedDate.year == yesterday.year &&
-        _selectedDate.month == yesterday.month &&
-        _selectedDate.day == yesterday.day) {
-      return 'Yesterday';
-    }
-
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[_selectedDate.month - 1]} ${_selectedDate.day}';
   }
 
   @override
@@ -3552,7 +3469,6 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet>
         // Calculate totals for this date
         int totalWorkers = 0;
         double totalSalary = 0.0;
-        double totalExtraCost = 0.0;
 
         for (final entry in entries) {
           totalWorkers += (entry['labour_count'] as num?)?.toInt() ?? 0;
@@ -3561,7 +3477,6 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet>
           final count = (entry['labour_count'] as num?)?.toInt() ?? 0;
           final rate = _rates[labourType] ?? 600;
           totalSalary += count * rate;
-          totalExtraCost += (entry['extra_cost'] as num?)?.toDouble() ?? 0.0;
         }
 
         return Column(
@@ -3820,77 +3735,6 @@ class _LabourEntrySheetState extends State<_LabourEntrySheet>
     } catch (e) {
       return dateStr;
     }
-  }
-
-  Widget _buildReadOnlyLabourRow(String type, int count) {
-    final icon = _getLabourIcon(type);
-    final rate = _rates[type] ?? 0;
-    final rowTotal = count * rate;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.deepNavy.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.deepNavy.withValues(alpha: 0.2),
-          width: 2,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.deepNavy,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  type,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.deepNavy,
-                  ),
-                ),
-                Text(
-                  '₹${rate.toStringAsFixed(0)}/day × $count = ₹${rowTotal.toStringAsFixed(0)}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.green.shade700,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: AppColors.orangeGradient,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              '$count',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   String _formatTimeFromString(String isoTime) {

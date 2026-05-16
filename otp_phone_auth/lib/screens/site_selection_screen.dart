@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../models/site_model.dart';
 import '../utils/app_colors.dart';
-import 'supervisor_dashboard.dart';
+import 'supervisor_dashboard_feed.dart';
 import 'supervisor_profile_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -179,7 +179,7 @@ class SiteSelectionScreen extends StatelessWidget {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => SupervisorDashboard(user: user),
+                builder: (context) => const SupervisorDashboardFeed(),
               ),
             );
           },

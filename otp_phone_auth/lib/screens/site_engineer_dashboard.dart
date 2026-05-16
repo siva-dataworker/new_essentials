@@ -12,9 +12,6 @@ import '../widgets/common_widgets.dart';
 import '../models/user_model.dart';
 import 'login_screen.dart';
 import 'site_engineer_site_detail_screen.dart';
-import 'site_engineer_material_screen.dart';
-import 'site_engineer_document_screen.dart';
-import 'site_engineer_labour_screen.dart';
 import 'site_engineer_reports_screen.dart';
 import 'edit_profile_screen.dart';
 
@@ -856,16 +853,6 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
     );
   }
 
-  // Notifications Tab
-  Widget _buildNotificationsTab() {
-    return CommonWidgets.buildEmptyState(
-      context,
-      message:
-          'No Notifications\n\nYou\'re all caught up!\nNotifications will appear here',
-      icon: Icons.notifications_none,
-    );
-  }
-
   // Profile Tab
   Widget _buildProfileTab() {
     return SingleChildScrollView(
@@ -1010,147 +997,6 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
     if (result == true) {
       await _loadSiteUploadStatus(site['id']);
     }
-  }
-
-  void _openMaterialInventory() {
-    final sites = context.read<ConstructionProvider>().sites;
-
-    if (sites.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No sites available. Please add sites first.'),
-          backgroundColor: AppColors.statusOverdue,
-        ),
-      );
-      return;
-    }
-
-    // If only one site, open directly
-    if (sites.length == 1) {
-      final site = sites[0];
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SiteEngineerMaterialScreen(
-            siteId: site['id'].toString(),
-            siteName:
-                site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
-          ),
-        ),
-      );
-      return;
-    }
-
-    // Multiple sites - show selection dialog
-    _showSiteSelectionDialog(
-      title: 'Select Site for Material Inventory',
-      onSiteSelected: (site) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SiteEngineerMaterialScreen(
-              siteId: site['id'].toString(),
-              siteName:
-                  site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _openLaborEntry() {
-    final sites = context.read<ConstructionProvider>().sites;
-
-    if (sites.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No sites available. Please add sites first.'),
-          backgroundColor: AppColors.statusOverdue,
-        ),
-      );
-      return;
-    }
-
-    // If only one site, open directly
-    if (sites.length == 1) {
-      final site = sites[0];
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SiteEngineerLabourScreen(
-            siteId: site['id'].toString(),
-            siteName:
-                site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
-          ),
-        ),
-      );
-      return;
-    }
-
-    // Multiple sites - show selection dialog
-    _showSiteSelectionDialog(
-      title: 'Select Site for Labor Entry',
-      onSiteSelected: (site) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SiteEngineerLabourScreen(
-              siteId: site['id'].toString(),
-              siteName:
-                  site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _openDocuments() {
-    final sites = context.read<ConstructionProvider>().sites;
-
-    if (sites.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No sites available. Please add sites first.'),
-          backgroundColor: AppColors.statusOverdue,
-        ),
-      );
-      return;
-    }
-
-    // If only one site, open directly
-    if (sites.length == 1) {
-      final site = sites[0];
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SiteEngineerDocumentScreen(
-            siteId: site['id'].toString(),
-            siteName:
-                site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
-          ),
-        ),
-      );
-      return;
-    }
-
-    // Multiple sites - show selection dialog
-    _showSiteSelectionDialog(
-      title: 'Select Site for Documents',
-      onSiteSelected: (site) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SiteEngineerDocumentScreen(
-              siteId: site['id'].toString(),
-              siteName:
-                  site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
-            ),
-          ),
-        );
-      },
-    );
   }
 
   void _openBudget() {
@@ -1446,25 +1292,6 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
     );
   }
 
-  void _showLaborEntryDialog(Map<String, dynamic> site) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _LaborEntrySheet(
-        siteId: site['id'].toString(),
-        siteName: site['display_name'] ?? site['site_name'] ?? 'Unknown Site',
-        onSuccess: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Labor entry submitted successfully!'),
-              backgroundColor: AppColors.statusCompleted,
-            ),
-          );
-        },
-      ),
-    );
-  }
 }
 
 // Labor Entry Sheet for Site Engineer

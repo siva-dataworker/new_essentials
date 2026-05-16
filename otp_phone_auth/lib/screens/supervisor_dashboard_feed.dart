@@ -12,7 +12,6 @@ import 'login_screen.dart';
 import 'site_detail_screen.dart';
 import 'supervisor_history_screen.dart';
 import '../widgets/supervisor_material_usage_dialog.dart';
-import 'working_sites_screen.dart';
 import 'supervisor_reports_screen.dart';
 import '../services/cache_service.dart';
 
@@ -44,16 +43,6 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
   List<Map<String, dynamic>> _workingSites = [];
   bool _isLoadingWorkingSites = false;
   bool _workingSitesExpanded = false;
-
-  // Today's sites with data
-  List<Map<String, dynamic>> _todaySitesWithData = [];
-  bool _isLoadingTodaySites = false;
-
-  // Total counts
-  int _totalAreas = 0;
-  int _totalStreets = 0;
-  int _totalSites = 0;
-  bool _isLoadingTotals = false;
 
   // Loading states
   bool _isLoadingAreas = false;
@@ -126,36 +115,24 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
   Future<void> _loadTodaySitesWithData() async {
     final cached = await CacheService.loadTodaySitesWithData();
     if (cached != null) {
-      setState(() { _todaySitesWithData = cached; _isLoadingTodaySites = false; });
       return;
     }
-    setState(() => _isLoadingTodaySites = true);
     try {
       final result = await _constructionService.getTodaySitesWithEntries();
       if (result['success']) {
         final sites = List<Map<String, dynamic>>.from(result['sites'] ?? []);
         await CacheService.saveTodaySitesWithData(sites);
-        setState(() { _todaySitesWithData = sites; });
       }
     } catch (e) {
       print('Error loading today sites with data: $e');
-    } finally {
-      setState(() => _isLoadingTodaySites = false);
     }
   }
 
   Future<void> _loadTotalCounts() async {
     final cached = await CacheService.loadTotalCounts();
     if (cached != null) {
-      setState(() {
-        _totalAreas = cached['total_areas'] ?? 0;
-        _totalStreets = cached['total_streets'] ?? 0;
-        _totalSites = cached['total_sites'] ?? 0;
-        _isLoadingTotals = false;
-      });
       return;
     }
-    setState(() => _isLoadingTotals = true);
     try {
       final result = await _constructionService.getTotalCounts();
       if (result['success']) {
@@ -164,16 +141,9 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
           'total_streets': result['total_streets'] ?? 0,
           'total_sites': result['total_sites'] ?? 0,
         });
-        setState(() {
-          _totalAreas = result['total_areas'] ?? 0;
-          _totalStreets = result['total_streets'] ?? 0;
-          _totalSites = result['total_sites'] ?? 0;
-        });
       }
     } catch (e) {
       print('Error loading total counts: $e');
-    } finally {
-      setState(() => _isLoadingTotals = false);
     }
   }
 
@@ -627,360 +597,6 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
 
         SliverToBoxAdapter(child: SizedBox(height: 100.h)),
       ],
-    );
-  }
-
-  Widget _buildStatsScreen() {
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          floating: true,
-          backgroundColor: BWColors.card,
-          elevation: 0,
-          title: const Text(
-            'Statistics',
-            style: TextStyle(color: BWColors.primary),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Container(
-            padding: EdgeInsets.all(16.r),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Summary Cards
-                SummaryCard(
-                  title: 'Total Areas',
-                  value: _totalAreas.toString(),
-                  icon: Icons.location_city,
-                  color: BWColors.primary,
-                ),
-                SizedBox(height: 16.h),
-                SummaryCard(
-                  title: 'Total Streets',
-                  value: _totalStreets.toString(),
-                  icon: Icons.route,
-                  color: BWColors.muted,
-                ),
-                SizedBox(height: 16.h),
-                SummaryCard(
-                  title: 'Total Sites',
-                  value: _totalSites.toString(),
-                  icon: Icons.business,
-                  color: BWColors.primary,
-                ),
-
-                SizedBox(height: 32.h),
-
-                // Today's Working Sites Dropdown
-                _buildExpandableSection(
-                  title: "Today's Working Sites",
-                  icon: Icons.work_outline,
-                  count: _workingSites.length,
-                  isLoading: _isLoadingWorkingSites,
-                  isEmpty: _workingSites.isEmpty,
-                  emptyMessage: 'No working sites for today',
-                  children: _workingSites.map((site) => _buildSiteListItem(site)).toList(),
-                  onRefresh: _loadWorkingSites,
-                ),
-
-                SizedBox(height: 16.h),
-
-                // Today's Sites with Entered Data Dropdown
-                _buildExpandableSection(
-                  title: "Today's Entered Data",
-                  icon: Icons.edit_note,
-                  count: _todaySitesWithData.length,
-                  isLoading: _isLoadingTodaySites,
-                  isEmpty: _todaySitesWithData.isEmpty,
-                  emptyMessage: 'No data entered today',
-                  children: _todaySitesWithData.map((site) => _buildSiteDataListItem(site)).toList(),
-                  onRefresh: _loadTodaySitesWithData,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildExpandableSection({
-    required String title,
-    required IconData icon,
-    required int count,
-    required bool isLoading,
-    required bool isEmpty,
-    required String emptyMessage,
-    required List<Widget> children,
-    required VoidCallback onRefresh,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: ExpansionTile(
-        leading: Container(
-          padding: EdgeInsets.all(8.r),
-          decoration: BoxDecoration(
-            color: BWColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8.r),
-          ),
-          child: Icon(icon, color: BWColors.primary, size: 24.sp),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.bold,
-            color: BWColors.primary,
-          ),
-        ),
-        subtitle: Text(
-          '$count ${count == 1 ? 'site' : 'sites'}',
-          style: TextStyle(
-            fontSize: 13.sp,
-            color: BWColors.secondaryText,
-          ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isLoading)
-              SizedBox(
-                width: 20.w,
-                height: 20.h,
-                child: const CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              IconButton(
-                icon: Icon(Icons.refresh, size: 20.sp),
-                onPressed: onRefresh,
-                tooltip: 'Refresh',
-              ),
-            const Icon(Icons.expand_more),
-          ],
-        ),
-        children: [
-          if (isLoading)
-            Padding(
-              padding: EdgeInsets.all(24.r),
-              child: const Center(child: CircularProgressIndicator()),
-            )
-          else if (isEmpty)
-            Padding(
-              padding: EdgeInsets.all(24.r),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(Icons.inbox_outlined, size: 48.sp, color: BWColors.muted),
-                    SizedBox(height: 12.h),
-                    Text(
-                      emptyMessage,
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        color: BWColors.secondaryText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            Column(children: children),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSiteListItem(Map<String, dynamic> site) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: BWColors.primary.withOpacity(0.1),
-        child: Icon(Icons.location_on, color: BWColors.primary, size: 20.sp),
-      ),
-      title: Text(
-        site['site_name'] ?? 'Unknown Site',
-        style: TextStyle(
-          fontSize: 14.sp,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 4.h),
-          // Area Badge
-          if (site['area'] != null && site['area'].toString().isNotEmpty)
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-              decoration: BoxDecoration(
-                color: BWColors.primary.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(4.r),
-                border: Border.all(
-                  color: BWColors.primary.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.location_city, size: 10.sp, color: BWColors.primary),
-                  SizedBox(width: 3.w),
-                  Text(
-                    site['area'],
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w600,
-                      color: BWColors.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          SizedBox(height: 4.h),
-          // Street
-          Row(
-            children: [
-              Icon(Icons.route, size: 12.sp, color: BWColors.muted),
-              SizedBox(width: 4.w),
-              Text(
-                site['street'] ?? 'N/A',
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  color: BWColors.secondaryText,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16.sp, color: BWColors.muted),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SiteDetailScreen(site: site),
-          ),
-        ).then((_) => _refreshAfterSiteDetail());
-      },
-    );
-  }
-
-  Widget _buildSiteDataListItem(Map<String, dynamic> site) {
-    final hasLabour = site['has_labour'] == true;
-    final hasMaterial = site['has_material'] == true;
-    final hasPhotos = site['has_photos'] == true;
-
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.green.withOpacity(0.1),
-        child: Icon(Icons.check_circle, color: Colors.green, size: 20.sp),
-      ),
-      title: Text(
-        site['site_name'] ?? 'Unknown Site',
-        style: TextStyle(
-          fontSize: 14.sp,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 4.h),
-          // Area Badge
-          if (site['area'] != null && site['area'].toString().isNotEmpty)
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-              decoration: BoxDecoration(
-                color: BWColors.primary.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(4.r),
-                border: Border.all(
-                  color: BWColors.primary.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.location_city, size: 10.sp, color: BWColors.primary),
-                  SizedBox(width: 3.w),
-                  Text(
-                    site['area'],
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w600,
-                      color: BWColors.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          SizedBox(height: 4.h),
-          // Street
-          Row(
-            children: [
-              Icon(Icons.route, size: 12.sp, color: BWColors.muted),
-              SizedBox(width: 4.w),
-              Text(
-                site['street'] ?? 'N/A',
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  color: BWColors.secondaryText,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 6.h),
-          Wrap(
-            spacing: 8,
-            children: [
-              if (hasLabour)
-                _buildDataChip('Labour', Icons.people, Colors.blue),
-              if (hasMaterial)
-                _buildDataChip('Material', Icons.inventory_2, Colors.brown),
-              if (hasPhotos)
-                _buildDataChip('Photos', Icons.photo_camera, Colors.purple),
-            ],
-          ),
-        ],
-      ),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16.sp, color: BWColors.muted),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SiteDetailScreen(site: site),
-          ),
-        ).then((_) => _refreshAfterSiteDetail());
-      },
-    );
-  }
-
-  Widget _buildDataChip(String label, IconData icon, Color color) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12.sp, color: color),
-          SizedBox(width: 4.w),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1747,10 +1363,6 @@ class _SupervisorDashboardFeedState extends State<SupervisorDashboardFeed> {
   }
 
   void _showChangePasswordDialog() {
-    final currentPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../utils/app_colors.dart';
 import '../services/auth_service.dart';
 import 'admin_site_comparison_screen.dart';
 import 'admin_site_documents_screen.dart';
@@ -23,7 +22,6 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
   String? _selectedSiteId;
   String? _selectedSiteName;
   Map<String, dynamic>? _profitLossData;
-  bool _isLoadingSites = false;
   bool _isLoadingData = false;
 
   @override
@@ -33,8 +31,6 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
   }
 
   Future<void> _loadSites() async {
-    setState(() => _isLoadingSites = true);
-
     try {
       final token = await _authService.getToken();
       final response = await http.get(
@@ -53,8 +49,6 @@ class _AdminProfitLossScreenState extends State<AdminProfitLossScreen> {
       }
     } catch (e) {
       print('Error loading sites: $e');
-    } finally {
-      setState(() => _isLoadingSites = false);
     }
   }
 

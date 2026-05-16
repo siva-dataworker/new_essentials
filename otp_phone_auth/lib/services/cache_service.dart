@@ -427,8 +427,6 @@ class CacheService {
   static const String _accountantMaterialTimestampKey = 'accountant_material_timestamp';
   static const String _accountantDashboardKey = 'accountant_dashboard_cache';
   static const String _accountantDashboardTimestampKey = 'accountant_dashboard_timestamp';
-  static const String _accountantReportsKey = 'accountant_reports_cache';
-  static const String _accountantReportsTimestampKey = 'accountant_reports_timestamp';
   
   /// Save accountant labour entries to cache
   static Future<void> saveAccountantLabour(List<Map<String, dynamic>> entries) async {

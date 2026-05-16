@@ -203,7 +203,7 @@ def guest_checkin_notification(request):
         conn.close()
 
         # ── FCM push to all admin devices ──────────────────────────────────
-        fcm_result = send_push_to_admins(
+        send_push_to_admins(
             title='🔔 New Guest Check-In',
             body=f'{guest_name} ({guest_phone}) just checked in — Ref: {ref}',
             data={'type': 'guest_checkin', 'guest_name': guest_name,
@@ -214,7 +214,6 @@ def guest_checkin_notification(request):
             'success': True,
             'checkin_id': str(row[0]),
             'checkin_time': row[1].isoformat(),
-            'fcm': fcm_result,
         }, status=status.HTTP_201_CREATED)
 
     except Exception as e:

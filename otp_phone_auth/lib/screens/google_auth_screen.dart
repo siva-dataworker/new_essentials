@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../utils/app_colors.dart';
 import '../services/google_auth_service.dart';
 import '../models/user_model.dart';
-import 'supervisor_dashboard.dart';
+import 'supervisor_dashboard_feed.dart';
 
 class GoogleAuthScreen extends StatefulWidget {
   final UserRole selectedRole;
@@ -82,11 +82,11 @@ class _GoogleAuthScreenState extends State<GoogleAuthScreen> {
 
     switch (widget.selectedRole) {
       case UserRole.supervisor:
-        dashboard = SupervisorDashboard(user: user);
+        dashboard = const SupervisorDashboardFeed();
         break;
       // Add other dashboards when ready
       default:
-        dashboard = SupervisorDashboard(user: user);
+        dashboard = const SupervisorDashboardFeed();
     }
 
     Navigator.pushReplacement(

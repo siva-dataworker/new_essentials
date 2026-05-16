@@ -25,15 +25,12 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
   int _currentIndex = 0;
   final _authService = AuthService();
   List<Map<String, dynamic>> _projectFiles = [];
-  List<Map<String, dynamic>> _complaints = [];
   bool _isLoadingFiles = false;
-  bool _isLoadingComplaints = false;
 
   @override
   void initState() {
     super.initState();
     _loadProjectFiles();
-    _loadComplaints();
   }
 
   Future<void> _loadProjectFiles() async {
@@ -58,31 +55,6 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
       }
     } catch (e) {
       setState(() => _isLoadingFiles = false);
-    }
-  }
-
-  Future<void> _loadComplaints() async {
-    setState(() => _isLoadingComplaints = true);
-
-    try {
-      final token = await _authService.getToken();
-
-      final response = await http.get(
-        Uri.parse('${AuthService.baseUrl}/construction/complaints/?site_id=${widget.site['id']}'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _complaints = List<Map<String, dynamic>>.from(data['complaints']);
-          _isLoadingComplaints = false;
-        });
-      } else {
-        setState(() => _isLoadingComplaints = false);
-      }
-    } catch (e) {
-      setState(() => _isLoadingComplaints = false);
     }
   }
 
@@ -311,115 +283,6 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
     );
   }
 
-  Widget _buildComplaintCard(Map<String, dynamic> complaint) {
-    final priority = complaint['priority'] ?? 'MEDIUM';
-    final status = complaint['status'] ?? 'OPEN';
-    final priorityColor = _getPriorityColor(priority);
-    final statusColor = status == 'RESOLVED' ? AppColors.statusCompleted : Colors.orange;
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
-      decoration: BoxDecoration(
-        color: AppColors.cleanWhite,
-        borderRadius: BorderRadius.circular(12.r),
-        boxShadow: [AppColors.cardShadow],
-        border: Border.all(color: priorityColor.withValues(alpha: 0.3), width: 2),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(16.r),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 8.w,
-                  height: 8.h,
-                  decoration: BoxDecoration(
-                    color: priorityColor,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    complaint['title'] ?? 'Complaint',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.deepNavy,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20.r),
-                    border: Border.all(color: statusColor),
-                  ),
-                  child: Text(
-                    status,
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.bold,
-                      color: statusColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              complaint['description'] ?? '',
-              style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
-            ),
-            SizedBox(height: 12.h),
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: priorityColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Text(
-                    priority,
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.bold,
-                      color: priorityColor,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Icon(Icons.calendar_today, size: 14.sp, color: AppColors.textSecondary),
-                SizedBox(width: 4.w),
-                Text(
-                  _formatDate(complaint['created_at']),
-                  style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-            if (complaint['assigned_to_name'] != null) ...[
-              SizedBox(height: 8.h),
-              Row(
-                children: [
-                  Icon(Icons.person_outline, size: 14.sp, color: AppColors.textSecondary),
-                  SizedBox(width: 4.w),
-                  Text(
-                    'Assigned to: ${complaint['assigned_to_name']}',
-                    style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildEmptyFilesState() {
     return Center(
       child: Padding(
@@ -436,31 +299,6 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
             SizedBox(height: 8.h),
             Text(
               'Upload estimation files, plans, and designs',
-              style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyComplaintsState() {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(32.r),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_outline, size: 80.sp, color: AppColors.statusCompleted.withValues(alpha: 0.5)),
-            SizedBox(height: 16.h),
-            Text(
-              'No Complaints',
-              style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.deepNavy),
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              'All clear! No complaints raised yet',
               style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
@@ -699,21 +537,6 @@ class _ArchitectSiteDetailScreenState extends State<ArchitectSiteDetailScreen> {
         return Colors.pink.shade600;
       default:
         return Colors.grey.shade600;
-    }
-  }
-
-  Color _getPriorityColor(String priority) {
-    switch (priority) {
-      case 'LOW':
-        return AppColors.statusCompleted;
-      case 'MEDIUM':
-        return Colors.orange;
-      case 'HIGH':
-        return Colors.deepOrange;
-      case 'URGENT':
-        return Colors.red;
-      default:
-        return Colors.grey;
     }
   }
 

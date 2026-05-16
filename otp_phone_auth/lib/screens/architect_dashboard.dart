@@ -13,7 +13,6 @@ import '../utils/app_colors.dart';
 import '../widgets/common_widgets.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
-import 'architect_client_complaints_screen.dart';
 import 'edit_profile_screen.dart';
 
 class ArchitectDashboard extends StatefulWidget {
@@ -792,48 +791,6 @@ class _ArchitectDashboardState extends State<ArchitectDashboard> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  void _showComplaintForm() {
-    showDialog(
-      context: context,
-      builder: (context) => _ComplaintFormDialog(
-        siteId: _selectedSite!,
-        onSubmitSuccess: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Complaint submitted successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showEstimationForm() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Estimation form coming soon!')),
-    );
-  }
-
-  void _showClientComplaints() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            ArchitectClientComplaintsScreen(siteId: _selectedSite!),
-      ),
-    );
-  }
-
-  void _showHistory() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ArchitectHistoryScreen(siteId: _selectedSite!),
       ),
     );
   }

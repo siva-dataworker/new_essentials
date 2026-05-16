@@ -1,8 +1,6 @@
 // Supervisor Entry Model Classes
 // Date: 2026-05-12
 
-import 'package:flutter/foundation.dart';
-
 /// Entry Status Enum
 enum EntryStatus {
   pending,

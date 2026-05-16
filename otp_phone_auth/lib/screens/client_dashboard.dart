@@ -19,7 +19,6 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
   int _selectedIndex = 0;
   Map<String, dynamic>? _siteData;
-  Map<String, dynamic>? _materialsData;
   Map<String, dynamic>? _photosData;
   bool _isLoading = true;
   String? _userName;
@@ -71,12 +70,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
     if (_currentSiteId == null) return;
 
     try {
-      final response = await _constructionService.getClientMaterials(
+      await _constructionService.getClientMaterials(
         _currentSiteId!,
       );
-      setState(() {
-        _materialsData = response;
-      });
     } catch (e) {
       print('Error loading materials: $e');
     }
@@ -744,36 +740,6 @@ class ClientProgressTab extends StatelessWidget {
     }
   }
 
-  String _formatDate(String date) {
-    try {
-      final dt = DateTime.parse(date);
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final yesterday = today.subtract(const Duration(days: 1));
-      final checkDate = DateTime(dt.year, dt.month, dt.day);
-
-      if (checkDate == today) return 'Today';
-      if (checkDate == yesterday) return 'Yesterday';
-
-      final months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-      return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
-    } catch (e) {
-      return date;
-    }
-  }
 }
 
 // Materials Tab - Real API data
@@ -1636,59 +1602,9 @@ class ClientProfileTab extends StatefulWidget {
 }
 
 class _ClientProfileTabState extends State<ClientProfileTab> {
-  Map<String, dynamic>? _budgetAllocation;
-  bool _isLoadingBudget = false;
-
   @override
   void initState() {
     super.initState();
-    _loadBudgetAllocation();
-  }
-
-  @override
-  void didUpdateWidget(ClientProfileTab oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.siteId != widget.siteId) {
-      _loadBudgetAllocation();
-    }
-  }
-
-  Future<void> _loadBudgetAllocation() async {
-    if (widget.siteId == null) return;
-
-    setState(() => _isLoadingBudget = true);
-    try {
-      final response = await ConstructionService().getClientBudgetAllocation(
-        widget.siteId!,
-      );
-      if (mounted) {
-        setState(() {
-          _budgetAllocation = response;
-          _isLoadingBudget = false;
-        });
-      }
-    } catch (e) {
-      print('Error loading budget allocation: $e');
-      if (mounted) {
-        setState(() => _isLoadingBudget = false);
-      }
-    }
-  }
-
-  String _formatCurrency(dynamic amount) {
-    if (amount == null) return '₹0';
-    double value = amount is String
-        ? double.tryParse(amount) ?? 0
-        : amount.toDouble();
-
-    if (value >= 10000000) {
-      return '₹${(value / 10000000).toStringAsFixed(2)} Cr';
-    } else if (value >= 100000) {
-      return '₹${(value / 100000).toStringAsFixed(2)} L';
-    } else if (value >= 1000) {
-      return '₹${(value / 1000).toStringAsFixed(2)} K';
-    }
-    return '₹${value.toStringAsFixed(0)}';
   }
 
   @override
@@ -1752,81 +1668,6 @@ class _ClientProfileTabState extends State<ClientProfileTab> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildBudgetCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: EdgeInsets.all(12.r),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(8.r),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Icon(icon, color: color, size: 24.sp),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(fontSize: 13.sp, color: Colors.grey),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w500,
-                color: AppColors.deepNavy,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

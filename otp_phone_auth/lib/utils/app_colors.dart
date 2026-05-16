@@ -85,6 +85,10 @@ class AppColors {
     offset: const Offset(0, 4),
   );
   
+  // Gray scale aliases
+  static const Color lightGray = Color(0xFFE0E0E0);
+  static const Color mediumGray = Color(0xFF9E9E9E);
+
   // Legacy compatibility (mapped to new colors)
   static const Color blueprintBlue = deepNavy;
   static const Color blueprintLight = deepNavyLight;

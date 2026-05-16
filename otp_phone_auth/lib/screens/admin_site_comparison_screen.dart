@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_provider.dart';
-import '../utils/smooth_animations.dart';
 
 class AdminSiteComparisonScreen extends StatefulWidget {
   const AdminSiteComparisonScreen({super.key, required List<Map<String, dynamic>> sites});
