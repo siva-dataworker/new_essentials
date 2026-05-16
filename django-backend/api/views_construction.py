@@ -1817,6 +1817,31 @@ def get_entries_by_date_and_role(request):
                   )
                 ORDER BY l.site_id, l.entry_time DESC
             """
+        elif role == 'Accountant':
+            # Get accountant (custom) entries from labour_entries table (submitted_by_role = 'Accountant')
+            query = """
+                SELECT
+                    l.id,
+                    l.site_id,
+                    s.site_name,
+                    s.customer_name,
+                    l.submitted_by_id,
+                    u.full_name as submitted_by,
+                    l.labour_type,
+                    l.labour_count,
+                    l.entry_date,
+                    l.created_at as entry_time,
+                    l.created_at as submitted_at
+                FROM labour_entries l
+                JOIN sites s ON l.site_id = s.id
+                LEFT JOIN users u ON l.submitted_by_id = u.id
+                WHERE l.entry_date = %s AND l.submitted_by_role = 'Accountant'
+                  AND NOT EXISTS (
+                    SELECT 1 FROM cash_entries ce
+                    WHERE ce.site_id = l.site_id AND ce.entry_date = l.entry_date
+                  )
+                ORDER BY l.site_id, l.created_at DESC
+            """
         else:
             # Get both
             query = """
