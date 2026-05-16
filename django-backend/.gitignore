@@ -20,6 +20,11 @@ media/
 .env
 .env.local
 
+# Firebase service account — contains private key, never commit
+backend/firebase-service-account.json
+firebase-service-account.json
+*service-account*.json
+
 # IDE
 .vscode/
 .idea/
