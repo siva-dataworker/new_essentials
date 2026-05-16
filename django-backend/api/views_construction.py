@@ -2054,6 +2054,7 @@ def get_approved_entries(request):
         # Group original entries by site_id + role
         supervisor_by_site = defaultdict(list)
         engineer_by_site = defaultdict(list)
+        accountant_by_site = defaultdict(list)
         for e in original_entries:
             site_id_str = str(e['site_id'])
             role = (e.get('submitted_by_role') or '').lower()
@@ -2061,7 +2062,9 @@ def get_approved_entries(request):
                 'labour_type': e['labour_type'],
                 'labour_count': e['labour_count'],
             }
-            if 'engineer' in role:
+            if 'accountant' in role:
+                accountant_by_site[site_id_str].append(entry_item)
+            elif 'engineer' in role:
                 engineer_by_site[site_id_str].append(entry_item)
             else:
                 supervisor_by_site[site_id_str].append(entry_item)
@@ -2082,6 +2085,7 @@ def get_approved_entries(request):
                 'selected_entries': selected_by_site[sid],
                 'supervisor_entries': supervisor_by_site[sid],
                 'site_engineer_entries': engineer_by_site[sid],
+                'accountant_entries': accountant_by_site[sid],
             })
 
         return Response({'approved_entries': result}, status=status.HTTP_200_OK)
@@ -5996,33 +6000,63 @@ def create_custom_cash_entry(request):
             SELECT COUNT(*) as count FROM cash_entries
             WHERE site_id = %s AND entry_date = %s
         """, (site_id, entry_date))
-        
+
         if existing and existing['count'] > 0:
             return Response({
                 'error': 'Cash entry already exists for this site and date. Only one entry per site per day is allowed.'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Insert cash entries for each labour type
+
+        # Insert labour entries (not cash entries yet) so accountant can confirm
+        labour_entry_ids = []
         for labour in labour_entries:
             labour_type = labour.get('labour_type')
             labour_count = labour.get('labour_count', 0)
-            daily_rate = labour.get('daily_rate', 0)
-            total_cost = labour_count * daily_rate
-            
-            cash_entry_id = str(uuid.uuid4())
+
+            labour_entry_id = str(uuid.uuid4())
+            labour_entry_ids.append(labour_entry_id)
+
             execute_query("""
-                INSERT INTO cash_entries
-                (id, site_id, accountant_id, entry_date, source_type, 
-                 labour_type, labour_count, daily_rate, total_cost, notes, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (cash_entry_id, site_id, user_id, entry_date, 'accountant_created',
-                  labour_type, labour_count, daily_rate, total_cost, notes, timezone.now()))
-        
-        print(f"✅ [CUSTOM CASH ENTRY] Created {len(labour_entries)} custom cash entries")
-        
+                INSERT INTO labour_entries
+                (id, site_id, entry_date, labour_type, labour_count,
+                 submitted_by_id, submitted_by_role, notes, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (labour_entry_id, site_id, entry_date, labour_type, labour_count,
+                  user_id, 'Accountant', notes, timezone.now()))
+
+        # Fetch the created entry with site info so it can be shown in compare screen
+        entry_data = fetch_one("""
+            SELECT
+                l.id, l.site_id, s.customer_name, s.site_name,
+                COALESCE(u.full_name, u.phone) as submitted_by,
+                l.submitted_by_role, l.created_at as submitted_at
+            FROM labour_entries l
+            JOIN sites s ON l.site_id = s.id
+            LEFT JOIN users u ON l.submitted_by_id = u.id
+            WHERE l.site_id = %s AND l.entry_date = %s AND l.submitted_by_role = 'Accountant'
+            ORDER BY l.created_at DESC
+            LIMIT 1
+        """, (site_id, entry_date))
+
+        # Get labour entries for this site+date+accountant
+        labour_list = fetch_all("""
+            SELECT labour_type, labour_count
+            FROM labour_entries
+            WHERE site_id = %s AND entry_date = %s AND submitted_by_role = 'Accountant'
+        """, (site_id, entry_date))
+
+        print(f"✅ [CUSTOM ENTRY] Created {len(labour_entries)} labour entries for accountant confirmation")
+
         return Response({
-            'message': 'Custom cash entry created successfully',
-            'entries_count': len(labour_entries)
+            'message': 'Custom entry created. Please confirm selection.',
+            'entry': {
+                'id': entry_data['id'] if entry_data else None,
+                'site_id': site_id,
+                'site_name': f"{entry_data['customer_name']} {entry_data['site_name']}" if entry_data else 'Unknown',
+                'submitted_by': entry_data['submitted_by'] if entry_data else 'Accountant',
+                'submitted_by_role': 'Accountant',
+                'submitted_at': entry_data['submitted_at'].isoformat() if entry_data and entry_data['submitted_at'] else None,
+                'labour_entries': labour_list,
+            }
         }, status=status.HTTP_201_CREATED)
         
     except Exception as e:
