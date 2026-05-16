@@ -1587,67 +1587,34 @@ def get_all_entries_for_accountant(request):
             return Response({'error': 'Only accountants and admins can access this data'}, 
                           status=status.HTTP_403_FORBIDDEN)
         
-        # Get labour entries with supervisor names, roles, timestamps, extra costs, and submitted_by_role
-        # Use CASE for daily rates - removed problematic labour_salary_rates join
-        # Only show APPROVED entries (those with corresponding cash_entries)
+        # Get labour entries directly from CASH_ENTRIES table (approved entries only)
+        # Cash entries are the source of truth for what the accountant has confirmed
         labour_query = """
             SELECT
-                l.id,
-                l.site_id,
-                l.labour_type,
-                l.labour_count,
-                l.entry_date,
-                l.entry_time,
-                l.notes,
-                COALESCE(l.extra_cost, 0) as extra_cost,
-                l.extra_cost_notes,
-                COALESCE(l.submitted_by_role, 'Supervisor') as submitted_by_role,
+                ce.id,
+                ce.site_id,
+                ce.labour_type,
+                ce.labour_count,
+                ce.entry_date,
+                ce.created_at as entry_time,
+                '' as notes,
+                0 as extra_cost,
+                '' as extra_cost_notes,
+                ce.source_type as submitted_by_role,
                 s.site_name,
                 s.customer_name,
                 s.area,
                 s.street,
-                u.full_name as supervisor_name,
+                COALESCE(u.full_name, u.phone) as supervisor_name,
                 u.username as supervisor_username,
                 r.role_name as user_role,
-                CASE l.labour_type
-                    WHEN 'General' THEN 600
-                    WHEN 'Mason' THEN 800
-                    WHEN 'Helper' THEN 500
-                    WHEN 'Carpenter' THEN 750
-                    WHEN 'Plumber' THEN 700
-                    WHEN 'Electrician' THEN 750
-                    WHEN 'Painter' THEN 650
-                    WHEN 'Tile Layer' THEN 700
-                    WHEN 'Tile Layerhelper' THEN 700
-                    WHEN 'Kambi Fitter' THEN 900
-                    WHEN 'Concrete Kot' THEN 950
-                    WHEN 'Pile Labour' THEN 800
-                    ELSE 900
-                END AS daily_rate,
-                (l.labour_count * CASE l.labour_type
-                    WHEN 'General' THEN 600
-                    WHEN 'Mason' THEN 800
-                    WHEN 'Helper' THEN 500
-                    WHEN 'Carpenter' THEN 750
-                    WHEN 'Plumber' THEN 700
-                    WHEN 'Electrician' THEN 750
-                    WHEN 'Painter' THEN 650
-                    WHEN 'Tile Layer' THEN 700
-                    WHEN 'Tile Layerhelper' THEN 700
-                    WHEN 'Kambi Fitter' THEN 900
-                    WHEN 'Concrete Kot' THEN 950
-                    WHEN 'Pile Labour' THEN 800
-                    ELSE 900
-                END) AS total_cost
-            FROM labour_entries l
-            JOIN sites s ON l.site_id = s.id
-            LEFT JOIN users u ON l.supervisor_id = u.id
+                ce.daily_rate,
+                ce.total_cost
+            FROM cash_entries ce
+            JOIN sites s ON ce.site_id = s.id
+            LEFT JOIN users u ON ce.accountant_id = u.id
             LEFT JOIN roles r ON u.role_id = r.id
-            WHERE EXISTS (
-                SELECT 1 FROM cash_entries ce
-                WHERE ce.site_id = l.site_id AND ce.entry_date = l.entry_date
-            )
-            ORDER BY l.entry_time DESC
+            ORDER BY ce.created_at DESC
             LIMIT 200
         """
         try:
