@@ -1589,6 +1589,7 @@ def get_all_entries_for_accountant(request):
         
         # Get labour entries with supervisor names, roles, timestamps, extra costs, and submitted_by_role
         # Use CASE for daily rates - removed problematic labour_salary_rates join
+        # Only show APPROVED entries (those with corresponding cash_entries)
         labour_query = """
             SELECT
                 l.id,
@@ -1642,6 +1643,10 @@ def get_all_entries_for_accountant(request):
             JOIN sites s ON l.site_id = s.id
             LEFT JOIN users u ON l.supervisor_id = u.id
             LEFT JOIN roles r ON u.role_id = r.id
+            WHERE EXISTS (
+                SELECT 1 FROM cash_entries ce
+                WHERE ce.site_id = l.site_id AND ce.entry_date = l.entry_date
+            )
             ORDER BY l.entry_time DESC
             LIMIT 200
         """
