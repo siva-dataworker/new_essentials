@@ -1961,22 +1961,54 @@ def get_approved_entries(request):
         debug_check = fetch_all("SELECT COUNT(*) as count FROM cash_entries WHERE entry_date = %s", (entry_date,))
         print(f"🔍 [DEBUG] Total cash_entries for {entry_date}: {debug_check[0]['count'] if debug_check else 0}")
 
-        # Step 1: Get unique approved sites+dates from cash_entries (grouped by site_id, entry_date)
-        approved_meta = fetch_all("""
+        # Step 1: Get unique approved sites+dates from cash_entries
+        # First, get just the unique combinations without aggregation
+        unique_combinations = fetch_all("""
             SELECT DISTINCT
                 ce.site_id,
-                CONCAT(s.customer_name, ' ', s.site_name) as site_name,
                 ce.entry_date,
-                ce.source_type,
-                MAX(ce.created_at) as approved_at,
-                COALESCE(u.full_name, u.phone) as approved_by
+                ce.source_type
             FROM cash_entries ce
-            JOIN sites s ON ce.site_id = s.id
-            LEFT JOIN users u ON ce.accountant_id = u.id
             WHERE ce.entry_date = %s
-            GROUP BY ce.site_id, s.customer_name, s.site_name, ce.entry_date, ce.source_type, u.full_name, u.phone
-            ORDER BY ce.site_id, ce.entry_date DESC
+            ORDER BY ce.site_id
         """, (entry_date,))
+
+        print(f"✅ [APPROVED ENTRIES] Found {len(unique_combinations)} unique site+date+source combinations")
+
+        # Now enrich with site and user info
+        approved_meta = []
+        for combo in unique_combinations:
+            site_id = combo['site_id']
+            combo_date = combo['entry_date']
+            source_type = combo['source_type']
+
+            # Get site info
+            site_info = fetch_one("""
+                SELECT CONCAT(customer_name, ' ', site_name) as site_name
+                FROM sites
+                WHERE id = %s
+            """, (site_id,))
+
+            # Get accountant info (from first entry for this site+date)
+            acc_info = fetch_one("""
+                SELECT COALESCE(u.full_name, u.phone) as approved_by, created_at
+                FROM cash_entries ce
+                LEFT JOIN users u ON ce.accountant_id = u.id
+                WHERE ce.site_id = %s AND ce.entry_date = %s
+                LIMIT 1
+            """, (site_id, combo_date))
+
+            if site_info:
+                approved_meta.append({
+                    'site_id': site_id,
+                    'site_name': site_info['site_name'],
+                    'entry_date': combo_date,
+                    'source_type': source_type,
+                    'approved_at': acc_info['created_at'] if acc_info else None,
+                    'approved_by': acc_info['approved_by'] if acc_info else 'Unknown',
+                })
+
+        print(f"✅ [APPROVED ENTRIES] Enriched with site info: {len(approved_meta)} entries")
 
         print(f"✅ [APPROVED ENTRIES] Found {len(approved_meta)} approved sites")
 
@@ -1994,18 +2026,24 @@ def get_approved_entries(request):
         """, (entry_date,))
 
         print(f"✅ [APPROVED ENTRIES] Found {len(selected_rows)} labour rows in cash_entries")
+        if selected_rows:
+            print(f"   Sample: {selected_rows[0]}")
 
         # Step 3: Get original labour_entries for all approved sites (both roles)
         site_ids = tuple(a['site_id'] for a in approved_meta)
-        print(f"🔍 [APPROVED ENTRIES] Fetching original entries for sites: {site_ids}")
+        print(f"🔍 [APPROVED ENTRIES] Site IDs to fetch: {site_ids}")
 
         if site_ids:
-            original_entries = fetch_all("""
-                SELECT site_id, entry_date, labour_type, labour_count, submitted_by_role
-                FROM labour_entries
-                WHERE site_id = ANY(%s) AND entry_date = %s
-                ORDER BY site_id, submitted_by_role
-            """, (list(site_ids), entry_date))
+            # Use individual site queries if ANY() doesn't work
+            original_entries = []
+            for sid in site_ids:
+                entries = fetch_all("""
+                    SELECT site_id, entry_date, labour_type, labour_count, submitted_by_role
+                    FROM labour_entries
+                    WHERE site_id = %s AND entry_date = %s
+                    ORDER BY submitted_by_role
+                """, (sid, entry_date))
+                original_entries.extend(entries)
         else:
             original_entries = []
 
