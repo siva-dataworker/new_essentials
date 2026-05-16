@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Black and White Professional Theme
-  
-  // Primary Colors - Black
-  static const Color deepNavy = Color(0xFF000000); // Pure Black
-  static const Color deepNavyDark = Color(0xFF000000); // Pure Black
-  static const Color deepNavyLight = Color(0xFF424242); // Dark Gray
+  // Dark Blue Navy Theme for Accountant & Professional
+
+  // Primary Colors - Dark Blue Navy
+  static const Color deepNavy = Color(0xFF1A1A2E); // Dark Blue Navy
+  static const Color deepNavyDark = Color(0xFF0F0F1E); // Darker Navy
+  static const Color deepNavyLight = Color(0xFF2D2E47); // Light Navy
   
   // Missing colors for supervisor dashboard
   static const Color primaryPurple = Color(0xFF000000); // Pure Black
@@ -23,11 +23,11 @@ class AppColors {
   static const Color surfaceWhite = Color(0xFFFFFFFF);
   static const Color white = Color(0xFFFFFFFF); // Pure White
   
-  // Text Colors - Black and Gray
-  static const Color textPrimary = Color(0xFF000000);
-  static const Color textSecondary = Color(0xFF424242);
-  static const Color textTertiary = Color(0xFF757575);
-  static const Color textHint = Color(0xFF9E9E9E);
+  // Text Colors - Navy Theme
+  static const Color textPrimary = Color(0xFF1A1A2E); // Dark Navy
+  static const Color textSecondary = Color(0xFF4A5568); // Medium Navy
+  static const Color textTertiary = Color(0xFF718096); // Light Navy
+  static const Color textHint = Color(0xFFCBD5E0); // Very Light Navy
   
   // Status/Feedback Colors - Grayscale
   static const Color success = Color(0xFF424242); // Dark Gray (for success)
@@ -35,12 +35,12 @@ class AppColors {
   static const Color warning = Color(0xFF757575); // Medium Gray (for warnings)
   static const Color info = Color(0xFF616161); // Medium Gray (for info)
   
-  // Role-specific Colors - Grayscale
-  static const Color supervisorColor = Color(0xFF000000); // Black
-  static const Color engineerColor = Color(0xFF424242); // Dark Gray
-  static const Color accountantColor = Color(0xFF616161); // Medium Gray
-  static const Color architectColor = Color(0xFF000000); // Black
-  static const Color ownerColor = Color(0xFF212121); // Very Dark Gray
+  // Role-specific Colors - Navy Theme
+  static const Color supervisorColor = Color(0xFF1A1A2E); // Dark Navy
+  static const Color engineerColor = Color(0xFF2563EB); // Blue
+  static const Color accountantColor = Color(0xFF1A1A2E); // Dark Navy (Primary)
+  static const Color architectColor = Color(0xFF1A1A2E); // Dark Navy
+  static const Color ownerColor = Color(0xFF1A1A2E); // Dark Navy
   
   // Status Colors - Grayscale
   static const Color statusCompleted = Color(0xFF424242); // Dark Gray
@@ -134,7 +134,21 @@ class AppColors {
   );
   static const LinearGradient darkGradient = professionalGradient;
   static const LinearGradient glowingGradient = professionalGradient;
-  
+
+  // Accountant Screen Specific Colors
+  static const Color accountantPrimary = Color(0xFF1A1A2E); // Dark Navy
+  static const Color accountantAccent = Color(0xFF2563EB); // Bright Blue
+  static const Color accountantSuccess = Color(0xFF059669); // Green (for confirmed)
+  static const Color accountantWarning = Color(0xFFF59E0B); // Amber (for pending)
+  static const Color accountantError = Color(0xFFDC2626); // Red (for errors)
+  static const Color accountantBackground = Color(0xFFF8F9FA); // Light Gray
+
+  static BoxShadow accountantCardShadow = BoxShadow(
+    color: const Color(0xFF1A1A2E).withValues(alpha: 0.08),
+    blurRadius: 8,
+    offset: const Offset(0, 2),
+  );
+
   static BoxShadow neonTealGlow = BoxShadow(
     color: const Color(0xFF757575).withValues(alpha: 0.3),
     blurRadius: 12,

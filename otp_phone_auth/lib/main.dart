@@ -23,6 +23,8 @@ import 'providers/material_provider.dart';
 import 'providers/admin_provider.dart';
 import 'providers/supervisor_provider.dart';
 import 'providers/accountant_provider.dart';
+import 'providers/accountant_dashboard_provider.dart';
+import 'providers/accountant_entries_provider.dart';
 import 'providers/architect_provider.dart';
 import 'providers/client_provider.dart';
 
@@ -59,6 +61,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AdminProvider()),
         ChangeNotifierProvider(create: (_) => SupervisorProvider()),
         ChangeNotifierProvider(create: (_) => AccountantProvider()),
+        ChangeNotifierProvider(create: (_) => AccountantDashboardProvider()),
+        ChangeNotifierProvider(create: (_) => AccountantEntriesProvider()),
         ChangeNotifierProvider(create: (_) => ArchitectProvider()),
         ChangeNotifierProvider(create: (_) => ClientProvider()),
       ],

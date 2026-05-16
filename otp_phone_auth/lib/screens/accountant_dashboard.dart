@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
 import '../providers/construction_provider.dart';
+import '../providers/accountant_dashboard_provider.dart';
 import '../services/auth_service.dart';
 import '../services/construction_service.dart';
 import '../services/cache_service.dart';
@@ -51,6 +52,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
   double _cashOverallTotal = 0.0;
   List<Map<String, dynamic>> _cashBySite =
       []; // [{site_id, site_name, customer_name, total_cost, ...}]
+  int _approvedEntriesCount = 0; // Count of distinct approved entries from cash_entries
 
   // Mismatch detection
   final _mismatchService = LaborMismatchService();
@@ -166,6 +168,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       // Fetch confirmed cash salary summary
       await _fetchCashEntriesSummary();
 
+      // Fetch approved entries count from cash_entries
+      await _fetchApprovedEntriesCount();
+
       // Load mismatch data (non-blocking)
       _loadMismatchData().catchError((e) {
         print('⚠️ [ACCOUNTANT] Mismatch loading failed: $e');
@@ -179,7 +184,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
       // Create and save dashboard data
       final dashboardData = {
-        'total_labour_entries': labourData.length,
+        'total_labour_entries': _approvedEntriesCount,
         'total_material_entries': materialData.length,
         'total_workers': labourData.fold<int>(
           0,
@@ -222,6 +227,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
   Future<void> _fetchWorkingSitesCount() async {
     try {
+      final provider = context.read<AccountantDashboardProvider>();
       final authService = AuthService();
       final token = await authService.getToken();
 
@@ -236,10 +242,10 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final count = data['working_sites_count'] ?? 0;
         if (mounted) {
-          setState(() {
-            _workingSitesCount = data['working_sites_count'] ?? 0;
-          });
+          _workingSitesCount = count;
+          provider.setWorkingSitesCount(count);
         }
         print('📊 [WORKING SITES] Count fetched: $_workingSitesCount');
       } else {
@@ -255,6 +261,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
   Future<void> _fetchCashEntriesSummary() async {
     try {
+      final provider = context.read<AccountantDashboardProvider>();
       final authService = AuthService();
       final token = await authService.getToken();
 
@@ -280,14 +287,13 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final overallTotal = (data['overall_total'] as num?)?.toDouble() ?? 0.0;
+        final bysite = List<Map<String, dynamic>>.from(data['by_site'] ?? []);
         if (mounted) {
-          setState(() {
-            _cashOverallTotal =
-                (data['overall_total'] as num?)?.toDouble() ?? 0.0;
-            _cashBySite = List<Map<String, dynamic>>.from(
-              data['by_site'] ?? [],
-            );
-          });
+          _cashOverallTotal = overallTotal;
+          _cashBySite = bysite;
+          provider.setTotalConfirmedSalary(overallTotal);
+          provider.setCashBySite(bysite);
         }
         print(
           '✅ [CASH SUMMARY] Overall: ₹$_cashOverallTotal across ${_cashBySite.length} sites',
@@ -297,6 +303,38 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       }
     } catch (e) {
       print('⚠️ [CASH SUMMARY] Error: $e');
+    }
+  }
+
+  Future<void> _fetchApprovedEntriesCount() async {
+    try {
+      final provider = context.read<AccountantDashboardProvider>();
+      final authService = AuthService();
+      final token = await authService.getToken();
+
+      final response = await http
+          .get(
+            Uri.parse(
+              '${AuthService.baseUrl}/construction/accountant/all-entries/',
+            ),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        // Use total_labour_entries from API which counts from cash_entries table
+        final count = data['total_labour_entries'] as int? ?? 0;
+        if (mounted) {
+          _approvedEntriesCount = count;
+          provider.setLabourEntriesCount(count);
+        }
+        print('📊 [APPROVED COUNT] Total entries from cash_entries: $_approvedEntriesCount');
+      } else {
+        print('⚠️ [APPROVED COUNT] Failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('⚠️ [APPROVED COUNT] Error: $e');
     }
   }
 
@@ -383,6 +421,9 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       // Fetch confirmed cash salary summary
       await _fetchCashEntriesSummary();
 
+      // Fetch approved entries count from cash_entries
+      await _fetchApprovedEntriesCount();
+
       // Load mismatch data
       await _loadMismatchData();
 
@@ -392,7 +433,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
       // Create and save dashboard data
       final dashboardData = {
-        'total_labour_entries': _labourEntries.length,
+        'total_labour_entries': _approvedEntriesCount,
         'total_material_entries': _materialEntries.length,
         'total_workers': _labourEntries.fold<int>(
           0,
@@ -495,7 +536,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 children: [
                   Icon(
                     Icons.warning_amber_rounded,
-                    color: Colors.orange,
+                    color: AppColors.accountantWarning,
                     size: 32.sp,
                   ),
                   SizedBox(width: 12.w),
@@ -544,7 +585,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                         child: ListTile(
                           leading: const Icon(
                             Icons.location_on,
-                            color: Colors.orange,
+                            color: AppColors.accountantWarning,
                           ),
                           title: Text(
                             site['site_name'] ?? 'Unknown Site',
@@ -559,7 +600,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                               vertical: 6.h,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.red,
+                              color: AppColors.accountantError,
                               borderRadius: BorderRadius.circular(12.r),
                             ),
                             child: Text(
@@ -629,7 +670,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
 
   Widget _buildDashboardScreen() {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.accountantBackground,
       appBar: CommonWidgets.buildAppBar(
         context,
         title: 'Dashboard - $_profileName',
@@ -644,7 +685,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   IconButton(
                     icon: Icon(
                       Icons.warning_amber_rounded,
-                      color: Colors.orange,
+                      color: AppColors.accountantWarning,
                       size: 28.sp,
                     ),
                     tooltip: 'Labor Entry Mismatches',
@@ -683,14 +724,14 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               ),
             ),
           IconButton(
-            icon: const Icon(Icons.refresh, color: const Color(0xFF1A1A2E)),
+            icon: const Icon(Icons.refresh, color: AppColors.deepNavy),
             onPressed: _forceRefresh,
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () async => _forceRefresh(),
-        color: const Color(0xFF1A1A2E),
+        color: AppColors.accountantAccent,
         child: _isLoading
             ? CommonWidgets.buildLoadingIndicator(
                 context,
@@ -718,8 +759,8 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
     // Use filtered labour entries (includes role, date, and site filters)
     final filteredLabourEntries = _filteredLabourEntries;
 
-    // Calculate totals from FILTERED data (for labour entries display)
-    final totalLabourEntries = filteredLabourEntries.length;
+    // Use approved entries count from cash_entries (accountant-confirmed entries)
+    final totalLabourEntries = _approvedEntriesCount;
 
     // ── Confirmed salary from cash_entries (accountant-selected entries) ──
     // If a specific site is selected, show only that site's confirmed total.
@@ -907,7 +948,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
             style: TextStyle(
               fontSize: 20.sp,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1A1A2E),
+              color: AppColors.deepNavy,
             ),
           ),
           SizedBox(height: 16.h),
@@ -919,7 +960,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   title: 'Labour Entries',
                   value: totalLabourEntries.toString(),
                   icon: Icons.people,
-                  color: const Color(0xFF4CAF50),
+                  color: AppColors.accountantSuccess,
                 ),
               ),
               SizedBox(width: 12.w),
@@ -928,7 +969,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   title: 'Working Sites',
                   value: workingSitesCount.toString(),
                   icon: Icons.location_city,
-                  color: const Color(0xFF1A1A2E),
+                  color: AppColors.deepNavy,
                 ),
               ),
             ],
@@ -944,7 +985,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                 : 'Total Confirmed Salary',
             value: '₹${_formatCurrency(confirmedTotalSalary)}',
             icon: Icons.currency_rupee,
-            color: const Color(0xFFFF9800),
+            color: AppColors.accountantAccent,
           ),
 
           // Per-site salary breakdown (only when no specific site is selected)
@@ -955,7 +996,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
               style: TextStyle(
                 fontSize: 16.sp,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A2E),
+                color: AppColors.deepNavy,
               ),
             ),
             SizedBox(height: 10.h),
@@ -978,14 +1019,14 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: AppColors.deepNavy.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
           Icon(
             Icons.location_on_outlined,
             size: 18.sp,
-            color: Color(0xFFFF9800),
+            color: AppColors.accountantAccent,
           ),
           SizedBox(width: 10.w),
           Expanded(
@@ -997,13 +1038,13 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
                   style: TextStyle(
                     fontSize: 15.sp,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A2E),
+                    color: AppColors.deepNavy,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   '$days day${days == 1 ? '' : 's'} confirmed',
-                  style: TextStyle(fontSize: 13.sp, color: Colors.grey),
+                  style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -1013,7 +1054,7 @@ class _AccountantDashboardState extends State<AccountantDashboard> {
             style: TextStyle(
               fontSize: 15.sp,
               fontWeight: FontWeight.bold,
-              color: Color(0xFFFF9800),
+              color: AppColors.accountantAccent,
             ),
           ),
         ],

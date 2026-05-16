@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 import '../services/construction_service.dart';
+import '../providers/accountant_entries_provider.dart';
+import '../utils/app_colors.dart';
+import 'accountant_approved_entries_screen.dart';
 
 class AccountantCompareScreen extends StatefulWidget {
   const AccountantCompareScreen({super.key});
@@ -13,127 +17,68 @@ class AccountantCompareScreen extends StatefulWidget {
 class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
   final _constructionService = ConstructionService();
 
-  DateTime _selectedDate = DateTime.now();
-  String? _selectedSite; // null = All Sites
-  List<Map<String, dynamic>> _sites = [];
-  List<Map<String, dynamic>> _supervisorEntries = [];
-  List<Map<String, dynamic>> _engineerEntries = [];
-  bool _isLoading = false;
-  bool _isLoadingSites = false;
-  String? _error;
-
-  // Selection state
-  String? _selectedEntryId; // ID of selected entry
-  String? _selectedEntryType; // 'supervisor' or 'site_engineer'
-  bool _isConfirming = false;
-
-  // Lock state — set when cash entry already confirmed for this site+date
-  bool _isLockedForSite = false;
-  Map<String, dynamic>? _lockInfo; // {source_type, accountant_name, created_at}
+  // Track expanded sites (local UI state only)
+  Set<String> _expandedSites = {};
 
   @override
   void initState() {
     super.initState();
-    _loadSites();
     _loadComparisonData();
   }
 
-  Future<void> _loadSites() async {
-    setState(() => _isLoadingSites = true);
-
-    try {
-      final sites = await _constructionService.getSites();
-
-      if (mounted) {
-        setState(() {
-          _sites = sites;
-          _isLoadingSites = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoadingSites = false);
-      }
-    }
-  }
-
   Future<void> _loadComparisonData() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-      _isLockedForSite = false;
-      _lockInfo = null;
-    });
+    final provider = context.read<AccountantEntriesProvider>();
+    provider.setIsLoading(true);
+    provider.setError(null);
+    provider.setLockStatus(false, null);
 
     try {
-      final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      final dateStr = DateFormat('yyyy-MM-dd').format(provider.selectedDate);
 
       print('🔍 [COMPARE] Loading data for date: $dateStr');
 
       // Load supervisor entries
       final supervisorData = await _constructionService.getEntriesByDateAndRole(dateStr, 'Supervisor');
+      print('📊 [COMPARE] Supervisor entries: ${supervisorData.length}');
+
       // Load site engineer entries
       final engineerData = await _constructionService.getEntriesByDateAndRole(dateStr, 'Site Engineer');
+      print('📊 [COMPARE] Engineer entries: ${engineerData.length}');
+
+      // Load accountant (custom) entries
+      final accountantData = await _constructionService.getEntriesByDateAndRole(dateStr, 'Accountant');
+      print('📊 [COMPARE] Accountant entries: ${accountantData.length}');
 
       if (mounted) {
-        setState(() {
-          if (_selectedSite != null) {
-            _supervisorEntries = supervisorData.where((entry) => entry['site_id'] == _selectedSite).toList();
-            _engineerEntries = engineerData.where((entry) => entry['site_id'] == _selectedSite).toList();
-          } else {
-            _supervisorEntries = supervisorData;
-            _engineerEntries = engineerData;
-          }
-          _isLoading = false;
-        });
-
-        // Check lock status for the selected site
-        if (_selectedSite != null) {
-          await _checkLockStatus(dateStr, _selectedSite!);
-        }
+        provider.setSupervisorEntries(supervisorData);
+        provider.setEngineerEntries(engineerData);
+        provider.setAccountantEntries(accountantData);
+        provider.setIsLoading(false);
       }
     } catch (e) {
       print('❌ [COMPARE] Error: $e');
       if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _isLoading = false;
-        });
+        provider.setError(e.toString());
+        provider.setIsLoading(false);
       }
     }
   }
 
-  Future<void> _checkLockStatus(String dateStr, String siteId) async {
-    try {
-      final result = await _constructionService.checkCashEntryExists(
-        siteId: siteId,
-        date: dateStr,
-      );
-      if (mounted) {
-        setState(() {
-          _isLockedForSite = result['exists'] == true;
-          _lockInfo = result['entry'] as Map<String, dynamic>?;
-        });
-      }
-    } catch (e) {
-      print('❌ [COMPARE] Lock check error: $e');
-    }
-  }
-
-  Future<void> _selectDate() async {
+Future<void> _selectDate() async {
+    final provider = context.read<AccountantEntriesProvider>();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: provider.selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1A1A2E),
+              primary: AppColors.deepNavy,
               onPrimary: Colors.white,
               surface: Colors.white,
-              onSurface: Color(0xFF1A1A2E),
+              onSurface: AppColors.deepNavy,
             ),
           ),
           child: child!,
@@ -141,34 +86,46 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
       },
     );
 
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
+    if (picked != null && picked != provider.selectedDate) {
+      provider.setSelectedDate(picked);
       _loadComparisonData();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AccountantEntriesProvider>();
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.accountantBackground,
       appBar: AppBar(
         title: Text(
           'Compare Entries',
           style: TextStyle(
-            color: const Color(0xFF1A1A2E),
+            color: AppColors.deepNavy,
             fontWeight: FontWeight.bold,
             fontSize: 18.sp,
           ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF1A1A2E)),
+        iconTheme: const IconThemeData(color: AppColors.deepNavy),
         actions: [
-          // Add custom entry button
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            onPressed: _showCreateCustomEntryDialog,
-            tooltip: 'Create Custom Entry',
+          // View Approved Entries button
+          TextButton.icon(
+            icon: const Icon(Icons.check_circle, color: AppColors.deepNavy),
+            label: Text(
+              'Approved',
+              style: TextStyle(color: AppColors.deepNavy, fontSize: 12.sp),
+            ),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AccountantApprovedEntriesScreen(
+                  initialDate: provider.selectedDate,
+                ),
+              ),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.calendar_today),
@@ -205,12 +162,12 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                     Container(
                       padding: EdgeInsets.all(10.r),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
+                        color: AppColors.deepNavy.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10.r),
                       ),
                       child: Icon(
                         Icons.compare_arrows,
-                        color: const Color(0xFF1A1A2E),
+                        color: AppColors.deepNavy,
                         size: 24.sp,
                       ),
                     ),
@@ -223,16 +180,16 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                             'Comparing Entries For',
                             style: TextStyle(
                               fontSize: 12.sp,
-                              color: const Color(0xFF6B7280),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                           SizedBox(height: 4.h),
                           Text(
-                            DateFormat('EEEE, MMM d, yyyy').format(_selectedDate),
+                            DateFormat('EEEE, MMM d, yyyy').format(provider.selectedDate),
                             style: TextStyle(
                               fontSize: 16.sp,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1A1A2E),
+                              color: AppColors.deepNavy,
                             ),
                           ),
                         ],
@@ -241,85 +198,40 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                     IconButton(
                       icon: const Icon(Icons.edit_calendar),
                       onPressed: _selectDate,
-                      color: const Color(0xFF1A1A2E),
+                      color: AppColors.deepNavy,
                     ),
                   ],
                 ),
                 SizedBox(height: 12.h),
                 const Divider(height: 1),
                 SizedBox(height: 12.h),
-                // Site filter dropdown
+                // Sites display text (no longer a filter dropdown)
                 Row(
                   children: [
                     Icon(
                       Icons.location_on_outlined,
-                      color: const Color(0xFF6B7280),
+                      color: AppColors.textSecondary,
                       size: 20.sp,
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      'Site:',
+                      'Sites:',
                       style: TextStyle(
                         fontSize: 14.sp,
-                        color: const Color(0xFF6B7280),
+                        color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     SizedBox(width: 12.w),
                     Expanded(
-                      child: _isLoadingSites
-                          ? Center(
-                              child: SizedBox(
-                                width: 20.w,
-                                height: 20.h,
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Color(0xFF1A1A2E),
-                                ),
-                              ),
-                            )
-                          : DropdownButtonFormField<String>(
-                              value: _selectedSite,
-                              decoration: InputDecoration(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  borderSide: const BorderSide(color: Color(0xFF1A1A2E)),
-                                ),
-                              ),
-                              hint: Text(
-                                'All Sites',
-                                style: TextStyle(fontSize: 14.sp),
-                              ),
-                              items: [
-                                const DropdownMenuItem<String>(
-                                  value: null,
-                                  child: Text('All Sites'),
-                                ),
-                                ..._sites.map((site) {
-                                  return DropdownMenuItem<String>(
-                                    value: site['id'],
-                                    child: Text(
-                                      site['display_name'] ?? site['site_name'] ?? 'Unknown',
-                                      style: TextStyle(fontSize: 14.sp),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  );
-                                }),
-                              ],
-                              onChanged: (value) {
-                                setState(() => _selectedSite = value);
-                                _loadComparisonData();
-                              },
-                            ),
+                      child: Text(
+                        '${provider.supervisorEntries.length + provider.engineerEntries.length} entries',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: AppColors.deepNavy,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -329,13 +241,13 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
 
           // Content
           Expanded(
-            child: _isLoading
+            child: provider.isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
-                      color: Color(0xFF1A1A2E),
+                      color: AppColors.accountantAccent,
                     ),
                   )
-                : _error != null
+                : provider.error != null
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -343,12 +255,12 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                             Icon(
                               Icons.error_outline,
                               size: 64.sp,
-                              color: Colors.red,
+                              color: AppColors.accountantError,
                             ),
                             SizedBox(height: 16.h),
                             Text(
-                              'Error: $_error',
-                              style: const TextStyle(color: Colors.red),
+                              'Error: ${provider.error}',
+                              style: const TextStyle(color: AppColors.accountantError),
                             ),
                             SizedBox(height: 16.h),
                             ElevatedButton(
@@ -358,11 +270,11 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                           ],
                         ),
                       )
-                    : _buildComparisonView(),
+                    : _buildComparisonView(provider),
           ),
 
           // Confirm button at bottom — hidden when site is already locked
-          if (_selectedEntryId != null && !_isLockedForSite)
+          if (provider.selectedEntryId != null && !provider.isLockedForSite)
             Container(
               padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
@@ -377,15 +289,15 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
               ),
               child: SafeArea(
                 child: ElevatedButton(
-                  onPressed: _isConfirming ? null : _confirmSelection,
+                  onPressed: provider.isConfirming ? null : _confirmSelection,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
+                    backgroundColor: AppColors.accountantSuccess,
                     padding: EdgeInsets.symmetric(vertical: 16.h),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
-                  child: _isConfirming
+                  child: provider.isConfirming
                       ? SizedBox(
                           width: 20.w,
                           height: 20.h,
@@ -410,8 +322,8 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
     );
   }
 
-  Widget _buildComparisonView() {
-    if (_supervisorEntries.isEmpty && _engineerEntries.isEmpty) {
+  Widget _buildComparisonView(AccountantEntriesProvider provider) {
+    if (provider.supervisorEntries.isEmpty && provider.engineerEntries.isEmpty && provider.accountantEntries.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -421,7 +333,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
               height: 100.h,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                  colors: [AppColors.deepNavy, AppColors.deepNavyDark],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -439,7 +351,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
               style: TextStyle(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF1A1A2E),
+                color: AppColors.deepNavy,
               ),
             ),
             SizedBox(height: 8.h),
@@ -448,7 +360,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16.sp,
-                color: const Color(0xFF6B7280),
+                color: AppColors.textSecondary,
               ),
             ),
           ],
@@ -456,22 +368,63 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
       );
     }
 
+    // Group entries by site
+    final Map<String, dynamic> siteMap = {};
+    for (final entry in provider.supervisorEntries) {
+      final siteId = entry['site_id'] ?? 'unknown';
+      if (!siteMap.containsKey(siteId)) {
+        siteMap[siteId] = {
+          'site_name': entry['site_name'] ?? 'Unknown',
+          'supervisor_entries': [],
+          'engineer_entries': [],
+          'accountant_entries': [],
+        };
+      }
+      siteMap[siteId]['supervisor_entries'].add(entry);
+    }
+
+    for (final entry in provider.engineerEntries) {
+      final siteId = entry['site_id'] ?? 'unknown';
+      if (!siteMap.containsKey(siteId)) {
+        siteMap[siteId] = {
+          'site_name': entry['site_name'] ?? 'Unknown',
+          'supervisor_entries': [],
+          'engineer_entries': [],
+          'accountant_entries': [],
+        };
+      }
+      siteMap[siteId]['engineer_entries'].add(entry);
+    }
+
+    for (final entry in provider.accountantEntries) {
+      final siteId = entry['site_id'] ?? 'unknown';
+      if (!siteMap.containsKey(siteId)) {
+        siteMap[siteId] = {
+          'site_name': entry['site_name'] ?? 'Unknown',
+          'supervisor_entries': [],
+          'engineer_entries': [],
+          'accountant_entries': [],
+        };
+      }
+      siteMap[siteId]['accountant_entries'].add(entry);
+    }
+
     return ListView(
       padding: EdgeInsets.all(16.r),
       children: [
         // Lock banner — shown when this site+date is already confirmed
-        if (_isLockedForSite && _lockInfo != null) ...[
+        if (provider.isLockedForSite && provider.lockInfo != null) ...[
           Container(
             margin: EdgeInsets.only(bottom: 16.h),
             padding: EdgeInsets.all(14.r),
             decoration: BoxDecoration(
-              color: Colors.green.shade50,
+              color: AppColors.accountantSuccess.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: Colors.green.shade400, width: 1.5),
+              border: Border.all(color: AppColors.accountantSuccess, width: 1.5),
             ),
             child: Row(
               children: [
-                Icon(Icons.lock, color: Colors.green.shade700, size: 22.sp),
+                Icon(Icons.lock, color: AppColors.accountantSuccess, size: 22.sp),
                 SizedBox(width: 10.w),
                 Expanded(
                   child: Column(
@@ -482,14 +435,14 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                         style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green.shade800,
+                          color: AppColors.accountantSuccess,
                         ),
                       ),
                       SizedBox(height: 2.h),
                       Text(
-                        'Confirmed by ${_lockInfo!['accountant_name'] ?? 'an accountant'} '
-                        '· Source: ${(_lockInfo!['source_type'] as String? ?? '').replaceAll('_', ' ').toUpperCase()}',
-                        style: TextStyle(fontSize: 12.sp, color: Colors.green.shade700),
+                        'Confirmed by ${provider.lockInfo!['accountant_name'] ?? 'an accountant'} '
+                        '· Source: ${(provider.lockInfo!['source_type'] as String? ?? '').replaceAll('_', ' ').toUpperCase()}',
+                        style: TextStyle(fontSize: 12.sp, color: AppColors.accountantSuccess),
                       ),
                     ],
                   ),
@@ -499,28 +452,111 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
           ),
         ],
 
-        // Supervisor Section
-        _buildSectionHeader(
-          'Supervisor Entries',
-          _supervisorEntries.length,
-          Icons.engineering,
-          const Color(0xFF059669),
-        ),
-        SizedBox(height: 12.h),
-        ..._supervisorEntries.map((entry) => _buildEntryCard(entry, true)),
-
-        SizedBox(height: 24.h),
-
-        // Site Engineer Section
-        _buildSectionHeader(
-          'Site Engineer Entries',
-          _engineerEntries.length,
-          Icons.construction,
-          const Color(0xFF2563EB),
-        ),
-        SizedBox(height: 12.h),
-        ..._engineerEntries.map((entry) => _buildEntryCard(entry, false)),
+        // Display sites as expandable items
+        ...siteMap.entries.map((entry) => _buildSiteCard(
+          entry.key,
+          entry.value['site_name'] as String,
+          List<Map<String, dynamic>>.from(entry.value['supervisor_entries'] as List),
+          List<Map<String, dynamic>>.from(entry.value['engineer_entries'] as List),
+          List<Map<String, dynamic>>.from(entry.value['accountant_entries'] as List),
+        )),
       ],
+    );
+  }
+
+  Widget _buildSiteCard(
+    String siteId,
+    String siteName,
+    List<Map<String, dynamic>> supervisorEntries,
+    List<Map<String, dynamic>> engineerEntries,
+    List<Map<String, dynamic>> accountantEntries,
+  ) {
+    final isExpanded = _expandedSites.contains(siteId);
+
+    return Card(
+      margin: EdgeInsets.only(bottom: 12.h),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          key: PageStorageKey<String>(siteId),
+          title: Text(
+            siteName,
+            style: TextStyle(
+              fontSize: 15.sp,
+              fontWeight: FontWeight.bold,
+              color: AppColors.deepNavy,
+            ),
+          ),
+          trailing: Icon(
+            isExpanded ? Icons.expand_less : Icons.expand_more,
+            color: AppColors.deepNavy,
+          ),
+          onExpansionChanged: (expanded) {
+            setState(() {
+              if (expanded) {
+                _expandedSites.add(siteId);
+              } else {
+                _expandedSites.remove(siteId);
+              }
+            });
+          },
+          children: [
+            Padding(
+              padding: EdgeInsets.all(12.r),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Supervisor Entries
+                  if (supervisorEntries.isNotEmpty) ...[
+                    Text(
+                      'Supervisor Entries (${supervisorEntries.length})',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accountantSuccess,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    ...supervisorEntries.map((entry) => _buildEntryCard(entry, true)),
+                    SizedBox(height: 16.h),
+                  ],
+
+                  // Site Engineer Entries
+                  if (engineerEntries.isNotEmpty) ...[
+                    Text(
+                      'Site Engineer Entries (${engineerEntries.length})',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accountantAccent,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    ...engineerEntries.map((entry) => _buildEntryCard(entry, false)),
+                    SizedBox(height: 16.h),
+                  ],
+
+                  // Accountant Entries
+                  if (accountantEntries.isNotEmpty) ...[
+                    Text(
+                      'Accountant Entries (${accountantEntries.length})',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accountantWarning,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    ...accountantEntries.map((entry) => _buildEntryCard(entry)),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -573,17 +609,26 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
     );
   }
 
-  Widget _buildEntryCard(Map<String, dynamic> entry, bool isSupervisor) {
+  Widget _buildEntryCard(Map<String, dynamic> entry, [bool? isSupervisor]) {
+    final provider = context.read<AccountantEntriesProvider>();
     final siteName = entry['site_name'] ?? 'Unknown Site';
     final siteId = entry['site_id'] ?? '';
     final labourEntries = entry['labour_entries'] as List? ?? [];
     final submittedBy = entry['submitted_by'] ?? 'Unknown';
-    final isLocked = _isLockedForSite; // read-only when site is confirmed
+    final isLocked = provider.isLockedForSite; // read-only when site is confirmed
     final submittedAt = entry['submitted_at'] as String?;
 
-    final color = isSupervisor ? const Color(0xFF059669) : const Color(0xFF2563EB);
-    final entryType = isSupervisor ? 'supervisor' : 'site_engineer';
-    final isSelected = _selectedEntryId == siteId && _selectedEntryType == entryType;
+    final color = isSupervisor == true
+        ? AppColors.accountantSuccess
+        : isSupervisor == false
+            ? AppColors.accountantAccent
+            : AppColors.accountantWarning;
+    final entryType = isSupervisor == true
+        ? 'supervisor'
+        : isSupervisor == false
+            ? 'site_engineer'
+            : 'accountant';
+    final isSelected = provider.selectedEntryId == siteId && provider.selectedEntryType == entryType;
 
     return Card(
       margin: EdgeInsets.only(bottom: 12.h),
@@ -601,15 +646,11 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
           if (!isLocked)
           InkWell(
             onTap: () {
-              setState(() {
-                if (isSelected) {
-                  _selectedEntryId = null;
-                  _selectedEntryType = null;
-                } else {
-                  _selectedEntryId = siteId;
-                  _selectedEntryType = entryType;
-                }
-              });
+              if (isSelected) {
+                provider.clearSelection();
+              } else {
+                provider.selectEntry(siteId, entryType);
+              }
             },
             child: Container(
               padding: EdgeInsets.all(12.r),
@@ -625,15 +666,13 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                   Checkbox(
                     value: isSelected,
                     onChanged: (value) {
-                      setState(() {
-                        if (value == true) {
-                          _selectedEntryId = siteId;
-                          _selectedEntryType = entryType;
-                        } else {
-                          _selectedEntryId = null;
-                          _selectedEntryType = null;
-                        }
-                      });
+                      if (value == true) {
+                        provider.selectEntry(siteId, entryType);
+                        // Immediately confirm and navigate to Approved Entries
+                        _confirmAndNavigate(entry, entryType);
+                      } else {
+                        provider.clearSelection();
+                      }
                     },
                     activeColor: color,
                   ),
@@ -644,7 +683,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                       style: TextStyle(
                         fontSize: 13.sp,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? color : const Color(0xFF6B7280),
+                        color: isSelected ? color : AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -662,7 +701,11 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                 borderRadius: BorderRadius.circular(8.r),
               ),
               child: Icon(
-                isSupervisor ? Icons.engineering : Icons.construction,
+                isSupervisor == true
+                    ? Icons.engineering
+                    : isSupervisor == false
+                        ? Icons.construction
+                        : Icons.person,
                 color: color,
                 size: 20.sp,
               ),
@@ -672,7 +715,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
               style: TextStyle(
                 fontSize: 15.sp,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF1A1A2E),
+                color: AppColors.deepNavy,
               ),
             ),
             subtitle: Column(
@@ -683,7 +726,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                   'By: $submittedBy',
                   style: TextStyle(
                     fontSize: 12.sp,
-                    color: const Color(0xFF6B7280),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 if (submittedAt != null)
@@ -691,7 +734,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
                     'At: ${_formatTime(submittedAt)}',
                     style: TextStyle(
                       fontSize: 11.sp,
-                      color: const Color(0xFF9CA3AF),
+                      color: AppColors.textTertiary,
                     ),
                   ),
               ],
@@ -735,7 +778,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
             width: 6.w,
             height: 6.h,
             decoration: const BoxDecoration(
-              color: Color(0xFF1A1A2E),
+              color: AppColors.deepNavy,
               shape: BoxShape.circle,
             ),
           ),
@@ -745,14 +788,14 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
               labourType,
               style: TextStyle(
                 fontSize: 14.sp,
-                color: const Color(0xFF1A1A2E),
+                color: AppColors.deepNavy,
               ),
             ),
           ),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
+              color: AppColors.deepNavy.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12.r),
             ),
             child: Text(
@@ -760,7 +803,7 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
               style: TextStyle(
                 fontSize: 13.sp,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF1A1A2E),
+                color: AppColors.deepNavy,
               ),
             ),
           ),
@@ -778,18 +821,20 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
     }
   }
 
-  Future<void> _confirmSelection() async {
-    if (_selectedEntryId == null || _selectedEntryType == null) return;
 
-    setState(() => _isConfirming = true);
+  Future<void> _confirmSelection() async {
+    final provider = context.read<AccountantEntriesProvider>();
+    if (provider.selectedEntryId == null || provider.selectedEntryType == null) return;
+
+    provider.setIsConfirming(true);
 
     try {
       // Find the selected entry
-      final entries = _selectedEntryType == 'supervisor' ? _supervisorEntries : _engineerEntries;
-      final selectedEntry = entries.firstWhere((e) => e['site_id'] == _selectedEntryId);
+      final entries = provider.selectedEntryType == 'supervisor' ? provider.supervisorEntries : provider.engineerEntries;
+      final selectedEntry = entries.firstWhere((e) => e['site_id'] == provider.selectedEntryId);
 
       final labourEntries = selectedEntry['labour_entries'] as List;
-      final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      final dateStr = DateFormat('yyyy-MM-dd').format(provider.selectedDate);
 
       // Fetch labour rates for each labour type
       final labourEntriesWithRates = <Map<String, dynamic>>[];
@@ -816,9 +861,9 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
 
       // Call confirm cash entry API
       final result = await _constructionService.confirmCashEntry(
-        siteId: _selectedEntryId!,
+        siteId: provider.selectedEntryId!,
         entryDate: dateStr,
-        sourceType: _selectedEntryType!,
+        sourceType: provider.selectedEntryType!,
         sourceEntryId: null, // We don't have individual entry IDs in the grouped data
         labourEntries: labourEntriesWithRates,
       );
@@ -828,14 +873,11 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result['message'] ?? 'Entry confirmed successfully'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.accountantSuccess,
             ),
           );
 
-          setState(() {
-            _selectedEntryId = null;
-            _selectedEntryType = null;
-          });
+          provider.clearSelection();
 
           // Reload data
           _loadComparisonData();
@@ -843,367 +885,129 @@ class _AccountantCompareScreenState extends State<AccountantCompareScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result['error'] ?? 'Failed to confirm entry'),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.accountantError,
             ),
           );
         }
+
+        // Refresh data after confirmation
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            _loadComparisonData();
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.accountantError,
           ),
         );
       }
     } finally {
       if (mounted) {
-        setState(() => _isConfirming = false);
+        provider.setIsConfirming(false);
       }
     }
   }
 
-  void _showCreateCustomEntryDialog() {
-    final dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(_selectedDate));
-    String? selectedSiteId;
-    String? selectedLabourType;
-    final countController = TextEditingController();
-    final notesController = TextEditingController();
-    double? dailyRate;
-    List<Map<String, dynamic>> labourRates = [];
-    bool isLoadingRates = true;
+  Future<void> _confirmAndNavigate(Map<String, dynamic> entry, String entryType) async {
+    try {
+      final provider = context.read<AccountantEntriesProvider>();
+      final siteId = entry['site_id'] as String;
+      final labourEntries = entry['labour_entries'] as List;
+      final dateStr = DateFormat('yyyy-MM-dd').format(provider.selectedDate);
 
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          // Load labour rates on first build
-          if (isLoadingRates && labourRates.isEmpty) {
-            _constructionService.getLabourRates('global').then((response) {
-              setDialogState(() {
-                labourRates = List<Map<String, dynamic>>.from(response['rates'] ?? []);
-                isLoadingRates = false;
-              });
-            });
+      print('✅ [CONFIRM] Starting confirmation - siteId: $siteId, entryType: $entryType, date: $dateStr');
+
+      // Fetch labour rates for each labour type
+      final labourEntriesWithRates = <Map<String, dynamic>>[];
+      for (var labour in labourEntries) {
+        final labourType = labour['labour_type'];
+        final labourCount = labour['labour_count'];
+
+        final ratesResponse = await _constructionService.getLabourRates('global');
+        final rates = ratesResponse['rates'] as List? ?? [];
+        final rateData = rates.firstWhere(
+          (r) => r['labour_type'] == labourType,
+          orElse: () => {'daily_rate': 600.0},
+        );
+
+        final dailyRate = (rateData['daily_rate'] as num).toDouble();
+
+        labourEntriesWithRates.add({
+          'labour_type': labourType,
+          'labour_count': labourCount,
+          'daily_rate': dailyRate,
+        });
+      }
+
+      print('✅ [CONFIRM] Prepared ${labourEntriesWithRates.length} labour entries with rates');
+
+      // Confirm the entry
+      final result = await _constructionService.confirmCashEntry(
+        siteId: siteId,
+        entryDate: dateStr,
+        sourceType: entryType,
+        sourceEntryId: null,
+        labourEntries: labourEntriesWithRates,
+      );
+
+      print('✅ [CONFIRM] API Response: $result');
+
+      if (mounted) {
+        if (result['success'] == true) {
+          print('✅ [CONFIRM] Confirmation succeeded!');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Entry confirmed! Moving to Approved Entries...'),
+              backgroundColor: Color(0xFF059669),
+            ),
+          );
+
+          // Refresh compare screen data
+          print('✅ [CONFIRM] Refreshing comparison data...');
+          await Future.delayed(const Duration(milliseconds: 300));
+          if (mounted) {
+            _loadComparisonData();
           }
 
-          return AlertDialog(
-            title: Text(
-              'Create Custom Entry',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1A1A2E),
-              ),
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Site selector
-                  Text(
-                    'Site',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A2E),
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  DropdownButtonFormField<String>(
-                    value: selectedSiteId,
-                    decoration: InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      hintText: 'Select site',
-                    ),
-                    items: _sites.map((site) {
-                      return DropdownMenuItem<String>(
-                        value: site['id'],
-                        child: Text(
-                          site['display_name'] ?? site['site_name'] ?? 'Unknown',
-                          style: TextStyle(fontSize: 14.sp),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setDialogState(() => selectedSiteId = value);
-                    },
-                  ),
-                  SizedBox(height: 16.h),
-
-                  // Date picker
-                  Text(
-                    'Date',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A2E),
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  TextField(
-                    controller: dateController,
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      suffixIcon: const Icon(Icons.calendar_today),
-                    ),
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        setDialogState(() {
-                          dateController.text = DateFormat('yyyy-MM-dd').format(picked);
-                        });
-                      }
-                    },
-                  ),
-                  SizedBox(height: 16.h),
-
-                  // Labour type selector
-                  Text(
-                    'Labour Type',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A2E),
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  isLoadingRates
-                      ? const Center(child: CircularProgressIndicator())
-                      : DropdownButtonFormField<String>(
-                          value: selectedLabourType,
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                            hintText: 'Select labour type',
-                          ),
-                          items: labourRates.map((rate) {
-                            return DropdownMenuItem<String>(
-                              value: rate['labour_type'],
-                              child: Text(
-                                rate['labour_type'],
-                                style: TextStyle(fontSize: 14.sp),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setDialogState(() {
-                              selectedLabourType = value;
-                              // Auto-fill daily rate
-                              final rateData = labourRates.firstWhere(
-                                (r) => r['labour_type'] == value,
-                                orElse: () => {'daily_rate': 600.0},
-                              );
-                              dailyRate = (rateData['daily_rate'] as num).toDouble();
-                            });
-                          },
-                        ),
-                  SizedBox(height: 16.h),
-
-                  // Labour count
-                  Text(
-                    'Labour Count',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A2E),
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  TextField(
-                    controller: countController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      hintText: 'Enter count',
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-
-                  // Daily rate (auto-filled, read-only)
-                  Text(
-                    'Daily Rate',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A2E),
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(8.r),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
-                    ),
-                    child: Text(
-                      dailyRate != null ? '₹${dailyRate!.toStringAsFixed(0)}' : 'Select labour type first',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        color: dailyRate != null ? const Color(0xFF1A1A2E) : const Color(0xFF9CA3AF),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-
-                  // Notes
-                  Text(
-                    'Notes (Optional)',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1A1A2E),
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  TextField(
-                    controller: notesController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      contentPadding: EdgeInsets.all(12.r),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      hintText: 'Enter notes',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  // Validation
-                  if (selectedSiteId == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please select a site'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                    return;
-                  }
-                  if (selectedLabourType == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please select a labour type'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                    return;
-                  }
-                  if (countController.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please enter labour count'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                    return;
-                  }
-
-                  final count = int.tryParse(countController.text);
-                  if (count == null || count <= 0) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please enter a valid count'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                    return;
-                  }
-
-                  Navigator.pop(context);
-
-                  // Show loading
-                  if (mounted) {
-                    setState(() => _isConfirming = true);
-                  }
-
-                  try {
-                    // Create custom cash entry
-                    final result = await _constructionService.createCustomCashEntry(
-                      siteId: selectedSiteId!,
-                      entryDate: dateController.text,
-                      labourEntries: [
-                        {
-                          'labour_type': selectedLabourType!,
-                          'labour_count': count,
-                          'daily_rate': dailyRate!,
-                        }
-                      ],
-                      notes: notesController.text.isNotEmpty ? notesController.text : null,
-                    );
-
-                    if (mounted) {
-                      if (result['success'] == true) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(result['message'] ?? 'Custom entry created successfully'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        _loadComparisonData();
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(result['error'] ?? 'Failed to create entry'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  } finally {
-                    if (mounted) {
-                      setState(() => _isConfirming = false);
-                    }
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF059669),
-                ),
-                child: const Text(
-                  'Create',
-                  style: TextStyle(color: Colors.white),
+          // Navigate to Approved Entries after a delay
+          print('✅ [CONFIRM] Navigating to Approved Entries screen...');
+          await Future.delayed(const Duration(milliseconds: 600));
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AccountantApprovedEntriesScreen(
+                  initialDate: provider.selectedDate,
                 ),
               ),
-            ],
+            );
+          }
+        } else {
+          print('❌ [CONFIRM] Confirmation failed: ${result['error']}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['error'] ?? 'Failed to confirm entry'),
+              backgroundColor: const Color(0xFFDC2626),
+            ),
           );
-        },
-      ),
-    );
+        }
+      }
+    } catch (e) {
+      print('❌ [CONFIRM] Exception: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
   }
+
 }

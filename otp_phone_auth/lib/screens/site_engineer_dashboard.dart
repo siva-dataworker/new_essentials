@@ -35,6 +35,10 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
 
+  // Filter state
+  String? _selectedArea;
+  String? _selectedStreet;
+
   final Map<String, Map<String, bool>> _uploadStatus =
       {}; // site_id -> {morning: bool, evening: bool}
 
@@ -229,12 +233,6 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
   Widget _buildDashboardTab(ConstructionProvider provider) {
     final sites = provider.sites;
     final totalSites = sites.length;
-    final morningUploaded = _uploadStatus.values
-        .where((s) => s['morning'] == true)
-        .length;
-    final eveningUploaded = _uploadStatus.values
-        .where((s) => s['evening'] == true)
-        .length;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -316,39 +314,14 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
               ),
             ),
             SizedBox(height: 12.h),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 1.0,
-              children: [
-                SummaryCard(
-                  title: 'Total Sites',
-                  value: '$totalSites',
-                  icon: Icons.location_city,
-                  color: AppColors.deepNavy,
-                ),
-                SummaryCard(
-                  title: 'Morning Photos',
-                  value: '$morningUploaded/$totalSites',
-                  icon: Icons.wb_sunny,
-                  color: Colors.orange,
-                ),
-                SummaryCard(
-                  title: 'Evening Photos',
-                  value: '$eveningUploaded/$totalSites',
-                  icon: Icons.nights_stay,
-                  color: Colors.purple,
-                ),
-                SummaryCard(
-                  title: 'Pending',
-                  value: '${totalSites - morningUploaded}',
-                  icon: Icons.pending_actions,
-                  color: AppColors.statusOverdue,
-                ),
-              ],
+            SizedBox(
+              width: double.infinity,
+              child: SummaryCard(
+                title: 'Total Sites',
+                value: '$totalSites',
+                icon: Icons.location_city,
+                color: AppColors.deepNavy,
+              ),
             ),
             SizedBox(height: 24.h),
 
@@ -424,23 +397,67 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
   // Sites Tab - Dropdown Selection instead of Cards
   Widget _buildSitesTab(ConstructionProvider provider) {
     final sites = provider.sites;
-    final filteredSites = _searchQuery.isEmpty
-        ? sites
-        : sites.where((site) {
-            final name = (site['display_name'] ?? site['site_name'] ?? '')
-                .toString()
-                .toLowerCase();
-            final area = (site['area'] ?? '').toString().toLowerCase();
-            final street = (site['street'] ?? '').toString().toLowerCase();
-            final customer = (site['customer_name'] ?? '')
-                .toString()
-                .toLowerCase();
-            final query = _searchQuery.toLowerCase();
-            return name.contains(query) ||
-                area.contains(query) ||
-                street.contains(query) ||
-                customer.contains(query);
-          }).toList();
+
+    // Extract unique areas and streets
+    final uniqueAreas = sites
+        .map((s) => s['area'] as String? ?? '')
+        .where((a) => a.isNotEmpty)
+        .toSet()
+        .toList()
+        ..sort();
+    final uniqueStreets = sites
+        .map((s) => s['street'] as String? ?? '')
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList()
+        ..sort();
+
+    print('🔍 [SITES TAB] Sites count: ${sites.length}');
+    if (sites.isNotEmpty) {
+      print('🔍 [SITES TAB] First site data: ${sites[0]}');
+      print('🔍 [SITES TAB] Site keys: ${sites[0].keys.toList()}');
+    }
+    print('🔍 [SITES TAB] Unique Areas: $uniqueAreas');
+    print('🔍 [SITES TAB] Unique Streets: $uniqueStreets');
+    print('🔍 [SITES TAB] Selected Area: $_selectedArea, Selected Street: $_selectedStreet');
+
+    // Apply filters
+    final filteredSites = sites.where((site) {
+      // Search filter
+      if (_searchQuery.isNotEmpty) {
+        final name = (site['display_name'] ?? site['site_name'] ?? '')
+            .toString()
+            .toLowerCase();
+        final area = (site['area'] ?? '').toString().toLowerCase();
+        final street = (site['street'] ?? '').toString().toLowerCase();
+        final customer = (site['customer_name'] ?? '')
+            .toString()
+            .toLowerCase();
+        final query = _searchQuery.toLowerCase();
+        if (!(name.contains(query) ||
+            area.contains(query) ||
+            street.contains(query) ||
+            customer.contains(query))) {
+          return false;
+        }
+      }
+
+      // Area filter
+      if (_selectedArea != null && _selectedArea!.isNotEmpty) {
+        if (site['area'] != _selectedArea) {
+          return false;
+        }
+      }
+
+      // Street filter
+      if (_selectedStreet != null && _selectedStreet!.isNotEmpty) {
+        if (site['street'] != _selectedStreet) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
 
     final isLoading = sites.isEmpty && _uploadStatus.isEmpty;
 
@@ -522,19 +539,136 @@ class _SiteEngineerDashboardState extends State<SiteEngineerDashboard> {
             ),
             SizedBox(height: 16.h),
 
-            // Results count
-            if (_searchQuery.isNotEmpty)
-              Padding(
-                padding: EdgeInsets.only(bottom: 16.h),
-                child: Text(
-                  'Found ${filteredSites.length} site(s)',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.deepNavy,
+            // Filter Dropdowns
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Area',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.deepNavy,
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      Material(
+                        child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: AppColors.deepNavy.withValues(alpha: 0.2),
+                          ),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: DropdownButton<String>(
+                          value: _selectedArea,
+                          isExpanded: true,
+                          underline: SizedBox(),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 8.h,
+                          ),
+                          dropdownColor: AppColors.cleanWhite,
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: null,
+                              child: Text(
+                                'All Areas',
+                                style: TextStyle(fontSize: 13.sp),
+                              ),
+                            ),
+                            ...uniqueAreas.map((area) {
+                              return DropdownMenuItem<String>(
+                                value: area,
+                                child: Text(area, style: TextStyle(fontSize: 13.sp)),
+                              );
+                            }).toList(),
+                          ],
+                          onChanged: (value) {
+                            print('📍 Area selected: $value');
+                            setState(() => _selectedArea = value);
+                          },
+                        ),
+                      ),
+                    ),
+                    ],
                   ),
                 ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Street',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.deepNavy,
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      Material(
+                        child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: AppColors.deepNavy.withValues(alpha: 0.2),
+                          ),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: DropdownButton<String>(
+                          value: _selectedStreet,
+                          isExpanded: true,
+                          underline: SizedBox(),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 8.h,
+                          ),
+                          dropdownColor: AppColors.cleanWhite,
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: null,
+                              child: Text(
+                                'All Streets',
+                                style: TextStyle(fontSize: 13.sp),
+                              ),
+                            ),
+                            ...uniqueStreets.map((street) {
+                              return DropdownMenuItem<String>(
+                                value: street,
+                                child: Text(street, style: TextStyle(fontSize: 13.sp)),
+                              );
+                            }).toList(),
+                          ],
+                          onChanged: (value) {
+                            print('🛣️ Street selected: $value');
+                            setState(() => _selectedStreet = value);
+                          },
+                        ),
+                      ),
+                    ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16.h),
+
+            // Results count
+            Padding(
+              padding: EdgeInsets.only(bottom: 16.h),
+              child: Text(
+                'Found ${filteredSites.length} site(s)',
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.deepNavy,
+                ),
               ),
+            ),
 
             // Sites Dropdown List
             if (filteredSites.isEmpty)
