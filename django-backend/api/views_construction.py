@@ -1992,21 +1992,28 @@ def get_approved_entries(request):
 
             # Get accountant info (from first entry for this site+date)
             acc_info = fetch_one("""
-                SELECT COALESCE(u.full_name, u.phone) as approved_by, created_at
+                SELECT ce.accountant_id, COALESCE(u.full_name, u.phone) as approved_by, ce.created_at
                 FROM cash_entries ce
                 LEFT JOIN users u ON ce.accountant_id = u.id
                 WHERE ce.site_id = %s AND ce.entry_date = %s
                 LIMIT 1
             """, (site_id, combo_date))
 
+            print(f"🔍 [APPROVED] acc_info for site {site_id}: {acc_info}")
+
             if site_info:
+                approved_by_name = 'Unknown'
+                if acc_info:
+                    approved_by_name = acc_info.get('approved_by') or acc_info.get('accountant_id') or 'Unknown'
+                    print(f"  accountant_id: {acc_info.get('accountant_id')}, approved_by: {acc_info.get('approved_by')}")
+
                 approved_meta.append({
                     'site_id': site_id,
                     'site_name': site_info['site_name'],
                     'entry_date': combo_date,
                     'source_type': source_type,
                     'approved_at': acc_info['created_at'] if acc_info else None,
-                    'approved_by': acc_info['approved_by'] if acc_info else 'Unknown',
+                    'approved_by': approved_by_name,
                 })
 
         print(f"✅ [APPROVED ENTRIES] Enriched with site info: {len(approved_meta)} entries")
