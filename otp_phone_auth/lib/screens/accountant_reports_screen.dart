@@ -32,7 +32,8 @@ class _AccountantReportsScreenState extends State<AccountantReportsScreen> {
         if (!d.startsWith(_selectedDateStr)) return false;
       }
       if (_selectedRole != null) {
-        final role = (e['user_role'] as String? ?? '').toLowerCase().replaceAll('_', ' ');
+        // Use submitted_by_role from cash_entries (source_type: 'Supervisor' or 'Site Engineer')
+        final role = (e['submitted_by_role'] as String? ?? '').toLowerCase();
         if (role != _selectedRole!.toLowerCase()) return false;
       }
       if (_selectedSiteId != null) {

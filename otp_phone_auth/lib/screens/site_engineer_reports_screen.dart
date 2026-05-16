@@ -14,6 +14,8 @@ class SiteEngineerReportsScreen extends StatefulWidget {
 
 class _SiteEngineerReportsScreenState
     extends State<SiteEngineerReportsScreen> {
+  String? _selectedArea;
+  String? _selectedStreet;
 
   @override
   void initState() {
@@ -227,6 +229,39 @@ class _SiteEngineerReportsScreenState
   }
 
   Widget _buildSiteList(List<Map<String, dynamic>> sites) {
+    // Extract unique areas and streets
+    final uniqueAreas = sites
+        .map((s) => s['area'] as String? ?? '')
+        .where((a) => a.isNotEmpty)
+        .toSet()
+        .toList()
+        ..sort();
+    final uniqueStreets = sites
+        .map((s) => s['street'] as String? ?? '')
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList()
+        ..sort();
+
+    // Apply filters
+    final filteredSites = sites.where((site) {
+      // Area filter
+      if (_selectedArea != null && _selectedArea!.isNotEmpty) {
+        if (site['area'] != _selectedArea) {
+          return false;
+        }
+      }
+
+      // Street filter
+      if (_selectedStreet != null && _selectedStreet!.isNotEmpty) {
+        if (site['street'] != _selectedStreet) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
+
     return RefreshIndicator(
       onRefresh: () =>
           context.read<ConstructionProvider>().loadSites(forceRefresh: true),
@@ -234,10 +269,125 @@ class _SiteEngineerReportsScreenState
       child: ListView(
         padding: EdgeInsets.all(16.r),
         children: [
+          // Filter Dropdowns
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Area',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.deepNavy,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Material(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: AppColors.deepNavy.withValues(alpha: 0.2),
+                          ),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: DropdownButton<String>(
+                          value: _selectedArea,
+                          isExpanded: true,
+                          underline: SizedBox(),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 8.h,
+                          ),
+                          dropdownColor: AppColors.cleanWhite,
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: null,
+                              child: Text(
+                                'All Areas',
+                                style: TextStyle(fontSize: 13.sp),
+                              ),
+                            ),
+                            ...uniqueAreas.map((area) {
+                              return DropdownMenuItem<String>(
+                                value: area,
+                                child: Text(area, style: TextStyle(fontSize: 13.sp)),
+                              );
+                            }),
+                          ],
+                          onChanged: (value) {
+                            setState(() => _selectedArea = value);
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Street',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.deepNavy,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Material(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: AppColors.deepNavy.withValues(alpha: 0.2),
+                          ),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: DropdownButton<String>(
+                          value: _selectedStreet,
+                          isExpanded: true,
+                          underline: SizedBox(),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 8.h,
+                          ),
+                          dropdownColor: AppColors.cleanWhite,
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: null,
+                              child: Text(
+                                'All Streets',
+                                style: TextStyle(fontSize: 13.sp),
+                              ),
+                            ),
+                            ...uniqueStreets.map((street) {
+                              return DropdownMenuItem<String>(
+                                value: street,
+                                child: Text(street, style: TextStyle(fontSize: 13.sp)),
+                              );
+                            }),
+                          ],
+                          onChanged: (value) {
+                            setState(() => _selectedStreet = value);
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16.h),
           Padding(
             padding: EdgeInsets.only(bottom: 12.h),
             child: Text(
-              '${sites.length} site${sites.length == 1 ? '' : 's'}',
+              '${filteredSites.length} site${filteredSites.length == 1 ? '' : 's'}',
               style: TextStyle(
                 fontSize: 13.sp,
                 fontWeight: FontWeight.w600,
@@ -245,7 +395,7 @@ class _SiteEngineerReportsScreenState
               ),
             ),
           ),
-          ...sites.map((site) => _buildSiteCard(site)),
+          ...filteredSites.map((site) => _buildSiteCard(site)),
         ],
       ),
     );

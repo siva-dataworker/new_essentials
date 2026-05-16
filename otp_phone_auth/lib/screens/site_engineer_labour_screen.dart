@@ -132,7 +132,13 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
         }
 
         // Populate evening history — morning entries only (hour < 12)
-        final morningEntries = labourEntries.where((e) {
+        // Filter to only Site Engineer entries
+        final siteEngineerEntries = labourEntries.where((e) {
+          final role = e['submitted_by_role'] as String? ?? '';
+          return role == 'Site Engineer';
+        }).toList();
+
+        final morningEntries = siteEngineerEntries.where((e) {
           final t = (e['entry_time'] as String?) ?? '';
           final hour = int.tryParse(t.split(':').first) ?? -1;
           return hour < 12;
@@ -162,8 +168,15 @@ class _SiteEngineerLabourScreenState extends State<SiteEngineerLabourScreen>
         final labourEntries = List<Map<String, dynamic>>.from(
           entries['labour_entries'] ?? [],
         );
+
+        // Filter to only Site Engineer entries
+        final siteEngineerEntries = labourEntries.where((e) {
+          final role = e['submitted_by_role'] as String? ?? '';
+          return role == 'Site Engineer';
+        }).toList();
+
         // Filter to morning entries only (entry_time hour < 12)
-        final morningEntries = labourEntries.where((e) {
+        final morningEntries = siteEngineerEntries.where((e) {
           final t = (e['entry_time'] as String?) ?? '';
           final hour = int.tryParse(t.split(':').first) ?? -1;
           // hour < 0 means no time info — include it (assume morning)

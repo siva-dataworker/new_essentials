@@ -2195,6 +2195,43 @@ class ConstructionService {
     }
   }
 
+  /// Get approved entries grouped by site and date
+  Future<List<Map<String, dynamic>>> getApprovedEntries(String date) async {
+    print('🔍 [SERVICE] getApprovedEntries called - date: $date');
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        print('❌ [SERVICE] No token available');
+        return [];
+      }
+
+      final url = '$baseUrl/construction/approved-entries/?date=$date';
+      print('🔍 [SERVICE] URL: $url');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('📊 [SERVICE] Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> entries = data['approved_entries'] ?? [];
+        print('✅ [SERVICE] Parsed ${entries.length} approved entries');
+        return entries.map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+      print('❌ [SERVICE] Non-200 status code');
+      return [];
+    } catch (e) {
+      print('❌ [SERVICE] Error fetching approved entries: $e');
+      return [];
+    }
+  }
+
   /// Confirm a cash entry from supervisor/engineer entry
   Future<Map<String, dynamic>> confirmCashEntry({
     required String siteId,
@@ -2207,33 +2244,47 @@ class ConstructionService {
       final token = await _authService.getToken();
       if (token == null) return {'success': false, 'error': 'No token'};
 
+      final payload = {
+        'site_id': siteId,
+        'entry_date': entryDate,
+        'source_type': sourceType,
+        'source_entry_id': sourceEntryId,
+        'labour_entries': labourEntries,
+      };
+
+      print('🔵 [CONFIRM-SERVICE] Sending confirmation request');
+      print('🔵 [CONFIRM-SERVICE] Payload: $payload');
+
       final response = await http.post(
         Uri.parse('$baseUrl/construction/confirm-cash-entry/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: json.encode({
-          'site_id': siteId,
-          'entry_date': entryDate,
-          'source_type': sourceType,
-          'source_entry_id': sourceEntryId,
-          'labour_entries': labourEntries,
-        }),
+        body: json.encode(payload),
       );
 
-      final data = json.decode(response.body);
+      print('🔵 [CONFIRM-SERVICE] Response status: ${response.statusCode}');
+      print('🔵 [CONFIRM-SERVICE] Response body: ${response.body}');
 
-      if (response.statusCode == 201) {
-        return {'success': true, 'message': data['message']};
+      final data = json.decode(response.body);
+      print('🔵 [CONFIRM-SERVICE] Parsed data: $data');
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        print('✅ [CONFIRM-SERVICE] Confirmation successful');
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Entry confirmed successfully',
+        };
       } else {
+        print('❌ [CONFIRM-SERVICE] Confirmation failed with status ${response.statusCode}');
         return {
           'success': false,
-          'error': data['error'] ?? 'Failed to confirm',
+          'error': data['error'] ?? data['message'] ?? 'Failed to confirm entry',
         };
       }
     } catch (e) {
-      print('Error confirming cash entry: $e');
+      print('❌ [CONFIRM-SERVICE] Error confirming cash entry: $e');
       return {'success': false, 'error': e.toString()};
     }
   }
