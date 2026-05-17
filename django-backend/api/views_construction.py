@@ -316,6 +316,9 @@ def submit_labour_count(request):
         # ── Duplicate / lock check ────────────────────────────────────────
         # One entry per (site, date, entry_type, labour_type, submitted_by_role) per user.
         # This allows supervisor and site engineer to submit same labour type separately.
+        print(f"[LABOUR] Checking duplicate for: site={site_id}, date={entry_date}, "
+              f"type={entry_type}, labour={labour_type}, role={user_role}")
+
         existing = fetch_one("""
             SELECT le.id,
                    le.supervisor_id,
@@ -331,6 +334,11 @@ def submit_labour_count(request):
               AND  le.submitted_by_role = %s
             LIMIT 1
         """, (site_id, entry_date, entry_type, labour_type, user_role))
+
+        print(f"[LABOUR] Duplicate check result: {'FOUND' if existing else 'NOT FOUND'}")
+        if existing:
+            print(f"[LABOUR] Existing entry: id={existing['id']}, role={existing['submitted_by_role']}, "
+                  f"supervisor_id={existing['supervisor_id']}")
 
         if existing:
             if str(existing['supervisor_id']) == str(user_id):
