@@ -462,7 +462,7 @@ def check_entry_lock(request):
         
         # Check if any entries exist for this site/date
         entries = fetch_all("""
-            SELECT 
+            SELECT
                 le.id,
                 le.supervisor_id,
                 COALESCE(u.full_name, u.phone) as supervisor_name,
@@ -471,8 +471,8 @@ def check_entry_lock(request):
                 le.labour_count,
                 le.entry_type
             FROM labour_entries le
-            LEFT JOIN users u ON le.supervisor_id = u.user_id
-            WHERE le.site_id = %s 
+            LEFT JOIN users u ON le.supervisor_id = u.id
+            WHERE le.site_id = %s
               AND le.entry_date = %s
             ORDER BY le.entry_time DESC
         """, (site_id, entry_date))
